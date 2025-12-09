@@ -1,22 +1,24 @@
 {
-    "name": "Moo Budget Tool",
-    "short_name": "MooBudget",
-    "start_url": "./mooBudgetTool.html",
-    "display": "standalone",
-    "background_color": "#ffffff",
-    "theme_color": "#4f46e5",
-    "icons": [
-        {
-            "src": "https://cdnjs.cloudflare.com/ajax/libs/lucide/0.263/cow.svg", 
-            "sizes": "192x192",
-            "type": "image/svg+xml",
-            "purpose": "any maskable"
-        },
-        {
-            "src": "https://cdnjs.cloudflare.com/ajax/libs/lucide/0.263/cow.svg",
-            "sizes": "512x512",
-            "type": "image/svg+xml",
-            "purpose": "any maskable"
-        }
-    ]
+  "name": "Moo Budget Tool",
+  "short_name": "MooBudget",
+  "description": "Offline-capable Film Production Budget Tool",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#4f46e5",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "https://raw.githubusercontent.com/moollc/mooBudgetTool/main/assets/cow-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "https://raw.githubusercontent.com/moollc/mooBudgetTool/main/assets/cow-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable any"
+    }
+  ]
 }
