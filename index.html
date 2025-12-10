@@ -2288,15 +2288,25 @@
             a.click();
         }
 
-        function init() {
+     function init() {
+            // 1. Sync Version Number to UI (Tab Title & Footer)
+            document.title = `mooBudgetTool v${APP_VERSION}`;
+            const footerText = document.querySelector('footer p');
+            if(footerText) footerText.innerHTML = `Budget Tool by moo v${APP_VERSION}`;
+
+            // 2. Load Settings & Currency
             displayCurrency = localStorage.getItem(`${storageKeyPrefix}currency`) || 'JMD';
+            
+            // 3. Load Project or Initialize New
             let projectToLoad = localStorage.getItem(`${storageKeyPrefix}lastLoaded`);
             if (!projectToLoad || !getProjectList().includes(projectToLoad)) projectToLoad = getProjectList()[0];
             projectToLoad ? loadBudget(projectToLoad) : handleNewProject(false);
+            
+            // 4. Render & Bind Events
             render();
             bindAppEventListeners();
             
-            // Global click listener to close popups when clicking outside
+            // 5. Global Click Listener (Close Crew Popups when clicking outside)
             document.addEventListener('click', (e) => {
                 if(!e.target.closest('.crew-wrapper')) {
                     document.querySelectorAll('.crew-wrapper').forEach(div => div.classList.remove('mobile-active'));
