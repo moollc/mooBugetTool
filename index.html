@@ -49,55 +49,126 @@
             -webkit-text-size-adjust: 100%;
             text-size-adjust: 100%;
         }
-        /* --- Tables --- */
-/* --- Mobile Table Optimized (v19.52) --- */
-        /* --- Mobile Table Fixes (v19.52 Optimized) --- */
-        @media (max-width: 768px) {
-            .table-container { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-            table { min-width: 600px; } /* Slightly tighter min-width */
-            th, td { white-space: nowrap; padding: 0.5rem 0.1rem; font-size: 0.75rem; } /* Reduced horizontal padding */
-            
-            /* Col 1: Crew Avatar */
-            th:nth-child(1), td:nth-child(1) { width: 40px; text-align: center; } 
-            
-            /* Col 2: Drag Handle */
-            th:nth-child(2), td:nth-child(2) { width: 30px; min-width: 30px; } 
-            
-            /* Col 3: Description */
-            th:nth-child(3), td:nth-child(3) { min-width: 140px; max-width: 180px; white-space: normal; } 
-            
-            /* Col 4: Qty (Tightened) */
-            th:nth-child(4), td:nth-child(4) { width: 32px; padding: 0; } 
-            td:nth-child(4) input { text-align: center; padding: 0; }
 
-            /* Col 5: Unit (Tightened & Fixed) */
-            th:nth-child(5), td:nth-child(5) { width: 38px; padding: 0; } 
-            /* Remove native arrow on mobile so text 'Day' fits */
+        /* --- Layout & Responsiveness --- */
+        @media (min-width: 768px) {
+            .sticky-header { position: sticky; top: 1rem; z-index: 10; }
+        }
+        
+        /* --- Form Elements --- */
+        input[type=number]::-webkit-inner-spin-button,
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            appearance: none; 
+            margin: 0; 
+        }
+        input[type=number] { -moz-appearance: textfield; appearance: textfield; }
+
+        /* --- Modals & Transitions --- */
+        .modal-enter { opacity: 0; }
+        .modal-enter-active { opacity: 1; transition: opacity 0.2s ease-in-out; }
+        .modal-exit { opacity: 1; }
+        .modal-exit-active { opacity: 0; transition: opacity 0.2s ease-in-out; }
+        #settingsModalContent, #aiToolsModalContent { transition: all 0.3s ease-in-out; }
+
+        /* --- Tables --- */
+/* --- Mobile Table Optimized --- */
+        @media (max-width: 768px) {
+            /* 1. Container & Table Structure */
+            .table-container { 
+                overflow-x: auto; 
+                -webkit-overflow-scrolling: touch; 
+                padding-bottom: 20px;
+            }
+            table { 
+                min-width: 100%; /* Allow full squish */
+                width: auto; 
+                table-layout: auto;
+            } 
+            
+            /* 2. Global Cell Reset */
+            th, td { 
+                white-space: nowrap; 
+                padding: 4px 1px !important; /* Very tight horizontal padding */
+                font-size: 11px; 
+            }
+            
+            /* 3. Input Overrides (Crucial for spacing) */
+            td input, td select { 
+                width: 100% !important; 
+                min-width: 0 !important; 
+                padding: 0 !important;
+                margin: 0 !important;
+                font-size: 11px !important;
+                background: transparent;
+                border: none;
+            }
+            td input:focus, td select:focus {
+                background: white;
+                outline: 1px solid #3b82f6;
+            }
+
+            /* --- Column Specifics --- */
+
+            /* Col 1: Crew Avatar (Fixed small width) */
+            th:nth-child(1), td:nth-child(1) { width: 32px; max-width: 32px; text-align: center; } 
+            .crew-avatar { width: 22px; height: 22px; font-size: 9px; margin: 0 auto; }
+            
+            /* Col 2: Drag Handle (Prevents wide gap) */
+            th:nth-child(2), td:nth-child(2) { width: 24px; max-width: 24px; padding: 0 !important; text-align: center; } 
+            
+            /* Col 3: Description (Grows to fill space) */
+            th:nth-child(3), td:nth-child(3) { 
+                width: auto; 
+                min-width: 100px; 
+                max-width: 160px; 
+                white-space: normal; 
+                line-height: 1.1;
+            } 
+            
+            /* Col 4: Qty (Tight) */
+            th:nth-child(4), td:nth-child(4) { width: 28px; max-width: 28px; } 
+            td:nth-child(4) input { text-align: center; }
+
+            /* Col 5: Unit (Visible Text, No Arrow) */
+            th:nth-child(5), td:nth-child(5) { width: 40px; max-width: 40px; } 
             td:nth-child(5) select { 
                 appearance: none; 
                 -webkit-appearance: none; 
-                padding: 0 !important; 
                 text-align: center; 
-                background-image: none !important;
                 font-weight: 600;
-                color: #2563eb; /* Blue text to indicate actionable */
+                color: #2563eb; 
+                text-indent: 0;
             }
 
-            /* Remaining Columns */
-            th:nth-child(6), td:nth-child(6) { width: 65px; } /* Rate */
-            th:nth-child(7), td:nth-child(7) { width: 65px; } /* Est */
-            th:nth-child(8), td:nth-child(8) { width: 65px; } /* Act */
-            th:nth-child(9), td:nth-child(9) { width: 65px; } /* Var */
-            th:nth-child(10), td:nth-child(10) { width: 25px; } /* Actions */
+            /* Col 6: Rate (Dynamic min-width) */
+            th:nth-child(6), td:nth-child(6) { width: auto; min-width: 50px; } 
+            td:nth-child(6) input { text-align: right; }
+
+            /* Financial Cols (7-9) */
+            th:nth-child(7), td:nth-child(7),
+            th:nth-child(8), td:nth-child(8),
+            th:nth-child(9), td:nth-child(9) { width: auto; min-width: 50px; } 
+            
+            /* Col 10: Actions */
+            th:nth-child(10), td:nth-child(10) { width: 20px; } 
         }
 
-        /* Fix Drag Locking */
+        /* --- Drag Logic Fix --- */
         .drag-handle {
-            touch-action: none; 
+            touch-action: none !important; /* Critical: Stops page scrolling when dragging row */
             cursor: grab;
-            padding: 10px !important;
+            padding: 8px 4px; /* Larger hit area */
+            font-size: 16px;
+            color: #9ca3af;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
-        .drag-handle:active { cursor: grabbing; }
+        .drag-handle:active { 
+            cursor: grabbing; 
+            color: #3b82f6; 
+        }
 
         /* --- v19.50 Crew Styles v19.52 --- */
         .crew-wrapper {
@@ -1237,182 +1308,89 @@ async function callUnifiedAI(provider, apiKey, prompt) {
 
         // --- Drag & Drop (Logic) ---
         let draggedItem = null;
-        function // --- Drag & Drop (Robust Mobile & Desktop) ---
-        let draggedItem = null;
-        let touchDragItem = null;
-        let touchDragClone = null; // Visual clone for dragging
-
         function initializeDragAndDrop() {
-            // 1. Setup Row Handlers
             document.querySelectorAll('.draggable-row').forEach(row => {
+                row.draggable = false;
+
                 const handle = row.querySelector('.drag-handle');
-                row.draggable = false; // Disable default to control manually
-
                 if(handle) {
-                    // --- Desktop Mouse Events ---
-                    handle.onmousedown = () => { row.draggable = true; };
-                    handle.onmouseup = () => { row.draggable = false; };
-                    handle.onmouseleave = () => { row.draggable = false; };
-
-                    // --- Mobile Touch Events ---
+                    const startDrag = () => { row.draggable = true; };
+                    const endDrag = () => { row.draggable = false; };
+                    
+                    handle.addEventListener('mousedown', startDrag);
+                    handle.addEventListener('mouseup', endDrag);
+                    handle.addEventListener('mouseleave', endDrag);
+                    
                     handle.addEventListener('touchstart', (e) => {
-                        if (e.cancelable) e.preventDefault();
-                        touchDragItem = row;
-                        
-                        // Create visual clone
-                        touchDragClone = row.cloneNode(true);
-                        touchDragClone.style.position = 'absolute';
-                        touchDragClone.style.width = `${row.offsetWidth}px`;
-                        touchDragClone.style.opacity = '0.8';
-                        touchDragClone.style.pointerEvents = 'none'; // Let clicks pass through to targets
-                        touchDragClone.style.zIndex = '9999';
-                        touchDragClone.style.backgroundColor = '#dbeafe'; // Light blue
-                        touchDragClone.classList.add('shadow-xl');
-                        document.body.appendChild(touchDragClone);
+                        startDrag();
+                        row.draggable = true;
+                        row.classList.add('dragging');
+                    }, { passive: true });
 
-                        // Position clone at finger
-                        const touch = e.touches[0];
-                        touchDragClone.style.left = `${touch.pageX}px`;
-                        touchDragClone.style.top = `${touch.pageY}px`;
+                    handle.addEventListener('touchend', endDrag);
+                    handle.addEventListener('touchcancel', endDrag);
+		 }
 
-                        row.classList.add('opacity-40'); // Dim original
-                    }, { passive: false });
-
-                    handle.addEventListener('touchmove', (e) => {
-                        if (!touchDragItem || !touchDragClone) return;
-                        if (e.cancelable) e.preventDefault();
-
-                        const touch = e.touches[0];
-                        // Move clone
-                        touchDragClone.style.left = `${touch.pageX + 10}px`; // Offset slightly so finger doesn't hide it
-                        touchDragClone.style.top = `${touch.pageY + 10}px`;
-
-                        // Identify Drop Target
-                        // Temporarily hide clone to get element underneath
-                        touchDragClone.style.display = 'none';
-                        const target = document.elementFromPoint(touch.clientX, touch.clientY);
-                        touchDragClone.style.display = 'block';
-
-                        if(!target) return;
-
-                        // Case A: Hovering over another row
-                        const targetRow = target.closest('.draggable-row');
-                        if (targetRow && targetRow !== touchDragItem) {
-                            const parent = targetRow.parentNode;
-                            const dragRect = touchDragItem.getBoundingClientRect();
-                            const targetRect = targetRow.getBoundingClientRect();
-                            
-                            // Insert before or after based on direction
-                            if (dragRect.top < targetRect.top) {
-                                parent.insertBefore(touchDragItem, targetRow.nextSibling);
-                            } else {
-                                parent.insertBefore(touchDragItem, targetRow);
-                            }
-                        }
-                        
-                        // Case B: Hovering over an empty/different section
-                        const targetSection = target.closest('[data-section-body]');
-                        if(targetSection && targetSection !== touchDragItem.parentNode) {
-                            targetSection.appendChild(touchDragItem);
-                        }
-
-                    }, { passive: false });
-
-                    handle.addEventListener('touchend', (e) => {
-                        if (!touchDragItem) return;
-
-                        // Finalize Move
-                        const newSectionEl = touchDragItem.closest('[data-section-body]');
-                        if (newSectionEl) {
-                            const newSectionName = newSectionEl.dataset.sectionBody;
-                            const oldSectionName = touchDragItem.dataset.section;
-                            
-                            // 1. Update DOM Data attributes immediately
-                            touchDragItem.dataset.section = newSectionName;
-                            touchDragItem.querySelectorAll('[data-section]').forEach(el => el.dataset.section = newSectionName);
-
-                            // 2. Sync underlying Data Model
-                            // We use a robust sync that handles cross-section moves
-                            syncBudgetModelAfterDrop(touchDragItem.dataset.itemId, oldSectionName, newSectionName);
-                        } else {
-                            // Dropped outside? Revert visualization (render will fix)
-                            render();
-                        }
-
-                        // Cleanup
-                        if (touchDragClone) touchDragClone.remove();
-                        touchDragItem.classList.remove('opacity-40');
-                        touchDragItem = null;
-                        touchDragClone = null;
-                    });
-                }
-
-                // --- Desktop Drag Events ---
                 row.addEventListener('dragstart', (e) => { 
                     if(row.draggable) {
                         draggedItem = { id: e.target.dataset.itemId, section: e.target.dataset.section }; 
-                        e.dataTransfer.effectAllowed = 'move';
-                        setTimeout(() => row.classList.add('opacity-50'), 0);
-                    } else { e.preventDefault(); }
+                        e.target.classList.add('dragging'); 
+                        e.dataTransfer.effectAllowed = 'move'; 
+                    } else {
+                        e.preventDefault(); 
+                    }
                 });
-                
-                row.addEventListener('dragend', () => { 
-                    row.classList.remove('opacity-50'); 
-                    document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+
+                row.addEventListener('dragover', (e) => {
+                    e.preventDefault(); 
+                    e.dataTransfer.dropEffect = 'move'; 
+                    e.currentTarget.classList.add('drag-over');
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    if (e.clientY < rect.top + rect.height / 2) { 
+                        e.currentTarget.style.borderTop = '3px solid #3b82f6'; 
+                        e.currentTarget.style.borderBottom = 'none'; 
+                    } else { 
+                        e.currentTarget.style.borderTop = 'none'; 
+                        e.currentTarget.style.borderBottom = '3px solid #3b82f6'; 
+                    }
                 });
-                
-                row.addEventListener('dragover', e => { e.preventDefault(); e.currentTarget.classList.add('drag-over'); });
-                row.addEventListener('dragleave', e => { e.currentTarget.classList.remove('drag-over'); });
-                
+
                 row.addEventListener('drop', (e) => {
                     e.preventDefault();
-                    if(!draggedItem) return;
                     const dropSection = e.currentTarget.closest('[data-section-body]').dataset.sectionBody;
-                    // Find index of the row we dropped ON
-                    const rows = Array.from(document.querySelectorAll(`tbody[data-section-body="${dropSection}"] .draggable-row`));
-                    const dropIndex = rows.indexOf(e.currentTarget);
-                    
+                    const dropIndex = Array.from(e.currentTarget.parentNode.children).indexOf(e.currentTarget);
                     moveItem(draggedItem.id, draggedItem.section, dropSection, dropIndex);
+                    resetDragStyles(e.currentTarget);
+                });
+
+                row.addEventListener('dragend', (e) => { 
+                    e.target.classList.remove('dragging'); 
+                    document.querySelectorAll('.drag-over').forEach(el => resetDragStyles(el)); 
                 });
             });
 
-            // Section Droppable Areas (For empty sections or padding)
             document.querySelectorAll('[data-section-body]').forEach(section => {
                 section.addEventListener('dragover', (e) => { e.preventDefault(); });
-                section.addEventListener('drop', (e) => {
-                    e.preventDefault();
-                    if(draggedItem && e.target === section) { // Only if dropped on container, not row
-                        moveItem(draggedItem.id, draggedItem.section, section.dataset.sectionBody, section.children.length);
+                section.addEventListener('drop', (e) => { 
+                    e.preventDefault(); 
+                    if(draggedItem) {
+                        moveItem(draggedItem.id, draggedItem.section, e.currentTarget.dataset.sectionBody, 0); 
+                        resetDragStyles(e.currentTarget); 
                     }
                 });
             });
         }
-
-        // Robust Sync Function for Touch Drops
-        function syncBudgetModelAfterDrop(itemId, oldSectionName, newSectionName) {
-            // 1. Remove from Old Section
-            const oldList = budget.sections[oldSectionName].items;
-            const itemIndex = oldList.findIndex(i => i.id === itemId);
-            if (itemIndex === -1) { render(); return; } // Error safety
-            
-            const [item] = oldList.splice(itemIndex, 1);
-            
-            // 2. Find New Position
-            // We look at the DOM *now* to see where the item ended up
-            const newRows = Array.from(document.querySelectorAll(`tbody[data-section-body="${newSectionName}"] .draggable-row`));
-            const newIndex = newRows.findIndex(row => row.dataset.itemId === itemId);
-            
-            // 3. Insert into New Section Data
-            if (!budget.sections[newSectionName].items) budget.sections[newSectionName].items = [];
-            
-            if (newIndex >= 0) {
-                budget.sections[newSectionName].items.splice(newIndex, 0, item);
-            } else {
-                budget.sections[newSectionName].items.push(item); // Append if something weird happened
-            }
-
-            pushToHistory(`Moved item to ${newSectionName}`);
-            render(); // Full re-render to ensure clean state
+        function resetDragStyles(el) { el.classList.remove('drag-over'); el.style.borderTop = 'none'; el.style.borderBottom = 'none'; }
+        function moveItem(itemId, fromSection, toSection, toIndex) {
+            if (fromSection === toSection && toIndex === Array.from(document.querySelector(`[data-section-body="${fromSection}"]`).children).findIndex(row => row.dataset.itemId === itemId)) return;
+            const fromItems = budget.sections[fromSection].items;
+            const toItems = budget.sections[toSection].items;
+            const item = fromItems.find(i => i.id === itemId);
+            if (!item) return;
+            fromItems.splice(fromItems.indexOf(item), 1);
+            toItems.splice(toIndex, 0, item);
+            pushToHistory(`Reordered item '${item.description}' from ${fromSection} to ${toSection}`);
+            render();
         }
 // --- Settings & AI Handlers ---
         window.switchSettingsTab = function(tabName, btn) {
