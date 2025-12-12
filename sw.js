@@ -1,5 +1,6 @@
 /* --- v19.51 Cache Version v19.52 --- */
 const CACHE_NAME = 'moo-budget-v19-52';
+const OFFLINE_URL = './index.html';
 
 // Cache root and explicit index.html
 const CRITICAL_ASSETS = [
@@ -11,6 +12,7 @@ const CRITICAL_ASSETS = [
 // External libraries & Assets
 const EXTERNAL_ASSETS = [
     'https://cdn.tailwindcss.com',
+    'https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js',
     'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
     'https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js',
     'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js',
@@ -20,7 +22,7 @@ const EXTERNAL_ASSETS = [
     'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js',
     'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js',
     'https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js',
-    // FIXED: Updated Icon Paths (PNGs)
+    // Assets
     'https://raw.githubusercontent.com/moollc/mooBudgetTool/main/assets/cow-512.png',
     'https://raw.githubusercontent.com/moollc/mooBudgetTool/main/assets/cow-192.png'
 ];
@@ -52,43 +54,40 @@ self.addEventListener('activate', (event) => {
     );
 });
 
-/* --- v19.51 Offline Handler --- */
+/* --- v19.51 Offline Handler v19.52 --- */
 self.addEventListener('fetch', (event) => {
+    // 1. Navigation Requests (HTML) - "App Shell" Strategy
+    if (event.request.mode === 'navigate') {
+        event.respondWith(
+            fetch(event.request)
+                .catch(() => {
+                    // Return cached HTML immediately if network fails
+                    // This prevents the "Blank Screen" on mobile/PWA
+                    return caches.match(OFFLINE_URL) || caches.match('./');
+                })
+        );
+        return;
+    }
+
+    // 2. Asset Requests (CSS, JS, Images)
     event.respondWith(
         (async () => {
-            // 1. Try Network First
+            // Check cache first for speed/offline capability
+            const cachedResponse = await caches.match(event.request);
+            if (cachedResponse) return cachedResponse;
+
             try {
+                // If not in cache, fetch from network
                 const networkResponse = await fetch(event.request);
                 
-                // If successful and valid, update the cache for next time
-                if (networkResponse && networkResponse.status === 200) {
+                // Cache valid responses for next time
+                if (networkResponse && networkResponse.status === 200 && event.request.url.startsWith('http')) {
                     const cache = await caches.open(CACHE_NAME);
-                    // Only cache valid HTTP/HTTPS requests (skips chrome-extension://, etc.)
-                    if(event.request.url.startsWith('http')) {
-                        cache.put(event.request, networkResponse.clone());
-                    }
+                    cache.put(event.request, networkResponse.clone());
                 }
                 return networkResponse;
             } catch (error) {
-                // 2. Network Failed (Offline) - Fallback Strategy
-                
-                // A. Check for exact match in cache (CSS, JS, Images)
-                const cachedResponse = await caches.match(event.request);
-                if (cachedResponse) return cachedResponse;
-
-                // B. Navigation Fallback (The "App Shell" Fix)
-                // If the user is trying to open the app (HTML), force load the cached index.html
-                if (event.request.mode === 'navigate') {
-                    // Try finding the explicit index.html
-                    const appShell = await caches.match('./index.html');
-                    if (appShell) return appShell;
-                    
-                    // Fallback: Try the root path if index.html lookup fails
-                    const rootShell = await caches.match('./');
-                    if (rootShell) return rootShell;
-                }
-
-                // 3. If absolutely nothing works, return a basic offline message
+                // Return simple offline message if all else fails
                 return new Response("Offline - Content unavailable", { status: 503, headers: { 'Content-Type': 'text/plain' } });
             }
         })()
