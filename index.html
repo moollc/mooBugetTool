@@ -73,58 +73,44 @@
 
         /* --- Tables --- */
 /* --- Mobile Table Optimized (v19.52) --- */
+        /* --- Mobile Table Fixes (v19.52 Optimized) --- */
         @media (max-width: 768px) {
             .table-container { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-            table { min-width: 600px; width: auto; } 
+            table { min-width: 600px; } /* Slightly tighter min-width */
+            th, td { white-space: nowrap; padding: 0.5rem 0.1rem; font-size: 0.75rem; } /* Reduced horizontal padding */
             
-            /* Global Cell Padding Reset for Mobile */
-            th, td { white-space: nowrap; padding: 4px 2px; font-size: 11px; }
-            
-            /* FORCE inputs to fit their columns (Fixes the wide gaps) */
-            td input, td select { 
-                width: 100% !important; 
-                min-width: 0 !important; 
-                padding: 0 !important;
-                margin: 0 !important;
-                font-size: 11px !important;
-            }
-
             /* Col 1: Crew Avatar */
-            th:nth-child(1), td:nth-child(1) { width: 35px; min-width: 35px; text-align: center; } 
-            .crew-avatar { width: 24px; height: 24px; font-size: 10px; margin: 0 auto; }
+            th:nth-child(1), td:nth-child(1) { width: 40px; text-align: center; } 
             
             /* Col 2: Drag Handle */
-            th:nth-child(2), td:nth-child(2) { width: 25px; min-width: 25px; } 
+            th:nth-child(2), td:nth-child(2) { width: 30px; min-width: 30px; } 
             
             /* Col 3: Description */
-            th:nth-child(3), td:nth-child(3) { min-width: 120px; max-width: 160px; white-space: normal; } 
+            th:nth-child(3), td:nth-child(3) { min-width: 140px; max-width: 180px; white-space: normal; } 
             
             /* Col 4: Qty (Tightened) */
-            th:nth-child(4), td:nth-child(4) { width: 30px; min-width: 30px; } 
-            td:nth-child(4) input { text-align: center; }
+            th:nth-child(4), td:nth-child(4) { width: 32px; padding: 0; } 
+            td:nth-child(4) input { text-align: center; padding: 0; }
 
-            /* Col 5: Unit (Visible Text) */
-            th:nth-child(5), td:nth-child(5) { width: 45px; min-width: 45px; } 
+            /* Col 5: Unit (Tightened & Fixed) */
+            th:nth-child(5), td:nth-child(5) { width: 38px; padding: 0; } 
+            /* Remove native arrow on mobile so text 'Day' fits */
             td:nth-child(5) select { 
                 appearance: none; 
                 -webkit-appearance: none; 
+                padding: 0 !important; 
                 text-align: center; 
-                background: none !important;
+                background-image: none !important;
                 font-weight: 600;
-                color: #2563eb; 
+                color: #2563eb; /* Blue text to indicate actionable */
             }
 
-            /* Col 6: Rate (Dynamic Space) */
-            th:nth-child(6), td:nth-child(6) { width: auto; min-width: 55px; } 
-            td:nth-child(6) input { text-align: right; }
-
-            /* Financial Columns */
-            th:nth-child(7), td:nth-child(7) { width: auto; min-width: 60px; } /* Est */
-            th:nth-child(8), td:nth-child(8) { width: auto; min-width: 60px; } /* Act */
-            th:nth-child(9), td:nth-child(9) { width: auto; min-width: 60px; } /* Var */
-            
-            /* Actions */
-            th:nth-child(10), td:nth-child(10) { width: 25px; min-width: 25px; } 
+            /* Remaining Columns */
+            th:nth-child(6), td:nth-child(6) { width: 65px; } /* Rate */
+            th:nth-child(7), td:nth-child(7) { width: 65px; } /* Est */
+            th:nth-child(8), td:nth-child(8) { width: 65px; } /* Act */
+            th:nth-child(9), td:nth-child(9) { width: 65px; } /* Var */
+            th:nth-child(10), td:nth-child(10) { width: 25px; } /* Actions */
         }
 
         /* Fix Drag Locking */
