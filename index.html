@@ -72,20 +72,37 @@
         #settingsModalContent, #aiToolsModalContent { transition: all 0.3s ease-in-out; }
 
         /* --- Tables --- */
-        @media (max-width: 768px) {
+      @media (max-width: 768px) {
             .table-container { overflow-x: auto; -webkit-overflow-scrolling: touch; }
             table { min-width: 600px; }
             th, td { white-space: nowrap; padding: 0.5rem 0.25rem; font-size: 0.75rem; }
-            th:nth-child(1), td:nth-child(1) { width: 50px; } /* Crew */
-            th:nth-child(2), td:nth-child(2) { min-width: 150px; } /* Description */
-            th:nth-child(3), td:nth-child(3) { width: 50px; } /* Qty */
-            th:nth-child(4), td:nth-child(4) { width: 60px; } /* Unit */
-            th:nth-child(5), td:nth-child(5) { width: 80px; } /* Rate */
-            th:nth-child(6), td:nth-child(6) { width: 80px; } /* Estimated */
-            th:nth-child(7), td:nth-child(7) { width: 80px; } /* Actual */
-            th:nth-child(8), td:nth-child(8) { width: 80px; } /* Variance */
-            th:nth-child(9), td:nth-child(9) { width: 40px; } /* Actions */
+            
+            /* Col 1: Crew Avatar */
+            th:nth-child(1), td:nth-child(1) { width: 45px; text-align: center; } 
+            
+            /* Col 2: Drag Handle */
+            th:nth-child(2), td:nth-child(2) { width: 35px; min-width: 35px; } 
+            
+            /* Col 3: Description */
+            th:nth-child(3), td:nth-child(3) { min-width: 160px; max-width: 200px; white-space: normal; } 
+            
+            /* Remaining Columns */
+            th:nth-child(4), td:nth-child(4) { width: 45px; } /* Qty */
+            th:nth-child(5), td:nth-child(5) { width: 60px; } /* Unit */
+            th:nth-child(6), td:nth-child(6) { width: 70px; } /* Rate */
+            th:nth-child(7), td:nth-child(7) { width: 70px; } /* Est */
+            th:nth-child(8), td:nth-child(8) { width: 70px; } /* Act */
+            th:nth-child(9), td:nth-child(9) { width: 70px; } /* Var */
+            th:nth-child(10), td:nth-child(10) { width: 30px; } /* Actions */
         }
+
+        /* Drag Unlocking */
+        .drag-handle {
+            touch-action: none; /* Prevents scroll interference */
+            cursor: grab;
+            padding: 10px !important; /* Larger touch target for mobile */
+        }
+        .drag-handle:active { cursor: grabbing; }
 
         /* --- v19.50 Crew Styles v19.52 --- */
         .crew-wrapper {
