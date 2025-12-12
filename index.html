@@ -1242,89 +1242,182 @@ async function callUnifiedAI(provider, apiKey, prompt) {
 
         // --- Drag & Drop (Logic) ---
         let draggedItem = null;
+        function // --- Drag & Drop (Robust Mobile & Desktop) ---
+        let draggedItem = null;
+        let touchDragItem = null;
+        let touchDragClone = null; // Visual clone for dragging
+
         function initializeDragAndDrop() {
+            // 1. Setup Row Handlers
             document.querySelectorAll('.draggable-row').forEach(row => {
-                row.draggable = false;
-
                 const handle = row.querySelector('.drag-handle');
+                row.draggable = false; // Disable default to control manually
+
                 if(handle) {
-                    const startDrag = () => { row.draggable = true; };
-                    const endDrag = () => { row.draggable = false; };
-                    
-                    handle.addEventListener('mousedown', startDrag);
-                    handle.addEventListener('mouseup', endDrag);
-                    handle.addEventListener('mouseleave', endDrag);
-                    
+                    // --- Desktop Mouse Events ---
+                    handle.onmousedown = () => { row.draggable = true; };
+                    handle.onmouseup = () => { row.draggable = false; };
+                    handle.onmouseleave = () => { row.draggable = false; };
+
+                    // --- Mobile Touch Events ---
                     handle.addEventListener('touchstart', (e) => {
-                        startDrag();
-                        row.draggable = true;
-                        row.classList.add('dragging');
-                    }, { passive: true });
+                        if (e.cancelable) e.preventDefault();
+                        touchDragItem = row;
+                        
+                        // Create visual clone
+                        touchDragClone = row.cloneNode(true);
+                        touchDragClone.style.position = 'absolute';
+                        touchDragClone.style.width = `${row.offsetWidth}px`;
+                        touchDragClone.style.opacity = '0.8';
+                        touchDragClone.style.pointerEvents = 'none'; // Let clicks pass through to targets
+                        touchDragClone.style.zIndex = '9999';
+                        touchDragClone.style.backgroundColor = '#dbeafe'; // Light blue
+                        touchDragClone.classList.add('shadow-xl');
+                        document.body.appendChild(touchDragClone);
 
-                    handle.addEventListener('touchend', endDrag);
-                    handle.addEventListener('touchcancel', endDrag);
-		 }
+                        // Position clone at finger
+                        const touch = e.touches[0];
+                        touchDragClone.style.left = `${touch.pageX}px`;
+                        touchDragClone.style.top = `${touch.pageY}px`;
 
+                        row.classList.add('opacity-40'); // Dim original
+                    }, { passive: false });
+
+                    handle.addEventListener('touchmove', (e) => {
+                        if (!touchDragItem || !touchDragClone) return;
+                        if (e.cancelable) e.preventDefault();
+
+                        const touch = e.touches[0];
+                        // Move clone
+                        touchDragClone.style.left = `${touch.pageX + 10}px`; // Offset slightly so finger doesn't hide it
+                        touchDragClone.style.top = `${touch.pageY + 10}px`;
+
+                        // Identify Drop Target
+                        // Temporarily hide clone to get element underneath
+                        touchDragClone.style.display = 'none';
+                        const target = document.elementFromPoint(touch.clientX, touch.clientY);
+                        touchDragClone.style.display = 'block';
+
+                        if(!target) return;
+
+                        // Case A: Hovering over another row
+                        const targetRow = target.closest('.draggable-row');
+                        if (targetRow && targetRow !== touchDragItem) {
+                            const parent = targetRow.parentNode;
+                            const dragRect = touchDragItem.getBoundingClientRect();
+                            const targetRect = targetRow.getBoundingClientRect();
+                            
+                            // Insert before or after based on direction
+                            if (dragRect.top < targetRect.top) {
+                                parent.insertBefore(touchDragItem, targetRow.nextSibling);
+                            } else {
+                                parent.insertBefore(touchDragItem, targetRow);
+                            }
+                        }
+                        
+                        // Case B: Hovering over an empty/different section
+                        const targetSection = target.closest('[data-section-body]');
+                        if(targetSection && targetSection !== touchDragItem.parentNode) {
+                            targetSection.appendChild(touchDragItem);
+                        }
+
+                    }, { passive: false });
+
+                    handle.addEventListener('touchend', (e) => {
+                        if (!touchDragItem) return;
+
+                        // Finalize Move
+                        const newSectionEl = touchDragItem.closest('[data-section-body]');
+                        if (newSectionEl) {
+                            const newSectionName = newSectionEl.dataset.sectionBody;
+                            const oldSectionName = touchDragItem.dataset.section;
+                            
+                            // 1. Update DOM Data attributes immediately
+                            touchDragItem.dataset.section = newSectionName;
+                            touchDragItem.querySelectorAll('[data-section]').forEach(el => el.dataset.section = newSectionName);
+
+                            // 2. Sync underlying Data Model
+                            // We use a robust sync that handles cross-section moves
+                            syncBudgetModelAfterDrop(touchDragItem.dataset.itemId, oldSectionName, newSectionName);
+                        } else {
+                            // Dropped outside? Revert visualization (render will fix)
+                            render();
+                        }
+
+                        // Cleanup
+                        if (touchDragClone) touchDragClone.remove();
+                        touchDragItem.classList.remove('opacity-40');
+                        touchDragItem = null;
+                        touchDragClone = null;
+                    });
+                }
+
+                // --- Desktop Drag Events ---
                 row.addEventListener('dragstart', (e) => { 
                     if(row.draggable) {
                         draggedItem = { id: e.target.dataset.itemId, section: e.target.dataset.section }; 
-                        e.target.classList.add('dragging'); 
-                        e.dataTransfer.effectAllowed = 'move'; 
-                    } else {
-                        e.preventDefault(); 
-                    }
+                        e.dataTransfer.effectAllowed = 'move';
+                        setTimeout(() => row.classList.add('opacity-50'), 0);
+                    } else { e.preventDefault(); }
                 });
-
-                row.addEventListener('dragover', (e) => {
-                    e.preventDefault(); 
-                    e.dataTransfer.dropEffect = 'move'; 
-                    e.currentTarget.classList.add('drag-over');
-                    const rect = e.currentTarget.getBoundingClientRect();
-                    if (e.clientY < rect.top + rect.height / 2) { 
-                        e.currentTarget.style.borderTop = '3px solid #3b82f6'; 
-                        e.currentTarget.style.borderBottom = 'none'; 
-                    } else { 
-                        e.currentTarget.style.borderTop = 'none'; 
-                        e.currentTarget.style.borderBottom = '3px solid #3b82f6'; 
-                    }
+                
+                row.addEventListener('dragend', () => { 
+                    row.classList.remove('opacity-50'); 
+                    document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
                 });
-
+                
+                row.addEventListener('dragover', e => { e.preventDefault(); e.currentTarget.classList.add('drag-over'); });
+                row.addEventListener('dragleave', e => { e.currentTarget.classList.remove('drag-over'); });
+                
                 row.addEventListener('drop', (e) => {
                     e.preventDefault();
+                    if(!draggedItem) return;
                     const dropSection = e.currentTarget.closest('[data-section-body]').dataset.sectionBody;
-                    const dropIndex = Array.from(e.currentTarget.parentNode.children).indexOf(e.currentTarget);
+                    // Find index of the row we dropped ON
+                    const rows = Array.from(document.querySelectorAll(`tbody[data-section-body="${dropSection}"] .draggable-row`));
+                    const dropIndex = rows.indexOf(e.currentTarget);
+                    
                     moveItem(draggedItem.id, draggedItem.section, dropSection, dropIndex);
-                    resetDragStyles(e.currentTarget);
-                });
-
-                row.addEventListener('dragend', (e) => { 
-                    e.target.classList.remove('dragging'); 
-                    document.querySelectorAll('.drag-over').forEach(el => resetDragStyles(el)); 
                 });
             });
 
+            // Section Droppable Areas (For empty sections or padding)
             document.querySelectorAll('[data-section-body]').forEach(section => {
                 section.addEventListener('dragover', (e) => { e.preventDefault(); });
-                section.addEventListener('drop', (e) => { 
-                    e.preventDefault(); 
-                    if(draggedItem) {
-                        moveItem(draggedItem.id, draggedItem.section, e.currentTarget.dataset.sectionBody, 0); 
-                        resetDragStyles(e.currentTarget); 
+                section.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    if(draggedItem && e.target === section) { // Only if dropped on container, not row
+                        moveItem(draggedItem.id, draggedItem.section, section.dataset.sectionBody, section.children.length);
                     }
                 });
             });
         }
-        function resetDragStyles(el) { el.classList.remove('drag-over'); el.style.borderTop = 'none'; el.style.borderBottom = 'none'; }
-        function moveItem(itemId, fromSection, toSection, toIndex) {
-            if (fromSection === toSection && toIndex === Array.from(document.querySelector(`[data-section-body="${fromSection}"]`).children).findIndex(row => row.dataset.itemId === itemId)) return;
-            const fromItems = budget.sections[fromSection].items;
-            const toItems = budget.sections[toSection].items;
-            const item = fromItems.find(i => i.id === itemId);
-            if (!item) return;
-            fromItems.splice(fromItems.indexOf(item), 1);
-            toItems.splice(toIndex, 0, item);
-            pushToHistory(`Reordered item '${item.description}' from ${fromSection} to ${toSection}`);
-            render();
+
+        // Robust Sync Function for Touch Drops
+        function syncBudgetModelAfterDrop(itemId, oldSectionName, newSectionName) {
+            // 1. Remove from Old Section
+            const oldList = budget.sections[oldSectionName].items;
+            const itemIndex = oldList.findIndex(i => i.id === itemId);
+            if (itemIndex === -1) { render(); return; } // Error safety
+            
+            const [item] = oldList.splice(itemIndex, 1);
+            
+            // 2. Find New Position
+            // We look at the DOM *now* to see where the item ended up
+            const newRows = Array.from(document.querySelectorAll(`tbody[data-section-body="${newSectionName}"] .draggable-row`));
+            const newIndex = newRows.findIndex(row => row.dataset.itemId === itemId);
+            
+            // 3. Insert into New Section Data
+            if (!budget.sections[newSectionName].items) budget.sections[newSectionName].items = [];
+            
+            if (newIndex >= 0) {
+                budget.sections[newSectionName].items.splice(newIndex, 0, item);
+            } else {
+                budget.sections[newSectionName].items.push(item); // Append if something weird happened
+            }
+
+            pushToHistory(`Moved item to ${newSectionName}`);
+            render(); // Full re-render to ensure clean state
         }
 // --- Settings & AI Handlers ---
         window.switchSettingsTab = function(tabName, btn) {
