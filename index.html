@@ -27,11 +27,33 @@
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     </script>
     
-    <script>
+   <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js')
-                    .then(reg => console.log('SW registered:', reg.scope))
+                // { updateViaCache: 'none' } forces the browser to check the server for a new sw.js
+                // every time the page loads, ignoring the HTTP cache headers.
+                navigator.serviceWorker.register('./sw.js', { scope: './', updateViaCache: 'none' })
+                    .then(reg => {
+                        console.log('SW registered:', reg.scope);
+                        
+                        // Check for updates immediately
+                        reg.onupdatefound = () => {
+                            const installingWorker = reg.installing;
+                            installingWorker.onstatechange = () => {
+                                if (installingWorker.state === 'installed') {
+                                    if (navigator.serviceWorker.controller) {
+                                        // New update available
+                                        console.log('New content is available; please refresh.');
+                                        if(confirm("New Update Available (v19.53)! Reload now?")) {
+                                            window.location.reload();
+                                        }
+                                    } else {
+                                        console.log('Content is cached for offline use.');
+                                    }
+                                }
+                            };
+                        };
+                    })
                     .catch(err => console.log('SW registration failed:', err));
             });
         }
@@ -1950,7 +1972,7 @@ function renderSettingsContent(tabName) {
     const currentDateFormat = getProjectDateFormat();
     const currentSeparator = getProjectNameSeparator();
 
-    if (tabName === 'general') {
+  if (tabName === 'general') {
         return `<div class="space-y-6">
             <div class="bg-blue-50 p-4 rounded-lg border border-blue-100">
                 <h3 class="font-bold text-blue-800 mb-2">Application Info</h3>
@@ -1974,15 +1996,24 @@ function renderSettingsContent(tabName) {
                 </div>
             </div>
 
-            <div class="text-center">
-                <button id="updateBtn" class="px-4 py-2 bg-gray-800 text-white rounded-md hover:bg-gray-900 text-sm font-medium transition-colors">Get Offline HTML (Download)</button>
-                <p class="text-xs text-gray-500 mt-2">Downloads the current state of the tool as a single HTML file.</p>
-                <div class="mt-6 flex justify-center gap-4 border-t pt-4">
+            <div class="bg-red-50 p-4 rounded-lg border border-red-100">
+                <h3 class="font-bold text-red-800 mb-2">Troubleshooting</h3>
+                <p class="text-xs text-red-600 mb-3">If features aren't loading or the app feels stuck on an old version, use this to force a system reload.</p>
+                <button onclick="navigator.serviceWorker.getRegistrations().then(regs => { regs.forEach(r => r.unregister()); alert('System Reset. Reloading...'); window.location.reload(); })" class="w-full py-2 bg-white text-red-600 font-bold rounded border border-red-200 hover:bg-red-50 text-sm shadow-sm transition-colors">
+                    ⚠️ Fix Bugs / Hard Reset
+                </button>
+            </div>
+
+            <div class="text-center pt-4 border-t border-gray-100">
+                <button id="updateBtn" class="text-gray-500 hover:text-gray-800 text-xs font-medium underline transition-colors">Download Offline HTML</button>
+                <div class="mt-4 flex justify-center">
                      <button onclick="const btn=document.querySelector('#bmc-wbtn'); if(btn) btn.click(); else window.open('https://buymeacoffee.com/jaysonmy', '_blank');" class="bmc-btn text-sm">☕ Buy me a coffee</button>
                 </div>
             </div>
         </div>`;
-    } else if (tabName === 'templates') {
+    }
+  
+  else if (tabName === 'templates') {
         const allTemplates = getAllTemplates();
         if(!editingTemplateId) editingTemplateId = 'Commercial';
         const options = Object.keys(allTemplates).map(k => `<option value="${k}" ${k === editingTemplateId ? 'selected' : ''}>${k}</option>`).join('');
