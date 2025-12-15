@@ -4412,14 +4412,17 @@ window.docHubState = {
     searchTerm: ''
 };
 
-// 2. Data Integrity Helper
+// 1. Data Integrity Helper
 function ensureDocumentData() {
     if (!budget.documents) {
-        // Load defaults from the Master Database if empty
-        budget.documents = DOCUMENT_TEMPLATES.filter(t => t.default).map(t => ({ ...t, status: 'Draft', content: null }));
+        // If templates are missing, use defaults
+        const defaults = typeof DOCUMENT_TEMPLATES !== 'undefined' ? DOCUMENT_TEMPLATES : [];
+        budget.documents = defaults.filter(t => t.default).map(t => ({ ...t, status: 'Draft', content: null }));
     }
     if (!budget.documentTrash) budget.documentTrash = [];
+    if (!budget.callSheet) budget.callSheet = JSON.parse(JSON.stringify(defaultCallSheet));
 }
+
 
 // 3. The "Light Switch" (Icon Logic)
 function renderDocActions(docId) {
@@ -4593,20 +4596,18 @@ function handleBulkTrash() {
     }
 }
 
+/* --- v19.61 Boot Sequence --- */
 function init() {
     document.title = `mooBudgetTool v${APP_VERSION}`;
-    
-    // REMOVED: The line that overwrote 'mBT' with 'Budget Tool by moo'
-    
-    // Load saved currency
     displayCurrency = localStorage.getItem(`${storageKeyPrefix}currency`) || 'JMD';
-    
-    /* --- v19.53 [Currency] - Fetch Live Rates --- */
     fetchExchangeRates();
 
     let projectToLoad = localStorage.getItem(`${storageKeyPrefix}lastLoaded`);
     if (!projectToLoad || !getProjectList().includes(projectToLoad)) projectToLoad = getProjectList()[0];
-    projectToLoad ? loadBudget(projectToLoad) : handleNewProject(false);
+    
+    // Safety check for first run
+    if (!projectToLoad) handleNewProject(false);
+    else loadBudget(projectToLoad);
     
     render();
     bindAppEventListeners();
@@ -4619,6 +4620,7 @@ function init() {
 }
 
 document.addEventListener('DOMContentLoaded', init);
+
 
     </script>
 </body>
