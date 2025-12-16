@@ -3719,8 +3719,7 @@ window.applyStagePreset = function(presetName) {
     pushToHistory(`Applied ${presetName} preset`);
 };
 
-/* --- v19.54 [Stages] - UI V9 (Smart Inputs: Auto-Clear/Restore) --- */
-/* --- v19.54 [Stages] - UI V10 (Persistence Fix + Live Calc) --- */
+/* --- v19.54 [Stages] - UI V11 (Stable, Aligned, Live Calc) --- */
 function showStagesModal() {
     try {
         // A. Init Data
@@ -3737,18 +3736,17 @@ function showStagesModal() {
 
         Object.entries(budget.sections).forEach(([sectionName, section]) => {
             section.items.forEach(item => {
-                // AUTO-INIT: Only runs if stageData is completely missing.
-                // This prevents overwriting your moves when you reload.
+                // Ensure defaults
                 if (!item.stageData) { 
                     item.stageData = {};
                     let target = 'prod';
-                    if (/post|edit/.test(item.description.toLowerCase())) target = 'post';
-                    else if (/pre|cast/.test(item.description.toLowerCase())) target = 'pre';
-                    else if (/dev|write/.test(item.description.toLowerCase())) target = 'dev';
+                    const lower = item.description.toLowerCase();
+                    if (/post|edit/.test(lower)) target = 'post';
+                    else if (/pre|cast/.test(lower)) target = 'pre';
+                    else if (/dev|write/.test(lower)) target = 'dev';
                     item.stageData[target] = { days: item.quantity, rate: item.rate };
                 }
                 
-                // Populate Columns based on SAVED data
                 Object.entries(item.stageData).forEach(([k, d]) => {
                     if (validKeys.includes(k)) {
                         const cost = (parseFloat(d.days)||0) * (parseFloat(d.rate)||0);
@@ -3805,7 +3803,7 @@ function showStagesModal() {
                             <button onclick="removeStageItem('${item.id}', '${item._sec}', '${key}')" class="absolute -top-1.5 -right-1.5 bg-white text-gray-300 hover:text-red-500 border border-gray-200 hover:border-red-200 w-5 h-5 rounded-full flex items-center justify-center text-xs shadow-sm opacity-0 group-hover:opacity-100 transition-opacity z-10">&times;</button>
                             <div class="flex items-center gap-2 mb-2 cursor-pointer" onclick="openCrewProfile(this, event, '${item.id}', '${item._sec}')"><div class="w-7 h-7 rounded-full bg-gray-100 flex-shrink-0 flex items-center justify-center text-[10px] text-gray-500 font-bold border border-gray-200 hover:bg-blue-500 hover:text-white transition-colors">${item.crew?.name?.charAt(0) || '👤'}</div><div class="min-w-0 flex-1"><div class="text-xs font-bold text-gray-700 truncate" title="${item.description}">${item.description}</div></div><div class="text-xs font-mono font-bold text-blue-600 flex-shrink-0" id="cost-${item.id}-${key}">${formatAbbreviated(item._sCost, displayCurrency)}</div></div>
                             <div class="flex gap-2 items-center h-7">
-                                <div class="relative w-14 h-full"><span class="absolute left-1.5 top-1/2 -translate-y-1/2 text-[8px] text-gray-400 font-bold select-none">D</span><input type="number" value="${item._sDays}" class="w-full h-full pl-4 pr-1 text-center text-xs font-bold bg-gray-50 border border-gray-200 rounded focus:bg-white focus:border-blue-400 focus:ring-1 focus:ring-blue-200 outline-none transition-all" onfocus="this.dataset.old=this.value; this.value=''" onblur="if(this.value===''){this.value=this.dataset.old; this.dispatchEvent(new Event('input'));}" oninput="updateStageItem('${item.id}', '${item._sec}', '${key}', 'days', this.value)"></div>
+                                <div class="relative w-10 h-full"><span class="absolute left-1.5 top-1/2 -translate-y-1/2 text-[8px] text-gray-400 font-bold select-none">D</span><input type="number" value="${item._sDays}" class="w-full h-full pl-3 pr-0.5 text-center text-xs font-bold bg-gray-50 border border-gray-200 rounded focus:bg-white focus:border-blue-400 focus:ring-1 focus:ring-blue-200 outline-none transition-all" onfocus="this.dataset.old=this.value; this.value=''" onblur="if(this.value===''){this.value=this.dataset.old; this.dispatchEvent(new Event('input'));}" oninput="updateStageItem('${item.id}', '${item._sec}', '${key}', 'days', this.value)"></div>
                                 <div class="relative flex-1 h-full"><span class="absolute left-2 top-1/2 -translate-y-1/2 text-[8px] text-gray-400 font-bold select-none">$</span><input type="number" value="${item._sRate}" class="w-full h-full pl-4 pr-2 text-right text-xs font-mono bg-gray-50 border border-gray-200 rounded focus:bg-white focus:border-blue-400 focus:ring-1 focus:ring-blue-200 outline-none transition-all" onfocus="this.dataset.old=this.value; this.value=''" onblur="if(this.value===''){this.value=this.dataset.old; this.dispatchEvent(new Event('input'));}" oninput="updateStageItem('${item.id}', '${item._sec}', '${key}', 'rate', this.value)"></div>
                             </div>
                         </div>`).join('')}
@@ -3821,6 +3819,7 @@ function showStagesModal() {
         const body = document.getElementById('stagesViewBody');
         if(body) body.style.padding = '0';
 
+        // E. Bindings (No-Flash Logic)
         setTimeout(() => {
             const bindInput = (el, isInput) => {
                 el.addEventListener(isInput ? 'change' : 'input', (e) => {
@@ -3838,7 +3837,6 @@ function showStagesModal() {
                     const cfg = budget.targetLock.stages[key];
                     const cap = budget.targetLock.totalCap * (cfg.ratio / 100);
                     totalPct += cfg.ratio;
-                    
                     const sIn = document.querySelector(`.stage-slider[data-stage-key="${key}"]`);
                     const nIn = document.getElementById(`setup_perc_${key}`);
                     const hIn = document.getElementById(`header_perc_${key}`);
@@ -3853,6 +3851,7 @@ function showStagesModal() {
                         if(i.stageData && i.stageData[key]) liveTotal += (parseFloat(i.stageData[key].days)||0) * (parseFloat(i.stageData[key].rate)||0);
                     }));
                     grandLiveTotal += liveTotal;
+                    
                     document.getElementById(`total-${key}`).textContent = formatAbbreviated(liveTotal, displayCurrency);
                     const bar = document.getElementById(`bar-${key}`);
                     if(bar) {
@@ -3861,7 +3860,6 @@ function showStagesModal() {
                         bar.className = `h-1 rounded-full transition-all duration-300 ${w>100?'bg-red-500':'bg-blue-500'}`;
                     }
                 });
-                
                 const ovTotal = document.getElementById('ovGrandTotal');
                 const ovCap = document.getElementById('ovTotalCap');
                 const ringTxt = document.getElementById('burnRateText');
@@ -3888,21 +3886,16 @@ function showStagesModal() {
                 if (item && item.stageData && item.stageData[stageKey]) {
                     item.stageData[stageKey][field] = parseFloat(val) || 0;
                     syncStageToMain(item);
-                    saveBudget(); // <--- Persist immediately
+                    saveBudget(); // <--- PERSIST DATA
                     const cost = item.stageData[stageKey].days * item.stageData[stageKey].rate;
                     const cEl = document.getElementById(`cost-${itemId}-${stageKey}`);
                     if(cEl) cEl.textContent = formatAbbreviated(cost, displayCurrency);
-                    updateAllHeaders();
-                    render();
+                    updateAllHeaders(); // Live Header Update
+                    render(); // Live Main BG Update
                 }
             };
 
-            window.updateGlobalDays = (key, val) => { 
-                budget.targetLock.stages[key].days = parseFloat(val)||0; 
-                saveBudget(); // <--- Persist
-                updateAllHeaders();
-            };
-            
+            window.updateGlobalDays = (key, val) => { budget.targetLock.stages[key].days = parseFloat(val)||0; saveBudget(); updateAllHeaders(); };
             window.toggleStageLock = (key) => { budget.targetLock.stages[key].locked = !budget.targetLock.stages[key].locked; showStagesModal(); };
             
             updateAllHeaders(); 
@@ -5675,20 +5668,24 @@ window.autoAssignRolesFromContacts = function() {
     }
 };
 
-/* --- v19.54 [Stages] - Drag & Drop Logic (Persist & Calc Fix) --- */
+/* --- v19.54 [Stages] - Drag & Drop V11 (Cloning Mode) --- */
 function initializeStageDragAndDrop() {
     const containers = document.querySelectorAll('.stage-drop-zone');
     
     containers.forEach(container => {
-        // Prevent duplicate initialization
         if (container._sortable) return;
 
         container._sortable = new Sortable(container, {
-            group: 'stages', // Allows moving between columns
+            group: {
+                name: 'stages',
+                pull: 'clone', // <--- THIS KEEPS THE ORIGINAL ITEM IN PLACE
+                put: true
+            },
             animation: 150,
-            delay: 100, // Prevent accidental drags on touch
+            sort: false, // Disable sorting within list for performance
+            delay: 100, 
             delayOnTouchOnly: true,
-            ghostClass: 'bg-blue-50', // Visual feedback
+            ghostClass: 'bg-blue-100', // Visual feedback
             
             onEnd: function (evt) {
                 const itemEl = evt.item;
@@ -5696,50 +5693,45 @@ function initializeStageDragAndDrop() {
                 const oldStageKey = evt.from.dataset.stageKey;
                 const itemId = itemEl.dataset.itemId;
 
-                // 1. If dropped in the same column, do nothing (reordering not tracked yet)
+                // If dropped in same list, ignore
                 if (newStageKey === oldStageKey) return;
 
-                // 2. Locate the Item in the Budget Data
+                // Remove the temporary DOM element created by Sortable (we re-render properly below)
+                itemEl.remove(); 
+
+                // 1. Locate Item
                 let foundItem = null;
-                // Search all sections to find the item
                 for (const section of Object.values(budget.sections)) {
                     const match = section.items.find(i => i.id === itemId);
                     if (match) { foundItem = match; break; }
                 }
 
                 if (foundItem) {
-                    // 3. Initialize stageData if missing (safety check)
                     if (!foundItem.stageData) foundItem.stageData = {};
 
-                    // 4. DATA MIGRATION: Move values from Old Stage -> New Stage
-                    if (foundItem.stageData[oldStageKey]) {
-                        // Copy existing values (Days/Rate) to new stage
-                        foundItem.stageData[newStageKey] = { 
-                            days: foundItem.stageData[oldStageKey].days, 
-                            rate: foundItem.stageData[oldStageKey].rate 
-                        };
-                        
-                        // Delete from old stage (The Move)
-                        delete foundItem.stageData[oldStageKey];
-                    } else {
-                        // Fallback: If old data was missing, use defaults
-                        foundItem.stageData[newStageKey] = { days: foundItem.quantity, rate: foundItem.rate };
-                    }
+                    // 2. CLONE LOGIC: Add new stage data (Do NOT delete old)
+                    // We copy the days/rate from the source stage to the new stage as a starting point
+                    const sourceData = foundItem.stageData[oldStageKey] || { days: foundItem.quantity, rate: foundItem.rate };
+                    
+                    foundItem.stageData[newStageKey] = { 
+                        days: sourceData.days, 
+                        rate: sourceData.rate 
+                    };
 
-                    // 5. MASTER SYNC
-                    syncStageToMain(foundItem); // Recalculate weighted averages
-                    saveBudget(); // <--- CRITICAL: Saves changes to LocalStorage immediately
-                    pushToHistory(`Moved item to ${budget.targetLock.stages[newStageKey].label}`);
+                    // 3. Sync & Save
+                    syncStageToMain(foundItem);
+                    saveBudget(); 
+                    pushToHistory(`Cloned item to ${budget.targetLock.stages[newStageKey].label}`);
 
-                    // 6. UI REFRESH
-                    // We must re-render the modal to update calculations and DOM IDs
+                    // 4. Refresh UI to show the new card and update totals
                     showStagesModal(); 
-                    render(); // Update main dashboard
+                    render(); 
                 }
             }
         });
     });
 }
+
 document.addEventListener('DOMContentLoaded', init);
 
     </script>
