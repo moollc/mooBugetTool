@@ -422,6 +422,13 @@
     }
 }
 
+/* --- v19.56 Stages Document Cards Responsive --- */
+@media (max-width: 640px) {
+    .doc-card .absolute {
+        opacity: 1 !important;
+    }
+}
+
 /* --- v19.53 Mobile Description Fix --- */
 @media (max-width: 768px) {
     /* Truncate text with ellipsis (...) */
@@ -482,6 +489,12 @@
 @media (min-width: 768px) { 
     .sticky-section-header { top: 0rem; } 
     .sticky-th { top: 43px; } 
+}
+
+/* --- v19.56 Edit Mode Focus --- */
+#attachmentPreview[contenteditable="true"] {
+    outline: none;
+    cursor: text;
 }
 
     </style>
@@ -3505,8 +3518,7 @@ function showTargetLockModal() {
     });
 }
 
-/* --- v19.53 [Stages] - Top Spenders & Day Sync, Auto-Sort + Add Button --- */
-/* --- v19.53 [Stages] - Layout Update (Button in Header) --- */
+/* --- v19.53 Stages - Top Spenders & Day Sync, Auto-Sort + Add Button --- */
 function showStagesModal() {
     try {
         // 1. DATA INITIALIZATION & SELF-HEALING
@@ -3713,6 +3725,30 @@ function showStagesModal() {
             `;
         };
 
+        const renderDocumentsCard = () => {
+            ensureDocumentData();
+            const docs = budget.documents || [];
+
+            return `
+            <div id="card-documents" class="stage-card min-w-[300px] w-full sm:w-[320px] flex-shrink-0 h-full bg-white flex flex-col snap-center relative">
+                <div class="p-4 bg-purple-900 text-white flex-shrink-0">
+                    <h3 class="text-xs font-bold text-purple-300 uppercase tracking-widest">Production Documents</h3>
+                </div>
+                <div class="flex-grow overflow-y-auto p-4 space-y-3 bg-gray-50">
+                    ${docs.length > 0 ? docs.map(doc => renderDocCard(doc, 'stages')).join('') : 
+                        `<div class="text-center py-12 text-gray-400 text-xs">
+                            <div class="text-6xl mb-4 opacity-20">📂</div>
+                            No documents yet.<br>
+                            <button onclick="showDocumentsModal()" class="mt-4 text-blue-600 hover:underline font-bold">Open Documents Hub</button>
+                        </div>`
+                    }
+                    <button onclick="showDocumentsModal()" class="w-full py-3 mt-4 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-purple-500 hover:text-purple-600 text-sm font-bold transition-colors bg-white">
+                        + Open Full Documents Hub
+                    </button>
+                </div>
+            </div>`;
+        };
+
         const renderFilesCard = () => {
              const attachments = budget.attachments || [];
             return `
@@ -3746,6 +3782,7 @@ function showStagesModal() {
                     ${renderSetupCard()}
                     ${renderOverviewCard()}
                     ${validKeys.map(k => renderStageColumn(k)).join('')}
+                    ${renderDocumentsCard()}
                     ${renderFilesCard()}
                 </div>
                 <button onclick="scrollCarousel('left')" class="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/80 hover:bg-white backdrop-blur border border-gray-200 rounded-full shadow-lg flex items-center justify-center text-gray-600 opacity-0 group-hover/carousel:opacity-100 transition-opacity z-20 hidden sm:flex"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
@@ -4831,9 +4868,11 @@ function openDocumentViewer(docId, context = 'hub') {
                     </div>
                 </div>`;
         }
-        else if (attachment && attachment.previewContent) {
+                else if (attachment && attachment.previewContent) {
             const prev = attachment.previewContent;
+            const editable = isEditableAttachment(attachment);
             let previewHTML = '';
+            let editorMode = false; // Future: could track per-attachment
 
             if (prev.type === 'image') {
                 previewHTML = `<img src="${prev.data}" alt="${attachment.name}" class="max-w-full h-auto rounded-lg shadow-lg mx-auto">`;
@@ -4843,11 +4882,14 @@ function openDocumentViewer(docId, context = 'hub') {
                     <div class="text-center">
                         <img src="${prev.thumbnail}" alt="PDF Preview" class="max-w-full h-auto rounded-lg shadow-lg mx-auto mb-4">
                         <p class="text-sm text-gray-600">PDF • ${prev.pageCount} pages</p>
-                        <p class="text-xs text-gray-400 mt-2">Full view coming soon</p>
+                        <p class="text-xs text-gray-400 mt-2">Full editable view coming soon</p>
                     </div>`;
             }
-            else if (prev.type === 'docx' || prev.type === 'xlsx') {
-                previewHTML = `<div class="prose prose-sm max-w-none overflow-x-auto">${prev.html}</div>`;
+            else if (prev.type === 'docx') {
+                previewHTML = prev.html;
+            }
+            else if (prev.type === 'xlsx') {
+                previewHTML = prev.html;
             }
             else if (prev.type === 'text') {
                 previewHTML = `<pre class="text-xs bg-gray-100 p-4 rounded-lg overflow-x-auto whitespace-pre-wrap">${prev.content}</pre>`;
@@ -4863,17 +4905,49 @@ function openDocumentViewer(docId, context = 'hub') {
                             <h3 class="text-xl font-bold text-gray-800">${doc.label}</h3>
                             <p class="text-sm text-gray-600 mt-1">Attached: ${attachment.name}</p>
                         </div>
-                        <div class="text-right">
-                            <p class="text-xs text-gray-500">Size: ${formatFileSize(attachment.size)}</p>
-                            <p class="text-xs text-gray-400">Added: ${new Date(attachment.dateAdded).toLocaleDateString()}</p>
+                        <div class="flex items-center gap-3">
+                            ${editable ? `
+                                <button id="editAttachmentBtn" 
+                                        onclick="enableAttachmentEditing('${attachment.id}', '${docId}')" 
+                                        class="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 shadow-md">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                    </svg>
+                                    Edit
+                                </button>
+                                <div id="saveControls" class="hidden flex items-center gap-2">
+                                    <button onclick="saveAttachmentEdits('${attachment.id}', '${docId}')" 
+                                            class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium">
+                                        Save
+                                    </button>
+                                    <button onclick="cancelAttachmentEditing('${docId}')" 
+                                            class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 font-medium">
+                                        Cancel
+                                    </button>
+                                </div>` : ''}
+                            <div class="text-right text-xs text-gray-500">
+                                <div>Size: ${formatFileSize(attachment.size)}</div>
+                                <div>Added: ${new Date(attachment.dateAdded).toLocaleDateString()}</div>
+                            </div>
                         </div>
                     </div>
-                    <div class="bg-white border rounded-xl shadow-inner p-4 overflow-auto max-h-[70vh]">
+                    <div id="attachmentPreview" class="border rounded-xl shadow-inner p-4 bg-white min-h-96 overflow-auto">
                         ${previewHTML}
                     </div>
-                    <div class="mt-6 text-center">
-                        <button onclick="attachFileToDocument('${docId}')" class="text-sm text-blue-600 hover:underline">
+                    <div class="mt-6 flex justify-center gap-6">
+                        <button onclick="attachFileToDocument('${docId}')" 
+                                class="inline-flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-800 font-medium">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="17 8 12 3 7 8"></polyline>
+                                <line x1="12" y1="3" x2="12" y2="15"></line>
+                            </svg>
                             Replace File
+                        </button>
+                        <button onclick="removeAttachmentFromDocument('${attachment.id}', '${docId}')" 
+                                class="text-sm text-red-600 hover:text-red-800 font-medium">
+                            Remove File
                         </button>
                     </div>
                 </div>`;
@@ -5083,6 +5157,29 @@ function saveAttachmentEdits(attachmentId, docId) {
     }
 
     alert('File edits saved!');
+}
+
+/* --- v19.56 Enable/Cancel Editing --- */
+function enableAttachmentEditing(attachmentId, docId) {
+    const previewDiv = document.getElementById('attachmentPreview');
+    const editBtn = document.getElementById('editAttachmentBtn');
+    const saveControls = document.getElementById('saveControls');
+
+    if (!previewDiv || !editBtn || !saveControls) return;
+
+    // Make content editable
+    previewDiv.contentEditable = true;
+    previewDiv.classList.add('border-blue-500', 'ring-2', 'ring-blue-200', 'bg-white');
+    previewDiv.focus();
+
+    // Hide Edit, show Save/Cancel
+    editBtn.classList.add('hidden');
+    saveControls.classList.remove('hidden');
+}
+
+function cancelAttachmentEditing(docId) {
+    // Refresh viewer to restore original preview
+    openDocumentViewer(docId);
 }
 
 /* --- v19.53 Attach File to Document --- */
