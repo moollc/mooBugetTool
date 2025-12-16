@@ -1483,6 +1483,7 @@ function showSettingsModal(defaultTab = 'general') {
              <button class="flex-1 p-3 hover:bg-gray-50 focus:outline-none whitespace-nowrap ${defaultTab === 'database' ? 'border-b-2 border-blue-500 text-blue-600' : ''}" onclick="switchSettingsTab('database', this)">Line Items</button>
              <button class="flex-1 p-3 hover:bg-gray-50 focus:outline-none whitespace-nowrap ${defaultTab === 'ai' ? 'border-b-2 border-blue-500 text-blue-600' : ''}" onclick="switchSettingsTab('ai', this)">✨ AI Assistant</button>
              <button class="flex-1 p-3 hover:bg-gray-50 focus:outline-none whitespace-nowrap ${defaultTab === 'roadmap' ? 'border-b-2 border-blue-500 text-blue-600' : ''}" onclick="switchSettingsTab('roadmap', this)">Roadmap</button>
+			 <button class="flex-1 p-3 hover:bg-gray-50 focus:outline-none whitespace-nowrap ${defaultTab === 'contacts' ? 'border-b-2 border-blue-500 text-blue-600' : ''}" onclick="switchSettingsTab('contacts', this)">Contacts</button>
         </div>
         <div class="p-6" id="settingsContent">${renderSettingsContent(defaultTab)}</div>
     `;
@@ -1491,21 +1492,48 @@ function showSettingsModal(defaultTab = 'general') {
 }
 
 /* --- v19.53 Film Industry Database --- */
+/* --- v19.55 [Open Gate v1.0] - Industry Line Item Database --- */
+/* Codename: Open Gate - Removing barriers to production knowledge. */
 const FILM_INDUSTRY_ITEMS = [
+    // --- Above the Line ---
+    { description: 'Director', unit: 'Day', rate: 85000 },
+    { description: 'Executive Producer', unit: 'Flat', rate: 500000 },
+    { description: 'Producer', unit: 'Day', rate: 75000 },
+    { description: 'Line Producer', unit: 'Day', rate: 65000 },
+    { description: 'Screenwriter', unit: 'Flat', rate: 350000 },
+    { description: 'Cast - Lead', unit: 'Day', rate: 100000 },
+    { description: 'Cast - Supporting', unit: 'Day', rate: 50000 },
+    { description: 'Stunt Coordinator', unit: 'Day', rate: 60000 },
+
+    // --- Production Dept ---
+    { description: 'Unit Production Manager (UPM)', unit: 'Day', rate: 60000 },
+    { description: 'Production Coordinator', unit: 'Day', rate: 30000 },
     { description: '1st Assistant Director (1st AD)', unit: 'Day', rate: 65000 },
     { description: '2nd Assistant Director', unit: 'Day', rate: 45000 },
-    { description: 'Script Supervisor', unit: 'Day', rate: 40000 },
-    { description: 'Unit Production Manager (UPM)', unit: 'Day', rate: 60000 },
+    { description: '2nd 2nd AD', unit: 'Day', rate: 25000 },
+    { description: 'Key PA', unit: 'Day', rate: 20000 },
+    { description: 'Set PA', unit: 'Day', rate: 15000 },
+    { description: 'Office PA', unit: 'Day', rate: 15000 },
+    { description: 'Truck PA', unit: 'Day', rate: 18000 },
     { description: 'Location Manager', unit: 'Day', rate: 50000 },
     { description: 'Location Scout', unit: 'Day', rate: 35000 },
-    { description: 'Production Coordinator', unit: 'Day', rate: 30000 },
-    { description: 'Office PA', unit: 'Day', rate: 15000 },
-    { description: 'Set PA', unit: 'Day', rate: 15000 },
-    { description: 'Truck PA', unit: 'Day', rate: 18000 },
+    { description: 'Script Supervisor', unit: 'Day', rate: 40000 },
+    { description: 'Medic / Set Nurse', unit: 'Day', rate: 35000 },
+    { description: 'Security Guard', unit: 'Day', rate: 12000 },
+    { description: 'Craft Service', unit: 'Day', rate: 25000 },
+    { description: 'Catering (Per Head)', unit: 'Flat', rate: 2500 },
+
+    // --- Camera Dept ---
+    { description: 'Director of Photography (DP)', unit: 'Day', rate: 90000 },
     { description: 'Camera Operator', unit: 'Day', rate: 60000 },
-    { description: '1st Assistant Camera (Focus Puller)', unit: 'Day', rate: 45000 },
+    { description: '1st Assistant Camera (Focus)', unit: 'Day', rate: 45000 },
     { description: '2nd Assistant Camera', unit: 'Day', rate: 35000 },
     { description: 'Digital Imaging Tech (DIT)', unit: 'Day', rate: 50000 },
+    { description: 'Steadicam Operator', unit: 'Day', rate: 70000 },
+    { description: 'Drone Operator', unit: 'Day', rate: 55000 },
+    { description: 'Camera Utility', unit: 'Day', rate: 25000 },
+
+    // --- Lighting & Grip ---
     { description: 'Gaffer', unit: 'Day', rate: 55000 },
     { description: 'Best Boy Electric', unit: 'Day', rate: 40000 },
     { description: 'Electrician', unit: 'Day', rate: 30000 },
@@ -1513,24 +1541,37 @@ const FILM_INDUSTRY_ITEMS = [
     { description: 'Best Boy Grip', unit: 'Day', rate: 40000 },
     { description: 'Dolly Grip', unit: 'Day', rate: 40000 },
     { description: 'Grip', unit: 'Day', rate: 30000 },
+    { description: 'Generator Operator', unit: 'Day', rate: 35000 },
+
+    // --- Sound ---
     { description: 'Sound Mixer', unit: 'Day', rate: 50000 },
     { description: 'Boom Operator', unit: 'Day', rate: 35000 },
+    { description: 'Sound Utility', unit: 'Day', rate: 25000 },
+
+    // --- Art & Wardrobe ---
     { description: 'Production Designer', unit: 'Day', rate: 65000 },
     { description: 'Art Director', unit: 'Day', rate: 50000 },
+    { description: 'Set Decorator', unit: 'Day', rate: 45000 },
     { description: 'Set Dresser', unit: 'Day', rate: 30000 },
     { description: 'Props Master', unit: 'Day', rate: 45000 },
+    { description: 'Assistant Props', unit: 'Day', rate: 30000 },
+    { description: 'Costume Designer', unit: 'Day', rate: 55000 },
     { description: 'Wardrobe Stylist', unit: 'Day', rate: 45000 },
-    { description: 'Makeup Artist', unit: 'Day', rate: 40000 },
-    { description: 'Hair Stylist', unit: 'Day', rate: 40000 },
+    { description: 'Wardrobe Assistant', unit: 'Day', rate: 25000 },
+    { description: 'Makeup Artist (Key)', unit: 'Day', rate: 45000 },
+    { description: 'Hair Stylist (Key)', unit: 'Day', rate: 45000 },
+    { description: 'Makeup/Hair Assistant', unit: 'Day', rate: 25000 },
+
+    // --- Post-Production ---
+    { description: 'Post-Production Supervisor', unit: 'Week', rate: 200000 },
     { description: 'Editor', unit: 'Day', rate: 50000 },
     { description: 'Assistant Editor (AE)', unit: 'Day', rate: 25000 },
     { description: 'Colorist', unit: 'Hour', rate: 15000 },
+    { description: 'VFX Supervisor', unit: 'Day', rate: 70000 },
     { description: 'VFX Artist', unit: 'Day', rate: 55000 },
     { description: 'Sound Designer', unit: 'Flat', rate: 150000 },
-    { description: 'Craft Service', unit: 'Day', rate: 25000 },
-    { description: 'Catering (Per Head)', unit: 'Flat', rate: 2500 },
-    { description: 'Security Guard', unit: 'Day', rate: 12000 },
-    { description: 'Medic / Set Nurse', unit: 'Day', rate: 35000 }
+    { description: 'Composer', unit: 'Flat', rate: 200000 },
+    { description: 'Music Supervisor', unit: 'Flat', rate: 100000 }
 ];
 
 function ensureDatabaseSeeded() {
@@ -2089,6 +2130,7 @@ function bindSettingsEvents(tabName) {
         document.getElementById('dateFormatSelect')?.addEventListener('change', (e) => { setProjectDateFormat(e.target.value); });
         document.getElementById('separatorInput')?.addEventListener('input', (e) => { setProjectNameSeparator(e.target.value); });
     }
+	else if (tabName === 'contacts') { bindContactsEvents(); }
     else if (tabName === 'templates') { bindTemplateEvents(); }
     else if (tabName === 'database') { bindDatabaseEvents(); }
     else if (tabName === 'roadmap') { document.getElementById('toggleRoadmapDetailsBtn')?.addEventListener('click', (e) => { document.querySelectorAll('.roadmap-detail').forEach(el => el.classList.toggle('hidden')); e.target.textContent = e.target.textContent.includes('Expand') ? 'Collapse Details' : 'Expand Details'; }); }
@@ -2200,6 +2242,52 @@ if (tabName === 'general') {
         </div>
     </div>`;
 }
+
+else if (tabName === 'contacts') {
+        const contacts = getGlobalContacts();
+        return `
+        <div class="space-y-4">
+            <div class="flex justify-between items-center bg-indigo-50 p-4 rounded-lg border border-indigo-100">
+                <div>
+                    <h3 class="font-bold text-indigo-900">Crew Database</h3>
+                    <p class="text-xs text-indigo-700">Manage roster for Open Gate Auto-Assign.</p>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="document.getElementById('csvImportInput').click()" class="bg-indigo-600 text-white px-3 py-1.5 rounded text-xs font-bold hover:bg-indigo-700">Import CSV</button>
+                    <input type="file" id="csvImportInput" class="hidden" accept=".csv" onchange="importContactsCSV(this)">
+                    <button onclick="autoAssignRolesFromContacts()" class="bg-green-600 text-white px-3 py-1.5 rounded text-xs font-bold hover:bg-green-700 shadow-sm flex items-center gap-1"><span>⚡</span> Auto-Assign Budget</button>
+                </div>
+            </div>
+
+            <form id="addContactForm" class="grid grid-cols-12 gap-2 items-end bg-gray-50 p-3 rounded-lg border">
+                <div class="col-span-12 sm:col-span-4">
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase">Name</label>
+                    <input type="text" id="cName" class="w-full p-2 border rounded text-sm" required placeholder="Jane Doe">
+                </div>
+                <div class="col-span-12 sm:col-span-4">
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase">Default Role</label>
+                    <input type="text" id="cRole" class="w-full p-2 border rounded text-sm" required placeholder="Director, Gaffer...">
+                </div>
+                <div class="col-span-12 sm:col-span-3">
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase">Email/Phone</label>
+                    <input type="text" id="cContact" class="w-full p-2 border rounded text-sm" placeholder="jane@film.com">
+                </div>
+                <div class="col-span-12 sm:col-span-1">
+                    <button type="submit" class="w-full p-2 bg-blue-600 text-white rounded font-bold hover:bg-blue-700">+</button>
+                </div>
+            </form>
+
+            <div class="border rounded-lg overflow-hidden">
+                <div class="bg-gray-100 p-2 text-xs font-bold text-gray-500 flex justify-between">
+                    <span>${contacts.length} Contacts stored</span>
+                    <input type="text" id="contactSearch" placeholder="Search..." class="bg-white border rounded px-2 py-0.5 text-xs font-normal w-32">
+                </div>
+                <div class="max-h-64 overflow-y-auto" id="contactsListBody">
+                    ${renderContactsList(contacts)}
+                </div>
+            </div>
+        </div>`;
+    }
 
 else if (tabName === 'templates') {
         const allTemplates = getAllTemplates();
@@ -2398,100 +2486,127 @@ else if (tabName === 'ai') {
         };
 
         /* --- v19.50 Crew Profile Manager v19.52 --- */
-        window.openCrewProfile = function(el, event, itemId, sectionName) {
-            if(event) event.stopPropagation();
+   /* --- v19.54 [Crew] - Contact Card Actions (WA, Call, SMS, Email) --- */
+window.openCrewProfile = function(el, event, itemId, sectionName) {
+    if(event) event.stopPropagation();
+    
+    const section = budget.sections[sectionName];
+    const item = section.items.find(i => i.id === itemId);
+    if(!item) return;
+
+    const crew = item.crew || { name: '', phone: '', email: '' };
+    
+    // 1. Prepare Action Links
+    const cleanPhone = crew.phone ? crew.phone.replace(/\D/g, '') : '';
+    const hasPhone = cleanPhone.length > 6; // Basic validation
+    const hasEmail = crew.email && crew.email.includes('@');
+    
+    const actionsBar = `
+        <div class="flex justify-center gap-3 mb-6 mt-2">
+            ${hasPhone ? `
+                <a href="tel:${cleanPhone}" class="flex flex-col items-center gap-1 group">
+                    <div class="w-10 h-10 rounded-full bg-green-50 text-green-600 border border-green-200 flex items-center justify-center shadow-sm group-hover:bg-green-600 group-hover:text-white transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                    </div>
+                    <span class="text-[10px] font-bold text-gray-500 uppercase">Call</span>
+                </a>
+                <a href="sms:${cleanPhone}" class="flex flex-col items-center gap-1 group">
+                    <div class="w-10 h-10 rounded-full bg-blue-50 text-blue-600 border border-blue-200 flex items-center justify-center shadow-sm group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+                    </div>
+                    <span class="text-[10px] font-bold text-gray-500 uppercase">Text</span>
+                </a>
+                <a href="https://wa.me/${cleanPhone}" target="_blank" class="flex flex-col items-center gap-1 group">
+                    <div class="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200 flex items-center justify-center shadow-sm group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
+                    </div>
+                    <span class="text-[10px] font-bold text-gray-500 uppercase">WhatsApp</span>
+                </a>
+            ` : ''}
+            ${hasEmail ? `
+                <a href="mailto:${crew.email}" class="flex flex-col items-center gap-1 group">
+                    <div class="w-10 h-10 rounded-full bg-indigo-50 text-indigo-600 border border-indigo-200 flex items-center justify-center shadow-sm group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                    </div>
+                    <span class="text-[10px] font-bold text-gray-500 uppercase">Email</span>
+                </a>
+            ` : ''}
+            ${!hasPhone && !hasEmail ? '<span class="text-xs text-gray-400 italic">Enter contact details to enable actions</span>' : ''}
+        </div>
+    `;
+
+    const content = `
+        <form id="crewProfileForm" class="space-y-4 p-1">
+            <div class="text-center">
+                <div class="w-20 h-20 mx-auto rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-3xl shadow-md border-4 border-white">
+                    ${crew.name ? crew.name.substring(0,1).toUpperCase() : '?'}
+                </div>
+                <h3 class="text-lg font-bold text-gray-900 mt-2">${crew.name || 'New Crew Member'}</h3>
+                <p class="text-sm text-blue-600 font-medium">${item.description}</p>
+            </div>
+
+            ${actionsBar}
             
-            const section = budget.sections[sectionName];
-            const item = section.items.find(i => i.id === itemId);
-            if(!item) return;
-
-            const crew = item.crew || { name: '', phone: '', email: '' };
-
-            const content = `
-                <form id="crewProfileForm" class="space-y-6 p-1">
-                    <div class="bg-blue-50 p-4 rounded-xl border border-blue-100 flex items-center gap-4">
-                        <div class="w-14 h-14 flex-shrink-0 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold text-2xl shadow-sm">
-                            ${crew.name ? crew.name.substring(0,1).toUpperCase() : '?'}
-                        </div>
-                        <div class="min-w-0 flex-grow">
-                            <p class="text-xs text-blue-600 font-bold uppercase tracking-wider mb-0.5">Assigning Role</p>
-                            <p class="font-bold text-gray-900 text-lg leading-tight truncate">${item.description}</p>
-                        </div>
-                        
-                        <button type="button" id="importContactBtn" class="flex-shrink-0 p-2 bg-white text-blue-600 rounded-full border border-blue-200 shadow-sm hover:bg-blue-50 transition-colors" title="Import from Device Contacts">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
-                        </button>
-                    </div>
-                    
-                    <div class="space-y-4">
-                        <div>
-                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">Full Name</label>
-                            <input type="text" id="crewName" value="${crew.name || ''}" placeholder="e.g. Jane Doe" class="w-full p-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all shadow-sm">
-                        </div>
-
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">Phone / WhatsApp</label>
-                                <input type="tel" id="crewPhone" value="${crew.phone || ''}" placeholder="+1 876..." class="w-full p-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all shadow-sm">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">Email Address</label>
-                                <input type="email" id="crewEmail" value="${crew.email || ''}" placeholder="jane@set.com" class="w-full p-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all shadow-sm">
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="pt-6 flex flex-col-reverse sm:flex-row sm:justify-between items-center gap-3 border-t border-gray-100 mt-2">
-                        <button type="button" class="w-full sm:w-auto text-red-500 text-sm hover:text-red-700 font-medium py-2 transition-colors" onclick="window.clearCrewAssignment('${itemId}', '${sectionName}')">Clear Assignment</button>
-                        <button type="submit" class="w-full sm:w-auto bg-blue-600 text-white px-8 py-2.5 rounded-lg font-bold shadow hover:bg-blue-700 active:transform active:scale-95 transition-all">Save Profile</button>
-                    </div>
-                </form>
-            `;
-
-            createModal('crewProfile', '', content, 'max-w-lg');
-
-            /* --- v19.50 Device Contact Import Logic v19.52 --- */
-            document.getElementById('importContactBtn').addEventListener('click', async () => {
-                const supported = ('contacts' in navigator && 'ContactsManager' in window);
+            <div class="bg-gray-50 p-4 rounded-xl border border-gray-200 space-y-4">
+                <div class="flex justify-between items-center mb-2">
+                    <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider">Contact Details</h4>
+                    <button type="button" id="importContactBtn" class="text-xs text-blue-600 font-bold hover:underline flex items-center gap-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                        Import
+                    </button>
+                </div>
                 
-                if (supported) {
-                    try {
-                        const props = ['name', 'tel', 'email'];
-                        const opts = { multiple: false };
-                        const contacts = await navigator.contacts.select(props, opts);
-                        
-                        if (contacts.length) {
-                            const contact = contacts[0];
-                            if(contact.name && contact.name[0]) document.getElementById('crewName').value = contact.name[0];
-                            if(contact.tel && contact.tel[0]) document.getElementById('crewPhone').value = contact.tel[0];
-                            if(contact.email && contact.email[0]) document.getElementById('crewEmail').value = contact.email[0];
-                        }
-                    } catch (ex) {
-                        console.log("Contact import cancelled", ex);
-                    }
-                } else {
-                    const nameInput = document.getElementById('crewName');
-                    nameInput.focus();
-                    
-                    const btn = document.getElementById('importContactBtn');
-                    const originalHTML = btn.innerHTML;
-                    btn.innerHTML = '<span class="text-xs text-red-500 font-bold">N/A</span>';
-                    setTimeout(() => btn.innerHTML = originalHTML, 2000);
-                }
-            });
+                <div>
+                    <input type="text" id="crewName" value="${crew.name || ''}" placeholder="Full Name" class="w-full p-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <input type="tel" id="crewPhone" value="${crew.phone || ''}" placeholder="Phone" class="w-full p-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                    <input type="email" id="crewEmail" value="${crew.email || ''}" placeholder="Email" class="w-full p-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+            </div>
 
-            document.getElementById('crewProfileForm').addEventListener('submit', (e) => {
-                e.preventDefault();
-                item.crew = {
-                    name: document.getElementById('crewName').value.trim(),
-                    phone: document.getElementById('crewPhone').value.trim(),
-                    email: document.getElementById('crewEmail').value.trim()
-                };
-                pushToHistory(`Assigned ${item.crew.name || 'Crew'} to ${item.description}`);
-                closeModal('crewProfileModal');
-                render(); 
-            });
+            <div class="pt-2 flex justify-between items-center">
+                <button type="button" class="text-red-500 text-xs font-bold hover:text-red-700 px-2" onclick="window.clearCrewAssignment('${itemId}', '${sectionName}')">Unassign</button>
+                <button type="submit" class="bg-gray-900 text-white px-6 py-2 rounded-lg font-bold shadow-md hover:bg-black transition-transform active:scale-95">Save & Close</button>
+            </div>
+        </form>
+    `;
+
+    createModal('crewProfile', '', content, 'max-w-sm');
+
+    // Attach Import Logic (Native)
+    document.getElementById('importContactBtn').addEventListener('click', async () => {
+        if ('contacts' in navigator && 'ContactsManager' in window) {
+            try {
+                const contacts = await navigator.contacts.select(['name', 'tel', 'email'], { multiple: false });
+                if (contacts.length) {
+                    const c = contacts[0];
+                    if(c.name?.[0]) document.getElementById('crewName').value = c.name[0];
+                    if(c.tel?.[0]) document.getElementById('crewPhone').value = c.tel[0];
+                    if(c.email?.[0]) document.getElementById('crewEmail').value = c.email[0];
+                }
+            } catch (ex) { console.log(ex); }
+        } else {
+            alert("Contact import not supported on this device/browser.");
+        }
+    });
+
+    // Attach Save Logic
+    document.getElementById('crewProfileForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        item.crew = {
+            name: document.getElementById('crewName').value.trim(),
+            phone: document.getElementById('crewPhone').value.trim(),
+            email: document.getElementById('crewEmail').value.trim()
         };
+        pushToHistory(`Updated crew: ${item.crew.name}`);
+        closeModal('crewProfileModal');
+        
+        // Refresh Screens
+        render(); 
+        if(document.getElementById('stagesViewModal')) showStagesModal(); 
+    });
+};
 
         window.clearCrewAssignment = function(itemId, sectionName) {
             if(confirm('Remove this person from the role?')) {
@@ -3519,134 +3634,198 @@ function showTargetLockModal() {
     });
 }
 
-/* --- v19.53 Stages - Top Spenders & Day Sync, Auto-Sort + Add Button --- */
+/* --- v19.54 [Stages] - Logic V3 (Presets, Sync, Proportional Locks) --- */
+
+// 1. Presets for "Distribute" Button
+const STAGE_PRESETS = {
+    'TVC': { 'dev': 10, 'pre': 25, 'prod': 15, 'post': 35, 'dist': 15 },
+    'Music Video': { 'dev': 10, 'pre': 20, 'prod': 15, 'post': 40, 'dist': 15 },
+    'Documentary': { 'dev': 20, 'pre': 15, 'prod': 35, 'post': 20, 'dist': 10 },
+    'Feature Film': { 'dev': 25, 'pre': 20, 'prod': 20, 'post': 25, 'dist': 10 }
+};
+
+// 2. Sync Logic (Weighted Average)
+function syncStageToMain(item) {
+    if (!item.stageData) return;
+    let totalDays = 0, totalCost = 0;
+    Object.values(item.stageData).forEach(d => {
+        const days = parseFloat(d.days) || 0;
+        const rate = parseFloat(d.rate) || 0;
+        totalDays += days;
+        totalCost += (days * rate);
+    });
+    if (totalDays > 0) {
+        item.quantity = totalDays;
+        item.rate = totalCost / totalDays;
+        item.unit = 'Day'; 
+    }
+}
+
+// 3. Remove Item Helper
+window.removeStageItem = function(itemId, sectionName, stageKey) {
+    const item = budget.sections[sectionName].items.find(i => i.id === itemId);
+    if (item && item.stageData && item.stageData[stageKey]) {
+        if(confirm("Remove item from this stage?")) {
+            delete item.stageData[stageKey];
+            syncStageToMain(item);
+            pushToHistory(`Removed item from ${stageKey}`);
+            const card = document.querySelector(`.stage-card-item[data-item-id="${itemId}"][data-stage="${stageKey}"]`);
+            if(card) card.remove();
+            updateAllHeaders(); // Recalc totals without full re-render
+            render();
+        }
+    }
+};
+
+// 4. Proportional Slider Balancing
+function balanceStageSliders(changedKey, newValue) {
+    const stages = budget.targetLock.stages;
+    const validKeys = ['dev', 'pre', 'prod', 'post', 'dist'];
+    
+    newValue = Math.max(0, Math.min(100, newValue));
+    
+    // Check locks
+    const lockedKeys = validKeys.filter(k => k !== changedKey && stages[k].locked);
+    const unlockedKeys = validKeys.filter(k => k !== changedKey && !stages[k].locked);
+    
+    const lockedTotal = lockedKeys.reduce((s, k) => s + stages[k].ratio, 0);
+    const maxAvailable = 100 - lockedTotal;
+    
+    if (newValue > maxAvailable) newValue = maxAvailable;
+    stages[changedKey].ratio = newValue;
+    
+    const remaining = 100 - newValue - lockedTotal;
+    
+    if (unlockedKeys.length > 0) {
+        const currentUnlockedTotal = unlockedKeys.reduce((s, k) => s + stages[k].ratio, 0);
+        unlockedKeys.forEach(k => {
+            if (currentUnlockedTotal <= 0) stages[k].ratio = remaining / unlockedKeys.length;
+            else stages[k].ratio = remaining * (stages[k].ratio / currentUnlockedTotal);
+        });
+    }
+}
+
+// 5. Apply Preset Handler
+window.applyStagePreset = function(presetName) {
+    const ratios = STAGE_PRESETS[presetName];
+    if (!ratios) return;
+    Object.keys(ratios).forEach(k => {
+        if (budget.targetLock.stages[k]) {
+            budget.targetLock.stages[k].ratio = ratios[k];
+            budget.targetLock.stages[k].locked = false;
+        }
+    });
+    updateAllHeaders(); 
+    pushToHistory(`Applied ${presetName} preset`);
+};
+
+/* --- v19.54 [Stages] - UI V9 (Smart Inputs: Auto-Clear/Restore) --- */
 function showStagesModal() {
     try {
-        // 1. DATA INITIALIZATION & SELF-HEALING
-        if (!budget.targetLock) {
-            budget.targetLock = {
-                enabled: false, totalCap: 0,
-                stages: {
-                    'dev': { label: 'Development', ratio: 5, days: 0 },
-                    'pre': { label: 'Pre-Production', ratio: 20, days: 0 },
-                    'prod': { label: 'Production', ratio: 55, days: 0 },
-                    'post': { label: 'Post-Production', ratio: 15, days: 0 },
-                    'dist': { label: 'Distribution', ratio: 5, days: 0 }
-                }
-            };
-        }
-        
+        // A. Init Data
+        if (!budget.targetLock) budget.targetLock = { enabled: false, totalCap: 0, stages: {} };
         const tl = budget.targetLock;
         const validKeys = ['dev', 'pre', 'prod', 'post', 'dist'];
-        
-        validKeys.forEach(k => {
-            if (!tl.stages[k]) tl.stages[k] = { label: k.toUpperCase(), ratio: 20, days: 0 };
-            if (tl.stages[k].days === undefined) tl.stages[k].days = 0;
-        });
+        validKeys.forEach(k => { if (!tl.stages[k]) tl.stages[k] = { label: k.toUpperCase(), ratio: 20, days: 0, locked: false }; });
 
+        // B. Data Prep
         const stageData = {};
         validKeys.forEach(k => stageData[k] = { items: [], total: 0 });
-
         let grandTotal = 0;
         const allItemsFlat = [];
 
-        // Loop through ENTIRE budget to populate Stages
         Object.entries(budget.sections).forEach(([sectionName, section]) => {
             section.items.forEach(item => {
-                const { estimated } = calculateItem(item);
-                
-                // --- AUTO-ASSIGNMENT LOGIC ---
-                let itemStages = item.assignedStage;
-                
-                // If item has no stage, assign one based on Section or Keyword
-                if (!itemStages || (Array.isArray(itemStages) && itemStages.length === 0)) {
-                    const desc = (item.description || '').toLowerCase();
-                    const sec = sectionName.toLowerCase();
-                    
-                    if (/(editor|vfx|color|sound mix|music|post|deliverables)/.test(desc) || sec.includes('post')) itemStages = ['post'];
-                    else if (/(writer|script|option|development|storyboard|research)/.test(desc) || sec.includes('development')) itemStages = ['dev'];
-                    else if (/(casting|scout|location|legal|insurance|rehearsal|travel)/.test(desc) || sec.includes('pre-production')) itemStages = ['pre'];
-                    else if (/(distrib|festival|market|sales|pr |publicist)/.test(desc) || sec.includes('distribution')) itemStages = ['dist'];
-                    else itemStages = ['prod']; // The catch-all
-
-                    item.assignedStage = itemStages; // Persist the fix
+                // Defaults
+                if (!item.stageData) { 
+                    item.stageData = {};
+                    let target = 'prod';
+                    if (/post|edit/.test(item.description.toLowerCase())) target = 'post';
+                    else if (/pre|cast/.test(item.description.toLowerCase())) target = 'pre';
+                    else if (/dev|write/.test(item.description.toLowerCase())) target = 'dev';
+                    item.stageData[target] = { days: item.quantity, rate: item.rate };
                 }
                 
-                if (!Array.isArray(itemStages)) itemStages = [itemStages];
-
-                itemStages.forEach(stageKey => {
-                    if (validKeys.includes(stageKey)) {
-                        stageData[stageKey].items.push({ ...item, _sectionName: sectionName });
-                        stageData[stageKey].total += estimated;
+                Object.entries(item.stageData).forEach(([k, d]) => {
+                    if (validKeys.includes(k)) {
+                        const cost = (parseFloat(d.days)||0) * (parseFloat(d.rate)||0);
+                        stageData[k].items.push({...item, _sDays:d.days, _sRate:d.rate, _sCost:cost, _sec:sectionName});
+                        stageData[k].total += cost;
+                        grandTotal += cost;
+                        if (cost > 0) allItemsFlat.push({ desc: item.description, cost: cost, stage: tl.stages[k].label });
                     }
                 });
-                
-                if (itemStages.some(k => validKeys.includes(k))) {
-                    grandTotal += estimated;
-                    allItemsFlat.push({ desc: item.description, est: estimated, section: sectionName });
-                }
             });
         });
 
-        const topSpenders = allItemsFlat.sort((a, b) => b.est - a.est).slice(0, 5);
+        const topSpenders = allItemsFlat.sort((a, b) => b.cost - a.cost).slice(0, 5);
 
-        // 2. RENDER UI
-        const renderNav = () => `
-            <div id="stageNavBar" class="flex items-center gap-1 overflow-x-auto h-8 px-1 bg-gray-50 border-b border-gray-200 flex-shrink-0 no-scrollbar select-none !rounded-none">
-                <button onclick="scrollToStageCard('card-setup')" class="nav-btn px-3 py-0.5 text-[10px] font-bold uppercase tracking-wider text-gray-500 hover:bg-gray-200 rounded-sm transition-colors whitespace-nowrap" data-target="card-setup">Overview</button>
-                <div class="h-3 w-px bg-gray-300 mx-1"></div>
-                ${validKeys.map(k => `<button onclick="scrollToStageCard('card-${k}')" class="nav-btn px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-gray-500 hover:bg-gray-200 rounded-sm transition-colors whitespace-nowrap" data-target="card-${k}">${tl.stages[k].label}</button>`).join('')}
-                <div class="h-3 w-px bg-gray-300 mx-1"></div>
-                <button onclick="scrollToStageCard('card-files')" class="nav-btn px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-gray-500 hover:bg-gray-200 rounded-sm transition-colors whitespace-nowrap" data-target="card-files">Files</button>
-            </div>
-        `;
-
+        // C. Render Helpers
+        
+        // 1. Setup Card
         const renderSetupCard = () => `
-            <div id="card-setup" class="stage-card min-w-[300px] w-full sm:w-[320px] flex-shrink-0 h-full bg-white border-r border-gray-200 flex flex-col snap-center relative">
-                <div class="p-4 bg-gray-900 text-white flex-shrink-0">
-                    <h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Target Lock Setup</h3>
-                    <div class="flex flex-col gap-1">
-                        <label class="text-[10px] text-gray-500 uppercase">Total Funding Cap</label>
-                        <div class="flex items-center gap-2 border-b border-gray-700 pb-1">
-                            <span class="text-xl font-bold text-gray-500">$</span>
-                            <input type="number" id="tlTotalCapInput" value="${tl.totalCap}" class="bg-transparent text-2xl font-bold text-white w-full focus:outline-none placeholder-gray-700" placeholder="0.00">
+            <div id="card-setup" class="stage-card min-w-[300px] flex-shrink-0 h-full bg-white border-r border-gray-200 flex flex-col snap-center">
+                <div class="p-3 bg-gray-900 text-white flex-shrink-0">
+                    <h3 class="text-xs font-bold uppercase tracking-widest">Setup</h3>
+                </div>
+                <div class="p-3 space-y-4 flex-grow overflow-y-auto">
+                    <div>
+                        <label class="text-[10px] text-gray-500 uppercase font-bold">Total Cap</label>
+                        <div class="flex items-center gap-2 border-b border-gray-300 pb-1">
+                            <span class="text-xl text-gray-400">$</span>
+                            <input id="tlTotalCapInput" type="number" value="${tl.totalCap}" class="bg-transparent text-xl font-bold w-full outline-none text-gray-800" onchange="budget.targetLock.totalCap=parseFloat(this.value); updateAllHeaders();">
                         </div>
                     </div>
-                </div>
-                <div class="flex-grow overflow-y-auto p-4 space-y-5">
-                    <div class="flex items-center justify-between">
-                        <p class="text-xs text-gray-500 italic">Adjust percentages to auto-balance budget.</p>
-                        <button id="syncDaysBtn" class="text-[10px] bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200 font-bold border border-blue-200" title="Update item quantities based on these days">⚡ Sync Days to Crew</button>
-                    </div>
-                    ${validKeys.map(key => `
-                        <div class="relative bg-gray-50 p-2 rounded border border-gray-100">
-                            <div class="flex justify-between items-center mb-2">
-                                <span class="font-bold text-gray-800 text-xs">${tl.stages[key].label}</span>
-                                <div class="flex items-center gap-1">
-                                    <span class="text-[9px] text-gray-400 uppercase">Days:</span>
-                                    <input type="number" min="0" value="${tl.stages[key].days}" data-stage-days="${key}" class="w-12 text-right text-xs p-1 border rounded bg-white focus:border-blue-500 focus:outline-none placeholder-gray-300 font-bold text-blue-600" placeholder="0">
-                                </div>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <input type="range" min="0" max="100" step="0.5" value="${tl.stages[key].ratio}" data-stage-key="${key}" class="stage-slider flex-grow h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600">
-                                <span class="font-mono text-xs font-bold text-blue-600 w-10 text-right" id="disp_perc_${key}">${tl.stages[key].ratio.toFixed(1)}%</span>
-                            </div>
-                            <div class="text-[10px] text-gray-400 text-right mt-1 font-mono" id="disp_amt_${key}">${formatAbbreviated(tl.totalCap * (tl.stages[key].ratio/100), displayCurrency)}</div>
-                        </div>
-                    `).join('')}
-                </div>
-            </div>
-        `;
 
-        const renderOverviewCard = () => `
-            <div id="card-overview" class="stage-card min-w-[300px] w-full sm:w-[320px] flex-shrink-0 h-full bg-gray-50 border-r border-gray-200 flex flex-col snap-center relative">
+                    <div class="bg-blue-50 p-2 rounded border border-blue-100">
+                        <label class="text-[10px] text-blue-500 uppercase font-bold mb-1 block">Auto-Distribute</label>
+                        <div class="flex gap-1">
+                            <select id="distPresetSelect" class="text-xs border rounded p-1 flex-grow bg-white focus:ring-1 focus:ring-blue-500 outline-none">
+                                <option value="" disabled selected>Select Type...</option>
+                                ${Object.keys(STAGE_PRESETS).map(k => `<option value="${k}">${k}</option>`).join('')}
+                            </select>
+                            <button onclick="applyStagePreset(document.getElementById('distPresetSelect').value)" class="bg-blue-600 text-white px-2 py-1 rounded text-xs font-bold hover:bg-blue-700 shadow-sm">Apply</button>
+                        </div>
+                    </div>
+
+                    <div class="space-y-3">
+                        ${validKeys.map(k => `
+                            <div class="bg-gray-50 p-2 rounded border border-gray-100 relative">
+                                <div class="flex justify-between mb-1 text-[10px] font-bold items-center">
+                                    <div class="flex items-center gap-1">
+                                        <button onclick="toggleStageLock('${k}')" class="text-gray-400 hover:text-blue-600 w-4 focus:outline-none">${tl.stages[k].locked ? '🔒' : '🔓'}</button>
+                                        <span>${tl.stages[k].label}</span>
+                                    </div>
+                                    <span class="text-blue-600 font-mono" id="disp_amt_${k}"></span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <input type="range" min="0" max="100" step="0.1" value="${tl.stages[k].ratio}" data-stage-key="${k}" class="stage-slider flex-grow h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600 ${tl.stages[k].locked ? 'opacity-50' : ''}" ${tl.stages[k].locked ? 'disabled' : ''}>
+                                    <div class="relative w-12 flex-shrink-0">
+                                        <input type="number" id="setup_perc_${k}" value="${tl.stages[k].ratio.toFixed(1)}" data-stage-key="${k}" class="stage-number-input w-full text-right text-xs font-bold bg-transparent border-b border-gray-300 focus:border-blue-500 outline-none pr-3" ${tl.stages[k].locked ? 'disabled' : ''}>
+                                        <span class="absolute right-0 top-0 text-xs text-gray-400">%</span>
+                                    </div>
+                                </div>
+                            </div>`).join('')}
+                        <div class="text-center text-[10px] text-gray-400 mt-2" id="totalRatioDisplay">Total: 100%</div>
+                    </div>
+                </div>
+            </div>`;
+
+        // 2. Overview Card
+        const renderOverviewCard = () => {
+            const burnRate = tl.totalCap > 0 ? (grandTotal / tl.totalCap) * 100 : 0;
+            const burnColor = burnRate > 100 ? 'text-red-600' : (burnRate > 85 ? 'text-yellow-600' : 'text-green-600');
+            const ringColor = burnRate > 100 ? 'border-red-200' : (burnRate > 85 ? 'border-yellow-200' : 'border-green-200');
+
+            return `
+            <div id="card-overview" class="stage-card min-w-[300px] flex-shrink-0 h-full bg-gray-50 border-r border-gray-200 flex flex-col snap-center">
                 <div class="p-6 flex flex-col items-center text-center border-b border-gray-200 bg-white">
-                    <div class="w-32 h-32 rounded-full border-8 border-gray-100 flex items-center justify-center mb-2 relative">
-                        <div class="text-2xl font-bold ${grandTotal > tl.totalCap && tl.totalCap > 0 ? 'text-red-600' : 'text-green-600'}">${Math.round(tl.totalCap > 0 ? (grandTotal / tl.totalCap) * 100 : 0)}%</div>
+                    <div id="burnRateRing" class="w-32 h-32 rounded-full border-8 ${ringColor} flex items-center justify-center mb-2 relative transition-colors duration-500">
+                        <div id="burnRateText" class="text-3xl font-bold ${burnColor}">${Math.round(burnRate)}%</div>
                         <div class="absolute text-[9px] text-gray-400 bottom-6 uppercase tracking-wider">Burn Rate</div>
                     </div>
                     <h3 class="text-base font-bold text-gray-800">Budget Health</h3>
-                    <p class="text-xs text-gray-500 mt-1">Est: <strong>${formatAbbreviated(grandTotal, displayCurrency)}</strong> / Cap: <strong>${formatAbbreviated(tl.totalCap, displayCurrency)}</strong></p>
+                    <p class="text-xs text-gray-500 mt-1">Est: <strong id="ovGrandTotal">${formatAbbreviated(grandTotal, displayCurrency)}</strong> / Cap: <strong id="ovTotalCap">${formatAbbreviated(tl.totalCap, displayCurrency)}</strong></p>
                 </div>
                 <div class="p-4 flex-grow overflow-y-auto">
                     <h4 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Top Spenders</h4>
@@ -3655,213 +3834,226 @@ function showStagesModal() {
                             <div class="flex justify-between items-center text-xs p-2 bg-white rounded border border-gray-200 shadow-sm">
                                 <div class="flex items-center gap-2 overflow-hidden">
                                     <span class="font-bold text-gray-400 w-4">${idx + 1}.</span>
-                                    <span class="truncate font-medium text-gray-700">${item.desc}</span>
+                                    <div class="min-w-0">
+                                        <div class="truncate font-medium text-gray-700">${item.desc}</div>
+                                        <div class="text-[9px] text-gray-400 uppercase">${item.stage}</div>
+                                    </div>
                                 </div>
-                                <span class="font-mono font-bold text-gray-800 flex-shrink-0">${formatAbbreviated(item.est, displayCurrency)}</span>
+                                <span class="font-mono font-bold text-gray-800 flex-shrink-0">${formatAbbreviated(item.cost, displayCurrency)}</span>
                             </div>
                         `).join('')}
                     </div>
                 </div>
-            </div>
-        `;
+            </div>`;
+        };
 
+        // 3. Stage Column (With Smart Inputs)
         const renderStageColumn = (key) => {
             const config = tl.stages[key];
             const data = stageData[key];
             const cap = tl.totalCap * (config.ratio / 100);
-            const percentUsed = cap > 0 ? (data.total / cap) * 100 : 0;
-            let progressColor = percentUsed > 100 ? 'bg-red-500' : (percentUsed > 80 ? 'bg-yellow-500' : 'bg-green-500');
-            const visualWidth = Math.min(percentUsed, 100);
-
+            
             return `
-                <div id="card-${key}" class="stage-card min-w-[300px] w-full sm:w-[320px] flex-shrink-0 flex flex-col h-full bg-white border-r border-gray-200 snap-center relative">
-                    <div class="p-3 bg-white border-b border-gray-100 flex-shrink-0 sticky top-0 z-10 shadow-sm">
-                        <div class="flex justify-between items-center mb-2">
-                            <span class="font-bold text-gray-800 text-sm truncate">${config.label}</span>
-                            <div class="flex items-center gap-1">
-                                ${config.days > 0 ? `<span class="text-[9px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded border border-blue-100 font-bold">${config.days} Days</span>` : ''}
-                                <span class="text-[9px] bg-gray-100 px-1.5 py-0.5 rounded text-gray-500 border">${config.ratio.toFixed(1)}%</span>
-                            </div>
-                        </div>
-                        <div class="w-full bg-gray-100 rounded-full h-1.5 mb-2 overflow-hidden">
-                            <div class="${progressColor} h-1.5 rounded-full transition-all duration-500" style="width: ${visualWidth}%"></div>
+            <div id="card-${key}" class="stage-card min-w-[300px] w-full sm:w-[320px] flex-shrink-0 flex flex-col h-full bg-white border-r border-gray-200 snap-center">
+                <div class="p-2 bg-white border-b border-gray-100 flex-shrink-0 sticky top-0 z-20 shadow-sm">
+                    <div class="flex justify-between items-center mb-2 h-7">
+                        <div class="flex items-center gap-1.5 overflow-hidden">
+                            <button onclick="toggleStageLock('${key}')" class="text-gray-400 hover:text-blue-600 flex-shrink-0 focus:outline-none" title="Lock Allocation">
+                                ${config.locked ? '🔒' : '🔓'}
+                            </button>
+                            <span class="font-bold text-gray-800 text-xs truncate" title="${config.label}">${config.label}</span>
                         </div>
                         
-                        <button onclick="handleStageAddItem('${key}')" class="w-full py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded text-xs font-bold border border-blue-100 transition-colors flex justify-center items-center gap-1">
-                            <span>+</span> Add Line Item
-                        </button>
-                    </div>
-
-                    <div class="stage-drop-zone flex-grow overflow-y-auto p-2 space-y-2 bg-gray-50" data-stage-key="${key}">
-                        ${data.items.length > 0 ? data.items.map(item => {
-                            const est = calculateItem(item).estimated;
-                            const dailyRate = config.days > 0 ? (est / config.days) : 0;
-                            const dailyDisplay = dailyRate > 0 ? `~${formatAbbreviated(dailyRate, displayCurrency)}/day` : '—';
-                            return `
-                            <div class="stage-draggable bg-white p-2 rounded border border-gray-200 shadow-sm text-xs group hover:border-blue-400 cursor-grab active:cursor-grabbing relative" 
-                                data-item-id="${item.id}" 
-                                data-origin-section="${item._sectionName}">
-                                <div class="flex justify-between items-start mb-1">
-                                    <span class="font-semibold text-gray-700 line-clamp-2 leading-tight w-3/4">${item.description}</span>
-                                    <span class="font-mono font-bold text-gray-800">${formatAbbreviated(est, displayCurrency)}</span>
-                                </div>
-                                <div class="flex items-center justify-between text-[9px] text-gray-400">
-                                    <div class="flex flex-col gap-0.5">
-                                        <div class="flex items-center gap-1">
-                                            <span>${item.rateType === 'fixed' ? '🔒' : '🤝'}</span>
-                                            <span class="truncate max-w-[80px] opacity-75">${item._sectionName}</span>
-                                        </div>
-                                    </div>
-                                    <div class="font-mono text-blue-400 bg-blue-50 px-1 rounded">${dailyDisplay}</div>
-                                </div>
-                                <button class="absolute top-1 right-1 w-5 h-5 bg-gray-100 text-gray-400 hover:bg-red-100 hover:text-red-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20"
-                                        title="Remove from this stage"
-                                        onclick="unassignStage(event, '${item.id}', '${item._sectionName}', '${key}')">
-                                    -
-                                </button>
+                        <div class="flex items-center gap-3">
+                            <div class="relative w-12 h-6 flex items-center bg-gray-50 border border-gray-200 rounded px-1">
+                                <input type="number" id="header_perc_${key}" value="${config.ratio.toFixed(1)}" 
+                                    class="stage-number-input w-full text-right text-[10px] font-bold bg-transparent focus:outline-none no-spinner pr-2" 
+                                    data-stage-key="${key}"
+                                    ${config.locked ? 'disabled style="opacity:0.5"' : ''}
+                                    onfocus="this.select()">
+                                <span class="absolute right-1 top-1/2 -translate-y-1/2 text-[8px] text-gray-400 select-none">%</span>
                             </div>
-                        `}).join('') : '<div class="h-12 border-2 border-dashed border-gray-200 rounded flex items-center justify-center text-[10px] text-gray-400">Drop items here</div>'} 
-                    </div>
-                </div>
-            `;
-        };
 
-        const renderDocumentsCard = () => {
-            ensureDocumentData();
-            const docs = budget.documents || [];
-
-            return `
-            <div id="card-documents" class="stage-card min-w-[300px] w-full sm:w-[320px] flex-shrink-0 h-full bg-white flex flex-col snap-center relative">
-                <div class="p-4 bg-purple-900 text-white flex-shrink-0">
-                    <h3 class="text-xs font-bold text-purple-300 uppercase tracking-widest">Production Documents</h3>
-                </div>
-                <div class="flex-grow overflow-y-auto p-4 space-y-3 bg-gray-50">
-                    ${docs.length > 0 ? docs.map(doc => renderDocCard(doc, 'stages')).join('') : 
-                        `<div class="text-center py-12 text-gray-400 text-xs">
-                            <div class="text-6xl mb-4 opacity-20">📂</div>
-                            No documents yet.<br>
-                            <button onclick="showDocumentsModal()" class="mt-4 text-blue-600 hover:underline font-bold">Open Documents Hub</button>
-                        </div>`
-                    }
-                    <button onclick="showDocumentsModal()" class="w-full py-3 mt-4 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-purple-500 hover:text-purple-600 text-sm font-bold transition-colors bg-white">
-                        + Open Full Documents Hub
-                    </button>
-                </div>
-            </div>`;
-        };
-
-        const renderFilesCard = () => {
-             const attachments = budget.attachments || [];
-            return `
-            <div id="card-files" class="stage-card min-w-[300px] w-full sm:w-[320px] flex-shrink-0 h-full bg-white flex flex-col snap-center relative">
-                <div class="p-4 bg-gray-800 text-white flex-shrink-0">
-                    <h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest">Project Files</h3>
-                </div>
-                <div class="flex-grow overflow-y-auto p-4 space-y-2 bg-gray-50">
-                    ${attachments.length > 0 ? attachments.map(file => `
-                        <div class="flex items-center justify-between bg-white p-2 rounded border border-gray-200 shadow-sm group hover:border-blue-300 transition-colors">
-                            <div class="flex items-center gap-3 overflow-hidden">
-                                <div class="w-8 h-8 flex-shrink-0 bg-blue-50 text-blue-600 rounded flex items-center justify-center text-[10px] font-bold border border-blue-100">
-                                    ${file.name.split('.').pop().toUpperCase().substring(0,3)}
-                                </div>
-                                <div class="min-w-0">
-                                    <div class="text-xs font-bold text-gray-700 truncate" title="${file.name}">${getAbbreviatedName(file.name)}</div>
-                                </div>
+                            <div class="flex items-center h-6 bg-gray-50 border border-gray-200 rounded px-1.5">
+                                <span class="text-[8px] text-gray-400 uppercase mr-1 font-bold">Days:</span>
+                                <input type="number" value="${config.days}" data-global-days="${key}" 
+                                    class="w-8 text-center text-[10px] bg-transparent font-bold text-blue-600 focus:outline-none no-spinner" 
+                                    onfocus="this.dataset.old=this.value; this.value=''" 
+                                    onblur="if(this.value==='') this.value=this.dataset.old; updateGlobalDays('${key}', this.value)">
                             </div>
-                            <button onclick="removeAttachment('${file.id}'); showStagesModal();" class="text-gray-300 hover:text-red-500 px-2 opacity-60 group-hover:opacity-100 transition-opacity">×</button>
                         </div>
-                    `).join('') : `<div class="text-center py-8 text-gray-400 text-xs italic">No files attached.</div>`}
-                    <button onclick="handleUniversalImport()" class="w-full py-3 mt-4 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-blue-500 hover:text-blue-600 text-xs font-bold transition-colors bg-white">+ Upload File</button>
+                    </div>
+
+                    <div class="w-full bg-gray-100 rounded-full h-1 mb-1 overflow-hidden">
+                        <div id="bar-${key}" class="bg-blue-500 h-1 rounded-full transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                    
+                    <div class="flex justify-between text-[9px] text-gray-400 font-mono mb-1">
+                        <span id="total-${key}">${formatAbbreviated(data.total, displayCurrency)}</span>
+                        <span id="limit-${key}">Cap: ${formatAbbreviated(cap, displayCurrency)}</span>
+                    </div>
+                    
+                    <button onclick="handleStageAddItem('${key}')" class="w-full py-1 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded text-[10px] font-bold border border-blue-100 transition-colors">+ Item</button>
+                </div>
+
+                <div class="stage-drop-zone flex-grow overflow-y-auto p-2 space-y-2 bg-gray-50 h-full" data-stage-key="${key}">
+                    ${data.items.map(item => `
+                        <div class="stage-card-item bg-white p-2 rounded-lg border border-gray-200 shadow-sm group hover:border-blue-400 transition-all relative" 
+                             data-item-id="${item.id}" data-stage="${key}">
+                            
+                            <button onclick="removeStageItem('${item.id}', '${item._sec}', '${key}')" 
+                                    class="absolute -top-1.5 -right-1.5 bg-white text-gray-300 hover:text-red-500 border border-gray-200 hover:border-red-200 w-5 h-5 rounded-full flex items-center justify-center text-xs shadow-sm opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                                &times;
+                            </button>
+
+                            <div class="flex items-center gap-2 mb-2 cursor-pointer" onclick="openCrewProfile(this, event, '${item.id}', '${item._sec}')">
+                                <div class="w-7 h-7 rounded-full bg-gray-100 flex-shrink-0 flex items-center justify-center text-[10px] text-gray-500 font-bold border border-gray-200 hover:bg-blue-500 hover:text-white transition-colors">
+                                    ${item.crew?.name?.charAt(0) || '👤'}
+                                </div>
+                                <div class="min-w-0 flex-1">
+                                    <div class="text-xs font-bold text-gray-700 truncate" title="${item.description}">${item.description}</div>
+                                </div>
+                                <div class="text-xs font-mono font-bold text-blue-600 flex-shrink-0" id="cost-${item.id}-${key}">
+                                    ${formatAbbreviated(item._sCost, displayCurrency)}
+                                </div>
+                            </div>
+
+                            <div class="flex gap-2 items-center h-7">
+                                <div class="relative w-14 h-full">
+                                    <span class="absolute left-1.5 top-1/2 -translate-y-1/2 text-[8px] text-gray-400 font-bold select-none">D</span>
+                                    <input type="number" value="${item._sDays}" 
+                                        class="w-full h-full pl-4 pr-1 text-center text-xs font-bold bg-gray-50 border border-gray-200 rounded focus:bg-white focus:border-blue-400 focus:ring-1 focus:ring-blue-200 outline-none transition-all"
+                                        onfocus="this.dataset.old=this.value; this.value=''" 
+                                        onblur="if(this.value===''){this.value=this.dataset.old; this.dispatchEvent(new Event('input'));}"
+                                        oninput="updateStageItem('${item.id}', '${item._sec}', '${key}', 'days', this.value)">
+                                </div>
+                                <div class="relative flex-1 h-full">
+                                    <span class="absolute left-2 top-1/2 -translate-y-1/2 text-[8px] text-gray-400 font-bold select-none">$</span>
+                                    <input type="number" value="${item._sRate}" 
+                                        class="w-full h-full pl-4 pr-2 text-right text-xs font-mono bg-gray-50 border border-gray-200 rounded focus:bg-white focus:border-blue-400 focus:ring-1 focus:ring-blue-200 outline-none transition-all"
+                                        onfocus="this.dataset.old=this.value; this.value=''" 
+                                        onblur="if(this.value===''){this.value=this.dataset.old; this.dispatchEvent(new Event('input'));}"
+                                        oninput="updateStageItem('${item.id}', '${item._sec}', '${key}', 'rate', this.value)">
+                                </div>
+                            </div>
+                        </div>
+                    `).join('')}
                 </div>
             </div>`;
         };
 
+        // D. Build Modal
         const content = `
-            <div class="flex flex-col h-[80vh] sm:h-[600px] w-full max-w-[95vw] overflow-hidden bg-white rounded-xl shadow-2xl relative group/carousel">
-                ${renderNav()}
+            <div class="flex flex-col h-[80vh] sm:h-[600px] w-full max-w-[95vw] bg-white rounded-xl shadow-2xl overflow-hidden relative">
+                <div class="flex items-center gap-2 overflow-x-auto h-8 px-2 bg-gray-50 border-b flex-shrink-0 no-scrollbar">
+                    ${validKeys.map(k => `<button onclick="document.getElementById('card-${k}').scrollIntoView({behavior:'smooth'})" class="text-[10px] font-bold uppercase text-gray-500 hover:text-blue-600 px-2">${k}</button>`).join('')}
+                </div>
                 <div id="stagesCarousel" class="flex flex-row overflow-x-auto h-full snap-x snap-mandatory scroll-smooth">
                     ${renderSetupCard()}
                     ${renderOverviewCard()}
                     ${validKeys.map(k => renderStageColumn(k)).join('')}
-                    ${renderDocumentsCard()}
-                    ${renderFilesCard()}
                 </div>
-                <button onclick="scrollCarousel('left')" class="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/80 hover:bg-white backdrop-blur border border-gray-200 rounded-full shadow-lg flex items-center justify-center text-gray-600 opacity-0 group-hover/carousel:opacity-100 transition-opacity z-20 hidden sm:flex"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
-                <button onclick="scrollCarousel('right')" class="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/80 hover:bg-white backdrop-blur border border-gray-200 rounded-full shadow-lg flex items-center justify-center text-gray-600 opacity-0 group-hover/carousel:opacity-100 transition-opacity z-20 hidden sm:flex"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
-            </div>
-        `;
+            </div>`;
 
         createModal('stagesView', '', content, 'max-w-none w-fit bg-transparent shadow-none');
-        
-        // Modal styling adjustments
         const header = document.querySelector('#stagesViewModal .bg-gray-50.border-b');
-        if(header) {
-            header.classList.remove('justify-between');
-            header.classList.add('relative', 'justify-end'); 
-            header.insertAdjacentHTML('afterbegin', '<div class="absolute inset-x-0 top-4 text-center pointer-events-none"><span class="text-gray-400 font-light tracking-widest text-xl bg-white/90 px-2">STAGES</span></div>');
-            const h2 = header.querySelector('h2');
-            if(h2) h2.style.display = 'none';
-        }
-
+        if(header) header.style.display = 'none';
         const body = document.getElementById('stagesViewBody');
-        if(body) { body.classList.remove('p-4'); body.style.padding = '0'; }
-        const contentDiv = document.getElementById('stagesViewContent');
-        if(contentDiv) { contentDiv.classList.remove('bg-white', 'shadow-xl', 'rounded-lg'); contentDiv.classList.add('bg-transparent', 'shadow-none'); }
+        if(body) body.style.padding = '0';
 
+        // E. Bindings
         setTimeout(() => {
-            // Listeners
-            const capInput = document.getElementById('tlTotalCapInput');
-            if(capInput) {
-                capInput.addEventListener('input', (e) => { budget.targetLock.totalCap = parseFloat(e.target.value) || 0; });
-                capInput.addEventListener('blur', () => { pushToHistory('Updated Total Cap'); showStagesModal(); });
-            }
+            const bindInput = (el, isInput) => {
+                el.addEventListener(isInput ? 'change' : 'input', (e) => {
+                    balanceStageSliders(e.target.dataset.stageKey, parseFloat(e.target.value));
+                    updateAllHeaders(); 
+                });
+            };
+            document.querySelectorAll('.stage-slider').forEach(el => bindInput(el, false));
+            document.querySelectorAll('.stage-number-input').forEach(el => bindInput(el, true));
 
-            document.getElementById('syncDaysBtn')?.addEventListener('click', () => {
-                if(confirm("Sync all item quantities to match Stage Days?")) {
-                    Object.entries(budget.sections).forEach(([_, section]) => {
-                        section.items.forEach(item => {
-                            if (item.unit === 'Day' || item.unit === 'Week') { 
-                                const stages = Array.isArray(item.assignedStage) ? item.assignedStage : [item.assignedStage || 'prod'];
-                                let totalDays = 0;
-                                stages.forEach(k => { if(validKeys.includes(k)) totalDays += (budget.targetLock.stages[k]?.days || 0); });
-                                if (totalDays > 0) item.quantity = totalDays;
-                            }
-                        });
-                    });
-                    pushToHistory(`Synced days`);
-                    showStagesModal(); 
-                    render(); 
+            window.updateAllHeaders = () => {
+                let totalPct = 0;
+                let grandLiveTotal = 0;
+
+                validKeys.forEach(key => {
+                    const cfg = budget.targetLock.stages[key];
+                    const cap = budget.targetLock.totalCap * (cfg.ratio / 100);
+                    totalPct += cfg.ratio;
+
+                    const sIn = document.querySelector(`.stage-slider[data-stage-key="${key}"]`);
+                    const nIn = document.getElementById(`setup_perc_${key}`);
+                    const hIn = document.getElementById(`header_perc_${key}`);
+                    
+                    if(sIn) sIn.value = cfg.ratio;
+                    if(nIn && document.activeElement !== nIn) nIn.value = cfg.ratio.toFixed(1);
+                    if(hIn && document.activeElement !== hIn) hIn.value = cfg.ratio.toFixed(1);
+
+                    document.getElementById(`disp_amt_${key}`).textContent = formatAbbreviated(cap, displayCurrency);
+                    document.getElementById(`limit-${key}`).textContent = `Cap: ${formatAbbreviated(cap, displayCurrency)}`;
+                    
+                    let liveTotal = 0;
+                    Object.values(budget.sections).forEach(sec => sec.items.forEach(i => {
+                        if(i.stageData && i.stageData[key]) liveTotal += (parseFloat(i.stageData[key].days)||0) * (parseFloat(i.stageData[key].rate)||0);
+                    }));
+                    grandLiveTotal += liveTotal;
+                    
+                    document.getElementById(`total-${key}`).textContent = formatAbbreviated(liveTotal, displayCurrency);
+                    const bar = document.getElementById(`bar-${key}`);
+                    if(bar) {
+                        const w = cap > 0 ? (liveTotal/cap)*100 : 0;
+                        bar.style.width = `${Math.min(w,100)}%`;
+                        bar.className = `h-1 rounded-full transition-all duration-300 ${w>100?'bg-red-500':'bg-blue-500'}`;
+                    }
+                });
+
+                const ovTotal = document.getElementById('ovGrandTotal');
+                const ovCap = document.getElementById('ovTotalCap');
+                const ringTxt = document.getElementById('burnRateText');
+                const ring = document.getElementById('burnRateRing');
+                
+                if(ovTotal) ovTotal.textContent = formatAbbreviated(grandLiveTotal, displayCurrency);
+                if(ovCap) ovCap.textContent = formatAbbreviated(budget.targetLock.totalCap, displayCurrency);
+                
+                if(ringTxt && ring) {
+                    const br = budget.targetLock.totalCap > 0 ? (grandLiveTotal / budget.targetLock.totalCap) * 100 : 0;
+                    ringTxt.textContent = Math.round(br) + '%';
+                    const rc = br > 100 ? 'border-red-200' : (br > 85 ? 'border-yellow-200' : 'border-green-200');
+                    const tc = br > 100 ? 'text-red-600' : (br > 85 ? 'text-yellow-600' : 'text-green-600');
+                    ring.className = `w-32 h-32 rounded-full border-8 ${rc} flex items-center justify-center mb-2 relative transition-colors duration-500`;
+                    ringTxt.className = `text-3xl font-bold ${tc}`;
                 }
-            });
 
-            document.querySelectorAll('.stage-slider').forEach(slider => {
-                slider.addEventListener('input', (e) => {
-                    const key = e.target.dataset.stageKey;
-                    const newVal = parseFloat(e.target.value);
-                    const stages = budget.targetLock.stages;
-                    stages[key].ratio = newVal;
-                    // (Balancing logic skipped for brevity, same as before)
-                    document.getElementById(`disp_perc_${key}`).textContent = newVal.toFixed(1) + '%';
-                    document.getElementById(`disp_amt_${key}`).textContent = formatAbbreviated(budget.targetLock.totalCap * (newVal/100), displayCurrency);
-                });
-                slider.addEventListener('change', () => { pushToHistory('Updated Stage Ratios'); showStagesModal(); }); 
-            });
+                const totDisp = document.getElementById('totalRatioDisplay');
+                if(totDisp) {
+                    totDisp.textContent = `Total: ${Math.round(totalPct)}%`;
+                    totDisp.className = `text-center text-[10px] mt-2 font-bold ${Math.round(totalPct)===100?'text-green-600':'text-red-500'}`;
+                }
+            };
+
+            window.updateStageItem = (itemId, sectionName, stageKey, field, val) => {
+                const item = budget.sections[sectionName].items.find(i => i.id === itemId);
+                if (item && item.stageData && item.stageData[stageKey]) {
+                    item.stageData[stageKey][field] = parseFloat(val) || 0;
+                    syncStageToMain(item);
+                    const cost = item.stageData[stageKey].days * item.stageData[stageKey].rate;
+                    const cEl = document.getElementById(`cost-${itemId}-${stageKey}`);
+                    if(cEl) cEl.textContent = formatAbbreviated(cost, displayCurrency);
+                    updateAllHeaders();
+                    render();
+                }
+            };
+
+            window.updateGlobalDays = (key, val) => { budget.targetLock.stages[key].days = parseFloat(val)||0; pushToHistory('Updated Days'); };
+            window.toggleStageLock = (key) => { budget.targetLock.stages[key].locked = !budget.targetLock.stages[key].locked; showStagesModal(); };
             
-             document.querySelectorAll('input[data-stage-days]').forEach(input => {
-                input.addEventListener('blur', (e) => {
-                     const key = e.target.dataset.stageDays;
-                     budget.targetLock.stages[key].days = parseFloat(e.target.value) || 0;
-                     pushToHistory('Updated Stage Days');
-                });
-            });
-
-            updateActiveNav('card-setup');
+            updateAllHeaders(); 
             initializeStageDragAndDrop();
-        }, 100);
-    } catch(err) {
-        console.error(err);
-    }
+        }, 50);
+
+    } catch(err) { console.error(err); }
 }
+
 
 /* -- P5 -- */
 
@@ -4818,48 +5010,63 @@ function openDocumentViewer(docId, context = 'hub') {
 
     if (!hasContent && !hasAttachment) {
         // Blank state – offer two primary actions
-        viewerContent = `
-            <div class="text-center py-12 px-6">
-                <div class="w-24 h-24 mx-auto mb-6 bg-gray-100 rounded-full flex items-center justify-center text-5xl">
-                    ${doc.icon || '📄'}
-                </div>
-                <h3 class="text-xl font-bold text-gray-800 mb-2">${doc.label}</h3>
-                <p class="text-sm text-gray-500 mb-8">This document is empty. Choose how to start:</p>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-md mx-auto">
-                    <button onclick="startWithTemplate('${docId}')" 
-                            class="py-4 px-6 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 shadow-md transition-transform hover:scale-105">
-                        <div class="text-3xl mb-2">📝</div>
-                        Use Template
-                    </button>
-                    <button onclick="attachFileToDocument('${docId}')" 
-                            class="py-4 px-6 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 shadow-md transition-transform hover:scale-105">
-                        <div class="text-3xl mb-2">📎</div>
-                        Attach Existing File
-                    </button>
-                </div>
-            </div>`;
-    } else {
-        // Document has content or attachment
-        const attachment = budget.attachments?.find(a => a.docId === docId);
-
-        if (doc.content && doc.content.type === 'template') {
-            // Existing template editor (unchanged from Batch 2)
-            const fields = doc.content.fields;
-            const data = doc.content.data;
-
-                        viewerContent = `
+                    viewerContent = `
                 <div class="p-6 max-w-4xl mx-auto">
                     <div class="flex justify-between items-center mb-6">
                         <h3 class="text-xl font-bold text-gray-800">${doc.content.templateLabel || doc.label}</h3>
-                        <div class="flex gap-3">
+                        <div class="flex gap-3 items-center">
+                            ${doc.content.templateId === 'crewList' ? `
+                                <button onclick="autoFillCrewList('${docId}')" 
+                                        class="inline-flex items-center gap-2 px-5 py-3 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 shadow-md transition-all">
+                                    <span class="text-xl">✨</span>
+                                    Fill
+                                </button>` : ''}
+                            <button onclick="downloadCrewList('${docId}')" 
+                                    class="w-12 h-12 bg-gray-800 text-white rounded-lg hover:bg-gray-900 shadow-md flex items-center justify-center transition-all"
+                                    title="Download as JPEG or PDF">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="7 10 12 15 17 10"></polyline>
+                                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                                </svg>
+                           </button>
+                        </div>
+                    </div>
+                    <div id="crewListTable" class="space-y-8">
+                        ${doc.content.templateId === 'crewList' ? renderCrewListTable(doc) : 
+                            `<div class="prose prose-sm max-w-none p-8 bg-gray-50 rounded-lg border border-gray-200 text-center">
+                                <p class="text-gray-600 italic">Preview for "${doc.label}"</p>
+                                <p class="text-xs text-gray-400 mt-4">Content rendering for this template is in development.</p>
+                            </div>`
+                        }
+                    </div>
+                </div>`;
+    } else {
+        // Document has content or attachment – existing attachment handling (unchanged)
+        const attachment = budget.attachments?.find(a => a.docId === docId);
+
+ /* --- v19.54 Template Viewer Conditional v19.54 --- */
+        if (doc.content && doc.content.type === 'template') {
+            if (doc.content.templateId === 'crewList') {
+/* --- v19.54 Crew List Fill & Download v19.54 --- */
+                viewerContent = `
+                <div class="p-6 max-w-4xl mx-auto">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-xl font-bold text-gray-800">${doc.content.templateLabel || doc.label}</h3>
+                        <div class="flex gap-3 items-center">
                             <button onclick="autoFillCrewList('${docId}')" 
-                                    class="px-5 py-2.5 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 shadow-md flex items-center gap-2">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
-                                Auto-Fill from Budget
+                                    class="inline-flex items-center gap-2 px-5 py-3 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 shadow-md transition-all">
+                                <span class="text-xl">✨</span>
+                                Fill
                             </button>
-                            <button onclick="saveDocumentContent('${docId}')" 
-                                    class="px-6 py-2 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 shadow-md">
-                                Save
+                            <button onclick="downloadCrewList('${docId}')" 
+                                    class="w-12 h-12 bg-gray-800 text-white rounded-lg hover:bg-gray-900 shadow-md flex items-center justify-center transition-all"
+                                    title="Download Crew List (JPEG / PDF)">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="7 10 12 15 17 10"></polyline>
+                                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                                </svg>
                             </button>
                         </div>
                     </div>
@@ -4867,6 +5074,25 @@ function openDocumentViewer(docId, context = 'hub') {
                         ${renderCrewListTable(doc)}
                     </div>
                 </div>`;
+/* --- v19.54 Generic Template Full-Page Snapshot for Publish v19.54 --- */
+            } else {
+                // Generic template – full-page white layout for reliable publish/share snapshot
+                viewerContent = `
+                <div class="p-12 bg-white" style="min-height: 100vh;">
+                    <div class="max-w-4xl mx-auto">
+                        <h1 class="text-4xl font-bold text-center mb-8 text-gray-800">${budget.projectName || 'Project'} - ${doc.label}</h1>
+                        <p class="text-center text-gray-500 mb-12">Generated: ${new Date().toLocaleDateString()}</p>
+                        <div class="bg-gray-50 rounded-xl border border-gray-200 p-20 text-center">
+                            <p class="text-3xl text-gray-700 mb-6">${doc.label}</p>
+                            <p class="text-xl text-gray-500 italic">Document content in development</p>
+                            <p class="text-sm text-gray-400 mt-12">This page is a snapshot for sharing and preview.</p>
+                        </div>
+                        <div class="mt-32 text-center text-xs text-gray-400">
+                            Generated by mooBudgetTool
+                        </div>
+                    </div>
+                </div>`;
+            }
         }
                 else if (attachment && attachment.previewContent) {
             const prev = attachment.previewContent;
@@ -5180,6 +5406,111 @@ function renderCrewListTable(doc) {
     `).join('');
 }
 
+/* --- v19.54 Crew List Download v19.54 --- */
+async function downloadCrewList(docId) {
+    const doc = budget.documents.find(d => d.id === docId);
+    if (!doc || doc.content.templateId !== 'crewList') return;
+
+    const tableHTML = renderCrewListTable(doc);
+    const fullHTML = `
+        <div class="p-12 bg-white">
+            <h1 class="text-3xl font-bold text-center mb-6">${budget.projectName || 'Project'} - Crew Contact List</h1>
+            <p class="text-center text-sm text-gray-500 mb-8">Generated: ${new Date().toLocaleDateString()}</p>
+            ${tableHTML}
+        </div>`;
+
+    const container = document.createElement('div');
+    container.style.position = 'absolute';
+    container.style.left = '-9999px';
+    container.innerHTML = `<div id="crewDownloadRender" style="width: 800px;">${fullHTML}</div>`;
+    document.body.appendChild(container);
+
+    try {
+        const canvas = await html2canvas(document.getElementById('crewDownloadRender'), { scale: 2 });
+        const imgData = canvas.toDataURL('image/jpeg', 0.95);
+
+        // Prompt user
+        const choice = prompt("Download Crew List as:\n1 = PDF\n2 = JPEG\nEnter 1, 2, or 1,2", "1,2");
+        if (!choice) return;
+
+        const wantPdf = choice.includes('1');
+        const wantJpg = choice.includes('2');
+
+        if (wantJpg) {
+            const link = document.createElement('a');
+            link.href = imgData;
+            link.download = `${budget.projectName || 'CrewList'}_CrewList.jpg`;
+            link.click();
+        }
+        if (wantPdf) {
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+            pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+            pdf.save(`${budget.projectName || 'CrewList'}_CrewList.pdf`);
+        }
+    } catch (e) {
+        alert("Download failed: " + e.message);
+    } finally {
+        document.body.removeChild(container);
+    }
+}
+
+function renderCrewListTable(doc) {
+    const crewByDept = {};
+    Object.entries(budget.sections).forEach(([sectionName, section]) => {
+        const dept = sectionName;
+        if (!crewByDept[dept]) crewByDept[dept] = [];
+        section.items.forEach(item => {
+            if (item.crew && item.crew.name) {
+                crewByDept[dept].push({
+                    role: item.description,
+                    name: item.crew.name || '',
+                    phone: item.crew.phone || '',
+                    email: item.crew.email || '',
+                    diet: item.crew.diet || '-',     // Placeholder
+                    notes: item.crew.notes || '-'
+                });
+            }
+        });
+    });
+
+    if (Object.keys(crewByDept).length === 0) {
+        return `<p class="text-center text-gray-500 py-12">No crew assigned. Assign contacts in budget → Auto-Fill.</p>`;
+    }
+
+    return Object.entries(crewByDept).map(([dept, members]) => `
+        <div class="mb-8">
+            <h4 class="font-bold text-xl text-gray-800 mb-4 border-b-2 border-gray-300 pb-2">${dept}</h4>
+            <table class="w-full text-sm border-collapse bg-white shadow-sm rounded-lg overflow-hidden">
+                <thead class="bg-gray-100 text-gray-600 uppercase text-xs">
+                    <tr>
+                        <th class="p-3 text-left">Name</th>
+                        <th class="p-3 text-left">Role</th>
+                        <th class="p-3 text-left">Phone</th>
+                        <th class="p-3 text-left">Email</th>
+                        <th class="p-3 text-left">Diet Notes</th>
+                        <th class="p-3 text-left">Notes</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                    ${members.map(m => `
+                        <tr class="hover:bg-gray-50">
+                            <td class="p-3 font-medium">${m.name}</td>
+                            <td class="p-3">${m.role}</td>
+                            <td class="p-3">${m.phone}</td>
+                            <td class="p-3"><a href="mailto:${m.email}" class="text-blue-600 hover:underline">${m.email || '-'}</a></td>
+                            <td class="p-3 text-gray-600">${m.diet}</td>
+                            <td class="p-3 text-gray-600">${m.notes}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        </div>
+    `).join('');
+}
+
 function autoFillCrewList(docId) {
     if (!confirm("Auto-fill Crew Contact List from assigned crew in budget?")) return;
     const doc = budget.documents.find(d => d.id === docId);
@@ -5378,6 +5709,114 @@ function init() {
     });
 }
 
+/* --- v19.55 Contacts Manager (Open Gate Integration) --- */
+
+const getGlobalContacts = () => JSON.parse(localStorage.getItem('moo_contacts') || '[]');
+const saveGlobalContacts = (list) => localStorage.setItem('moo_contacts', JSON.stringify(list));
+
+function renderContactsList(list) {
+    if (list.length === 0) return '<div class="p-4 text-center text-gray-400 text-xs">No contacts yet. Add one or Import CSV.</div>';
+    return list.map((c, i) => `
+        <div class="flex justify-between items-center p-2 border-b hover:bg-gray-50 text-sm group">
+            <div class="flex-1 min-w-0">
+                <div class="font-bold text-gray-800 truncate">${c.name}</div>
+                <div class="text-xs text-gray-500 truncate">${c.role} • ${c.contact || '-'}</div>
+            </div>
+            <button onclick="deleteContact(${i})" class="text-gray-300 hover:text-red-500 px-2 opacity-0 group-hover:opacity-100 transition-opacity">×</button>
+        </div>
+    `).join('');
+}
+
+function bindContactsEvents() {
+    document.getElementById('addContactForm')?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const name = document.getElementById('cName').value.trim();
+        const role = document.getElementById('cRole').value.trim();
+        const contact = document.getElementById('cContact').value.trim();
+        if (name && role) {
+            const list = getGlobalContacts();
+            list.unshift({ name, role, contact });
+            saveGlobalContacts(list);
+            window.switchSettingsTab('contacts', document.querySelector('button[onclick*="contacts"]'));
+        }
+    });
+
+    document.getElementById('contactSearch')?.addEventListener('input', (e) => {
+        const term = e.target.value.toLowerCase();
+        const all = getGlobalContacts();
+        const filtered = all.filter(c => c.name.toLowerCase().includes(term) || c.role.toLowerCase().includes(term));
+        document.getElementById('contactsListBody').innerHTML = renderContactsList(filtered);
+    });
+}
+
+window.deleteContact = function(idx) {
+    if(confirm("Delete contact?")) {
+        const list = getGlobalContacts();
+        list.splice(idx, 1);
+        saveGlobalContacts(list);
+        window.switchSettingsTab('contacts', document.querySelector('button[onclick*="contacts"]'));
+    }
+};
+
+window.importContactsCSV = function(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const text = e.target.result;
+        const lines = text.split('\n');
+        const list = getGlobalContacts();
+        let added = 0;
+        lines.forEach(line => {
+            const cols = line.split(','); 
+            if (cols.length >= 2) {
+                const name = cols[0].trim();
+                const role = cols[1].trim();
+                const contact = cols[2] ? cols[2].trim() : '';
+                if (name && role && name.toLowerCase() !== 'name') { 
+                    list.push({ name, role, contact });
+                    added++;
+                }
+            }
+        });
+        saveGlobalContacts(list);
+        alert(`Imported ${added} contacts.`);
+        window.switchSettingsTab('contacts', document.querySelector('button[onclick*="contacts"]'));
+    };
+    reader.readAsText(file);
+};
+
+window.autoAssignRolesFromContacts = function() {
+    if(!budget) return;
+    const contacts = getGlobalContacts();
+    if(contacts.length === 0) return alert("Contact database is empty.");
+    
+    let matched = 0;
+    Object.values(budget.sections).forEach(section => {
+        section.items.forEach(item => {
+            if (!item.crew || !item.crew.name) {
+                const desc = item.description.toLowerCase();
+                const match = contacts.find(c => desc.includes(c.role.toLowerCase()));
+                if (match) {
+                    item.crew = { 
+                        name: match.name, 
+                        phone: match.contact.includes('@') ? '' : match.contact, 
+                        email: match.contact.includes('@') ? match.contact : '' 
+                    };
+                    matched++;
+                }
+            }
+        });
+    });
+    
+    if (matched > 0) {
+        pushToHistory(`Auto-assigned ${matched} roles from Open Gate`);
+        render();
+        alert(`Success! Assigned ${matched} crew members.`);
+    } else {
+        alert("No matching roles found in current budget.");
+    }
+};
 
 document.addEventListener('DOMContentLoaded', init);
 
