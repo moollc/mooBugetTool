@@ -14,6 +14,8 @@
 
 	<script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
@@ -1147,108 +1149,78 @@ const getDefaultBudget = (name, type = 'Commercial') => {
             container.innerHTML = `<div id="statusMsgWrapper" class="scrolling-text-wrapper"><span id="statusBarMessage" class="font-medium px-1">${message}</span></div><div class="flex items-center flex-shrink-0 pl-2 border-l border-blue-200 ml-2"><button id="undoBtn" class="px-2 py-1 rounded-md text-sm font-semibold ${canUndo ? 'bg-blue-200 hover:bg-blue-300' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}" ${!canUndo ? 'disabled' : ''}>Undo</button><button id="redoBtn" class="ml-2 px-2 py-1 rounded-md text-sm font-semibold ${canRedo ? 'bg-blue-200 hover:bg-blue-300' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}" ${!canRedo ? 'disabled' : ''}>Redo</button></div>`;
         }
 
+/* --- v19.54 RenderEngine (Centralized UI Logic) --- */
+const RenderEngine = {
+    esc(str) {
+        if (str === null || str === undefined) return '';
+        return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#x27;');
+    },
+
+    placeholder(text = 'No items found.') {
+        return `<div class="p-8 text-center text-xs text-gray-400 italic">${this.esc(text)}</div>`;
+    },
+
+    table({ head = [], body = [], headClasses = 'bg-gray-100 text-gray-600', rowClasses = '', cellClasses = '' }) {
+        if (body.length === 0) return this.placeholder();
+        return `<table class="w-full text-sm border-collapse">${head.length ? `<thead class="${headClasses}"><tr>${head.map(h => `<th class="p-2 text-left font-bold ${cellClasses}">${h}</th>`).join('')}</tr></thead>` : ''}<tbody class="${rowClasses}">${body.map(row => `<tr class="border-b hover:bg-gray-50 transition-colors">${row.map(cell => `<td class="p-2 ${cellClasses}">${cell}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+    },
+
+    section({ name, total = '', isOpen = true, content = '' }) {
+        const safeName = this.esc(name);
+        return `<div class="mb-4 bg-white rounded-lg shadow-sm border border-gray-200"><div class="relative rounded-t-lg min-h-[44px] px-3 py-2 flex justify-between items-center cursor-pointer bg-gray-50 select-none hover:bg-gray-100 transition-colors" data-section-toggle="${safeName}"><div class="flex items-center gap-2"><span class="section-arrow text-gray-400 text-xs">${isOpen ? '▼' : '▶'}</span><h2 class="text-sm font-bold text-gray-800 uppercase tracking-wide leading-tight">${safeName}</h2></div><span data-section-total="${safeName}" class="text-sm font-bold text-blue-600 font-mono flex-shrink-0">${total}</span></div><div class="section-content rounded-b-lg ${isOpen ? '' : 'hidden'}">${content}</div></div>`;
+    },
+
+    // 5. Line Item Row (FIXED: Original SVG Icons Restored)
+    lineItem(item, sectionName) {
+        const safeId = this.esc(item.id);
+        const safeSection = this.esc(sectionName || 'General');
+        const isMobile = window.innerWidth < 768;
+        const formatMoney = (val) => isMobile ? formatAbbreviated(val, displayCurrency) : formatCurrency(toDisp(val));
+        const rateDisp = toDisp(item.rate);
+        const actualDisp = toDisp(item.actual);
+        const { estimated, variance } = calculateItem(item);
+        const crew = item.crew || {};
+        const hasCrew = !!crew.name;
+        let initials = '?', avatarClass = 'unassigned', titleText = 'Unassigned';
+        if (hasCrew) { initials = this.esc(crew.name).split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase(); avatarClass = 'assigned'; titleText = this.esc(crew.name); }
+
+        // Restored SVGs
+        const cleanPhone = crew.phone ? crew.phone.replace(/[^0-9]/g, '') : '';
+        const waCallBtn = cleanPhone ? `<a href="https://wa.me/${cleanPhone}" target="_blank" class="contact-btn btn-wa-call" title="Call"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg></a>` : '';
+        const waMsgBtn = cleanPhone ? `<a href="https://wa.me/${cleanPhone}" target="_blank" class="contact-btn btn-wa-msg" title="Message"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg></a>` : '';
+        const emailBtn = crew.email ? `<a href="mailto:${this.esc(crew.email)}" class="contact-btn btn-email" title="Email"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg></a>` : '';
+
+        const unitColors = { 'Day': 'blue', 'Week': 'indigo', 'Flat': 'emerald', 'Hour': 'purple', 'Policy': 'orange' };
+        const unitClass = `bg-${unitColors[item.unit] || 'gray'}-100 text-${unitColors[item.unit] || 'gray'}-700 border-${unitColors[item.unit] || 'gray'}-200`;
+        const isLocked = item.rateType === 'fixed';
+
+        return `<tr class="draggable-row border-b hover:bg-gray-100 group" data-item-id="${safeId}" data-section="${safeSection}"><td class="p-1 w-12 text-center relative"><div class="crew-wrapper"><div class="crew-avatar ${avatarClass}" onclick="toggleCrewPopup(this, event)" ondblclick="openCrewProfile(this, event, '${safeId}', '${safeSection}')" title="${titleText}">${initials}</div><div class="contact-popup">${waCallBtn} ${waMsgBtn} ${emailBtn}<button onclick="openCrewProfile(this, event, '${safeId}', '${safeSection}')" class="contact-btn bg-gray-400">✎</button></div></div></td><td class="p-2 text-center text-gray-400 cursor-grab drag-handle touch-none select-none hover:text-blue-500 w-8">⠿</td><td class="p-2"><input type="text" data-field="description" data-id="${safeId}" data-section="${safeSection}" value="${this.esc(item.description)}" class="w-full bg-transparent p-1 rounded-md mobile-desc-truncate focus:bg-white focus:ring-1 focus:ring-blue-200" /></td><td class="p-2 text-center md:w-16"><input type="number" data-field="quantity" data-id="${safeId}" data-section="${safeSection}" value="${item.quantity}" class="w-full bg-transparent p-1 rounded-md text-center focus:bg-white" /></td><td class="p-2 relative md:w-20"><span class="md:hidden absolute inset-0 m-auto w-6 h-6 flex items-center justify-center rounded text-xs font-bold pointer-events-none ${unitClass}">${item.unit.charAt(0)}</span><select data-field="unit" data-id="${safeId}" data-section="${safeSection}" class="w-full text-center text-xs font-semibold rounded px-1 py-1 appearance-none cursor-pointer border ${isMobile ? 'opacity-0' : unitClass}">${['Day','Week','Flat','Policy','Hour'].map(u => `<option ${item.unit === u ? 'selected' : ''}>${u}</option>`).join('')}</select></td><td class="p-2 text-left flex items-center justify-start gap-1 md:w-32"><button onclick="toggleRateType('${safeId}', '${safeSection}')" class="w-7 h-7 rounded flex items-center justify-center text-sm border ${isLocked ? 'text-red-500 bg-red-50 border-red-200' : 'text-green-600 bg-green-50 border-green-200'} hover:scale-110 transition-transform flex-shrink-0" title="${isLocked ? 'Fixed' : 'Negotiable'}">${isLocked ? '🔒' : '🤝'}</button><input type="number" step="0.01" data-field="rate" data-id="${safeId}" data-section="${safeSection}" value="${rateDisp.toFixed(2)}" class="w-full bg-transparent p-1 rounded-md text-left font-mono focus:bg-white" /></td><td data-estimated-id="${safeId}" class="p-2 text-left font-medium text-gray-700 md:w-28 font-mono">${formatMoney(estimated)}</td><td class="p-2 text-left md:w-28"><input type="number" step="0.01" data-field="actual" data-id="${safeId}" data-section="${safeSection}" value="${actualDisp.toFixed(2)}" class="w-full bg-blue-50 p-1 rounded-md text-left font-mono focus:ring-1 focus:ring-blue-300" /></td><td data-variance-id="${safeId}" class="p-2 text-right font-medium text-xs md:w-28 font-mono ${variance > 0 ? 'text-red-500' : 'text-green-600'}">${formatMoney(variance)}</td><td class="p-2 text-center w-10"><button data-remove-item="${safeId}" data-section="${safeSection}" class="text-gray-400 hover:text-red-500 transition-colors">🗑️</button></td></tr>`;
+    },
+
+    // 6. Document Card (FIXED: Aeroplane Icon)
+    docCard(doc, context = 'hub') {
+        const isSelectMode = window.docHubState && window.docHubState.mode === 'select';
+        const isSelected = window.docHubState && window.docHubState.selected.has(doc.id);
+        const clickAction = isSelectMode ? `toggleDocSelection('${doc.id}')` : `openDocumentViewer('${doc.id}', '${context}')`;
+        const safeLabel = this.esc(doc.label);
+
+        return `<div onclick="${clickAction}" class="doc-card group relative flex items-center p-3 bg-white border ${isSelected && isSelectMode ? 'border-blue-500 ring-1 ring-blue-500 bg-blue-50' : 'border-gray-200'} rounded-lg hover:shadow-md transition-all h-16 w-full select-none cursor-pointer" data-label="${safeLabel.toLowerCase()}">${isSelectMode ? `<div class="mr-3 w-5 h-5 rounded border flex items-center justify-center ${isSelected ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-gray-300'}">${isSelected ? '✓' : ''}</div>` : `<div class="w-10 h-10 rounded-md bg-gray-50 flex-shrink-0 flex items-center justify-center text-lg mr-3 border border-gray-100 shadow-sm">${doc.icon || '📄'}</div>`}<div class="min-w-0 flex-1 flex flex-col justify-center"><span class="text-sm font-bold text-gray-800 truncate leading-tight block" title="${safeLabel}">${safeLabel}</span><span class="text-[10px] text-gray-400 uppercase leading-tight mt-0.5 block">${this.esc(doc.status || 'Draft')}</span></div>${!isSelectMode ? RenderEngine.docActions(doc.id, context) : ''}</div>`;
+    },
+
+    // 7. Document Actions (Aeroplane Share + Delete)
+    docActions(docId, context = 'hub') {
+        return `<div class="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1 bg-white pl-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"><button onclick="event.stopPropagation(); handlePublishMenu('${docId}')" class="w-8 h-8 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white flex items-center justify-center border border-blue-100 transition-colors" title="Share"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg></button><button onclick="event.stopPropagation(); deleteSingleDoc('${docId}')" class="w-8 h-8 flex items-center justify-center rounded-full text-gray-300 hover:bg-red-50 hover:text-red-500 transition-colors border border-transparent hover:border-red-100" title="Delete"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button></div>`;
+    },
+
+    stageCard(item, stageKey) {
+        const cost = (parseFloat(item._sDays)||0) * (parseFloat(item._sRate)||0);
+        return `<div class="stage-card-item bg-white p-2 rounded-lg border border-gray-200 shadow-sm group hover:border-blue-400 transition-all relative" data-item-id="${item.id}" data-stage="${stageKey}"><button onclick="removeStageItem('${item.id}', '${this.esc(item._sec)}', '${stageKey}')" class="absolute -top-1.5 -right-1.5 bg-white text-gray-300 hover:text-red-500 border border-gray-200 hover:border-red-200 w-5 h-5 rounded-full flex items-center justify-center text-xs shadow-sm opacity-0 group-hover:opacity-100 transition-opacity z-10">&times;</button><div class="flex items-center gap-2 mb-2 cursor-pointer" onclick="openCrewProfile(this, event, '${item.id}', '${this.esc(item._sec)}')"><div class="w-7 h-7 rounded-full bg-gray-100 flex-shrink-0 flex items-center justify-center text-[10px] text-gray-500 font-bold border border-gray-200 hover:bg-blue-50 hover:text-white transition-colors">${item.crew?.name?.charAt(0) || '👤'}</div><div class="min-w-0 flex-1"><div class="text-xs font-bold text-gray-700 truncate" title="${this.esc(item.description)}">${this.esc(item.description)}</div></div><div class="text-xs font-mono font-bold text-blue-600 flex-shrink-0" id="cost-${item.id}-${stageKey}">${formatAbbreviated(cost, displayCurrency)}</div></div><div class="flex gap-2 items-center h-7"><div class="relative w-14 h-full"><span class="absolute left-1.5 top-1/2 -translate-y-1/2 text-[8px] text-gray-400 font-bold select-none">D</span><input type="number" value="${item._sDays}" class="w-full h-full pl-4 pr-1 text-center text-xs font-bold bg-gray-50 border border-gray-200 rounded focus:bg-white focus:border-blue-400 focus:ring-1 focus:ring-blue-200 outline-none transition-all" oninput="updateStageItem(this, '${item.id}', '${this.esc(item._sec)}', 'days')"></div><div class="relative flex-1 h-full"><span class="absolute left-2 top-1/2 -translate-y-1/2 text-[8px] text-gray-400 font-bold select-none">$</span><input type="number" value="${item._sRate}" class="w-full h-full pl-4 pr-2 text-right text-xs font-mono bg-gray-50 border border-gray-200 rounded focus:bg-white focus:border-blue-400 focus:ring-1 focus:ring-blue-200 outline-none transition-all" oninput="updateStageItem(this, '${item.id}', '${this.esc(item._sec)}', 'rate')"></div></div></div>`;
+    }
+};
+
 /* --- P2 --- */
 
 /* --- v19.52 v19.53 --- */
-/* --- v19.53 Responsive Alignment & Mobile Truncation --- */
-function renderLineItem(item, sectionName) {
-    // 1. Detect Mobile
-    const isMobile = window.innerWidth < 768;
-
-    // 2. Formatting Helpers (Abbreviate on Mobile)
-    const formatMoney = (val) => isMobile ? formatAbbreviated(val, displayCurrency) : formatCurrency(toDisp(val));
-    const rateDisp = toDisp(item.rate);
-    const actualDisp = toDisp(item.actual);
-    const multiplierValue = item.multiplier !== 1 ? item.multiplier : 1;
-    
-    // 3. Crew & Role Logic
-    const crew = item.crew || {};
-    const hasAssignedCrew = !!crew.name;
-    const isRoleMatch = ['director', 'dp', 'producer', 'manager', 'sound'].some(role => item.description.toLowerCase().includes(role));
-    
-    let initials = '?';
-    let avatarClass = 'unassigned';
-    let titleText = 'Unassigned';
-
-    if (hasAssignedCrew) {
-        initials = crew.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-        avatarClass = 'assigned'; 
-        titleText = crew.name;
-    } else if (isRoleMatch) {
-        initials = item.description.substring(0, 2).toUpperCase();
-        avatarClass = 'assigned opacity-75'; 
-        titleText = 'Role Detected';
-    }
-
-    // 4. Unit Logic (Color Coded)
-    const unitLetter = item.unit.charAt(0).toUpperCase(); 
-    const unitColors = {
-        'Day': 'bg-blue-100 text-blue-700 border-blue-200',
-        'Week': 'bg-indigo-100 text-indigo-700 border-indigo-200',
-        'Flat': 'bg-emerald-100 text-emerald-700 border-emerald-200',
-        'Hour': 'bg-purple-100 text-purple-700 border-purple-200',
-        'Policy': 'bg-orange-100 text-orange-800 border-orange-200'
-    };
-    const unitClass = unitColors[item.unit] || 'bg-gray-100 text-gray-700 border-gray-200';
-
-    // 5. Rate Identifier Logic
-    const rType = item.rateType || 'negotiable'; 
-    const isLocked = rType === 'fixed';
-    const rateIcon = isLocked ? '🔒' : '🤝';
-    const rateTitle = isLocked ? 'Fixed Rate (Hard Limit)' : 'Negotiable Rate (Soft Cost)';
-    const rateBtnClass = isLocked ? 'text-red-500 bg-red-50 border-red-200' : 'text-green-600 bg-green-50 border-green-200';
-
-    // 6. Contact Buttons
-    const cleanPhone = crew.phone ? crew.phone.replace(/[^0-9]/g, '') : '';
-    const waCallBtn = cleanPhone ? `<a href="https://wa.me/${cleanPhone}" target="_blank" class="contact-btn btn-wa-call"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg></a>` : '';
-    const waMsgBtn = cleanPhone ? `<a href="https://wa.me/${cleanPhone}" target="_blank" class="contact-btn btn-wa-msg"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg></a>` : '';
-    const emailBtn = crew.email ? `<a href="mailto:${crew.email}" class="contact-btn btn-email"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg></a>` : '';
-
-    return `<tr class="draggable-row border-b hover:bg-gray-100 group" data-item-id="${item.id}" data-section="${sectionName}">
-        <td class="p-1 w-12 text-center relative">
-            <div class="crew-wrapper">
-                <div class="crew-avatar ${avatarClass}" onclick="toggleCrewPopup(this, event)" ondblclick="openCrewProfile(this, event, '${item.id}', '${sectionName}')" title="${titleText}">${initials}</div>
-                <div class="contact-popup">
-                    ${waCallBtn} ${waMsgBtn} ${emailBtn}
-                    <button onclick="openCrewProfile(this, event, '${item.id}', '${sectionName}')" class="contact-btn bg-gray-400"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg></button>
-                </div>
-            </div>
-            <input type="hidden" data-field="multiplier" data-id="${item.id}" data-section="${sectionName}" value="${multiplierValue}" />
-        </td>
-
-        <td class="p-2 text-center text-gray-400 cursor-grab drag-handle touch-none select-none hover:text-blue-500 w-8">⠿</td>
-
-        <td class="p-2">
-            <input type="text" aria-label="Description" data-field="description" data-id="${item.id}" data-section="${sectionName}" value="${item.description}" class="w-full bg-transparent p-1 rounded-md mobile-desc-truncate" />
-        </td>
-        
-        <td class="p-2 text-center md:w-16"><input type="number" aria-label="Quantity" data-field="quantity" data-id="${item.id}" data-section="${sectionName}" value="${item.quantity}" class="w-full bg-transparent p-1 rounded-md text-center" /></td>
-        
-        <td class="p-2 relative md:w-20">
-            <span class="md:hidden absolute inset-0 m-auto w-6 h-6 flex items-center justify-center rounded text-xs font-bold pointer-events-none ${unitClass}">${unitLetter}</span>
-            <select aria-label="Unit" data-field="unit" data-id="${item.id}" data-section="${sectionName}" class="w-full text-center text-xs font-semibold rounded px-1 py-1 appearance-none cursor-pointer border ${isMobile ? 'opacity-0' : unitClass}">
-                <option class="bg-blue-100 text-blue-700 font-semibold" ${item.unit === 'Day' ? 'selected' : ''}>Day</option>
-                <option class="bg-indigo-100 text-indigo-700 font-semibold" ${item.unit === 'Week' ? 'selected' : ''}>Week</option>
-                <option class="bg-emerald-100 text-emerald-700 font-semibold" ${item.unit === 'Flat' ? 'selected' : ''}>Flat</option>
-                <option class="bg-orange-100 text-orange-800 font-semibold" ${item.unit === 'Policy' ? 'selected' : ''}>Policy</option>
-                <option class="bg-purple-100 text-purple-700 font-semibold" ${item.unit === 'Hour' ? 'selected' : ''}>Hour</option>
-            </select>
-        </td>
-        
-        <td class="p-2 text-left flex items-center justify-start gap-1 md:w-32">
-            <button onclick="toggleRateType('${item.id}', '${sectionName}')" class="w-7 h-7 rounded flex items-center justify-center text-sm border ${rateBtnClass} hover:scale-110 transition-transform flex-shrink-0" title="${rateTitle}">${rateIcon}</button>
-            <input type="number" step="0.01" aria-label="Rate" data-field="rate" data-id="${item.id}" data-section="${sectionName}" value="${rateDisp.toFixed(2)}" class="w-full bg-transparent p-1 rounded-md text-left font-mono" />
-        </td>
-        
-        <td data-estimated-id="${item.id}" class="p-2 text-left font-medium text-gray-700 md:w-28 font-mono">${formatMoney(calculateItem(item).estimated)}</td>
-        
-        <td class="p-2 text-left md:w-28"><input type="number" step="0.01" aria-label="Actual Cost" data-field="actual" data-id="${item.id}" data-section="${sectionName}" value="${actualDisp.toFixed(2)}" class="w-full bg-blue-50 p-1 rounded-md text-left font-mono" /></td>
-        
-        <td data-variance-id="${item.id}" class="p-2 text-right font-medium text-xs md:w-28 font-mono">${formatMoney(calculateItem(item).variance)}</td>
-        
-        <td class="p-2 text-center w-10"><button aria-label="Remove Item" data-remove-item="${item.id}" data-section="${sectionName}" class="text-gray-400 hover:text-red-500"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="pointer-events-none"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button></td>
-    </tr>`;
-}
 
 /* --- v19.53 [Interaction] - Toggle Rate Type --- */
 window.toggleRateType = function(itemId, sectionName) {
@@ -1264,14 +1236,8 @@ window.toggleRateType = function(itemId, sectionName) {
        /* --- v19.52 v19.53 --- */
 /* --- v19.53 Responsive Headers (Stable Size, Text Wrap) --- */
 function renderBudgetSections() {
-    return Object.entries(budget.sections).map(([sectionName, section]) => `
-    <div class="mb-4 bg-white rounded-lg shadow-sm border border-gray-200">
-        <div class="relative rounded-t-lg min-h-[44px] px-3 py-2 flex justify-between items-center cursor-pointer bg-gray-50 select-none" data-section-toggle="${sectionName}">
-            <h2 class="text-sm font-bold text-gray-800 uppercase tracking-wide leading-tight mr-2">${sectionName}</h2>
-            <span data-section-total="${sectionName}" class="text-sm font-bold text-blue-600 font-mono flex-shrink-0"></span>
-        </div>
-        
-        <div class="section-content rounded-b-lg ${section.isOpen ? '' : 'hidden'}">
+    return Object.entries(budget.sections).map(([sectionName, section]) => {
+        const bodyContent = `
             <div class="p-0 table-container">
                 <table class="w-full text-sm border-collapse">
                     <thead class="bg-white text-gray-500 font-medium border-b border-gray-100">
@@ -1289,7 +1255,7 @@ function renderBudgetSections() {
                         </tr>
                     </thead>
                     <tbody data-section-body="${sectionName}">
-                        ${section.items.map(item => renderLineItem(item, sectionName)).join('')}
+                        ${section.items.map(item => RenderEngine.lineItem(item, sectionName)).join('')}
                     </tbody>
                 </table>
             </div>
@@ -1297,9 +1263,15 @@ function renderBudgetSections() {
                 <button data-add-item="${sectionName}" class="w-full py-1 text-center text-blue-500 font-bold text-xs hover:bg-blue-50 hover:text-blue-700 transition-colors uppercase tracking-wider">
                     + Add Line Item
                 </button>
-            </div>
-        </div>
-    </div>`).join('');
+            </div>`;
+
+        return RenderEngine.section({
+            name: sectionName,
+            total: '', // Calculated via DOM updates usually, but structure is here
+            isOpen: section.isOpen,
+            content: bodyContent
+        });
+    }).join('');
 }
 
 /* --- v19.53 Main Render (Summary Rework) --- */
@@ -1636,11 +1608,13 @@ function ensureDatabaseSeeded() {
 // Run check immediately
 ensureDatabaseSeeded();
 
-/* --- v19.53 Add Item Modal with Search --- */
+/* --- v19.53 Add Item Modal with Search Engine Update v19.54 --- */
 function showItemSelectorModal(sectionName) {
+    // 1. Prepare Data
     const allItems = getAllItems();
-    // Sort & De-dupe Logic
     const uniqueMap = {};
+    
+    // Sort & De-dupe Logic
     allItems.forEach(item => {
         if (!uniqueMap[item.description]) uniqueMap[item.description] = { unit: item.unit, rate: item.rate, count: 0, isGlobal: item.isGlobal };
         else if (item.isGlobal) uniqueMap[item.description] = { unit: item.unit, rate: item.rate, count: uniqueMap[item.description].count, isGlobal: true };
@@ -1655,7 +1629,8 @@ function showItemSelectorModal(sectionName) {
         if (!entry.isGlobal && entry.count > 1) entry.rate = entry.rate / entry.count;
     });
 
-    const itemList = Object.keys(uniqueMap).filter(desc => desc !== 'New Item' && desc.trim())
+    const itemList = Object.keys(uniqueMap)
+        .filter(desc => desc !== 'New Item' && desc.trim())
         .map(desc => ({ description: desc, unit: uniqueMap[desc].unit, rate: uniqueMap[desc].rate, isGlobal: uniqueMap[desc].isGlobal }))
         .sort((a, b) => { 
             if (a.isGlobal && !b.isGlobal) return -1; 
@@ -1663,58 +1638,68 @@ function showItemSelectorModal(sectionName) {
             return a.description.localeCompare(b.description); 
         });
 
+    // Helper: Row Renderer
+    const rowRenderer = (item) => `
+        <div class="flex justify-between items-center p-2 border-b hover:bg-blue-50 cursor-pointer transition-colors" 
+             data-select-item='${JSON.stringify({desc: item.description.replace(/'/g, "&#39;"), unit: item.unit, rate: item.rate})}'>
+            <div>
+                <div class="font-bold text-sm text-gray-700">${item.description} ${item.isGlobal ? '<span class="text-yellow-500">★</span>' : ''}</div>
+                <div class="text-xs text-gray-400">${item.unit}</div>
+            </div>
+            <div class="font-mono text-xs font-bold text-blue-600">${formatCurrency(item.rate)}</div>
+        </div>`;
+
+    // 2. Render Initial Content
     const content = `
         <div class="mb-3">
-            <input type="text" id="addItemSearch" placeholder="🔍 Search roles..." class="w-full p-2 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" autocomplete="off">
+            <input type="text" id="addItemSearch" placeholder="🔍 Search roles..." 
+                   class="w-full p-3 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-bold shadow-sm" 
+                   autocomplete="off">
         </div>
-        <button id="newItemBtn" class="w-full mb-2 p-3 bg-blue-100 text-blue-700 font-bold rounded-lg hover:bg-blue-200 border border-blue-200 flex justify-center items-center gap-2">
+        <button id="newItemBtn" class="w-full mb-2 p-3 bg-blue-100 text-blue-700 font-bold rounded-lg hover:bg-blue-200 border border-blue-200 flex justify-center items-center gap-2 transition-colors">
             <span>+</span> Create Blank Item
         </button>
         <div class="max-h-[50vh] overflow-y-auto border-t border-gray-100" id="itemSelectorList">
-            ${renderItemSelectorList(itemList)}
+            ${itemList.map(rowRenderer).join('')}
         </div>
         <div class="mt-2 text-xs text-center text-gray-400">Database items marked with <span class="text-yellow-500">★</span></div>`;
     
-    const modal = createModal('itemSelector', 'Add Line Item', content, 'max-w-md');
-    
-    const searchInput = document.getElementById('addItemSearch');
-    if(searchInput) {
-        searchInput.focus();
-        searchInput.addEventListener('input', (e) => {
-            const term = e.target.value.toLowerCase();
-            const filtered = itemList.filter(i => i.description.toLowerCase().includes(term));
-            document.getElementById('itemSelectorList').innerHTML = renderItemSelectorList(filtered);
-            bindSelectorClicks(modal, sectionName);
-        });
+    // 3. Open Modal via Engine
+    if (typeof mBTME === 'undefined') {
+        // Fallback if engine isn't ready
+        alert("System loading... please try again in a moment.");
+        return;
     }
 
-    document.getElementById('newItemBtn').addEventListener('click', () => { 
-        closeModal('itemSelectorModal'); 
-        handleAddBlank(sectionName); 
-    });
-    
-    bindSelectorClicks(modal, sectionName);
-}
+    mBTME.open('itemSelector', 'Add Line Item', content, 'max-w-md', {
+        onOpen: () => {
+            // A. Auto-Focus
+            const input = document.getElementById('addItemSearch');
+            if (input) {
+                input.focus();
+                // B. Attach Search using Engine
+                mBTME.attachSearch('addItemSearch', 'itemSelectorList', itemList, rowRenderer);
+            }
 
-function renderItemSelectorList(items) {
-    if(items.length === 0) return '<p class="text-center text-gray-400 py-8 text-sm">No matching roles found.</p>';
-    return items.map(item => `
-        <div class="p-3 border-b border-gray-100 cursor-pointer hover:bg-blue-50 transition-colors flex justify-between items-center group" data-select-item='${JSON.stringify({ desc: item.description, unit: item.unit, rate: item.rate })}'>
-            <div class="flex items-center overflow-hidden min-w-0 mr-2">
-                ${item.isGlobal ? '<span class="mr-2 text-yellow-500 text-xs flex-shrink-0" title="Database Item">★</span>' : ''}
-                <span class="truncate ${item.isGlobal ? 'font-semibold text-gray-800' : 'text-gray-600'} text-sm">${item.description}</span>
-            </div>
-            <span class="text-xs font-mono text-gray-500 whitespace-nowrap bg-gray-100 px-1.5 py-0.5 rounded">${item.unit}: ${formatCurrency(item.rate)}</span>
-        </div>`).join('');
-}
+            // C. Bind "Create Blank"
+            document.getElementById('newItemBtn')?.addEventListener('click', () => { 
+                mBTME.close('itemSelectorModal'); 
+                handleAddBlank(sectionName); 
+            });
 
-function bindSelectorClicks(modal, sectionName) {
-    modal.querySelectorAll('[data-select-item]').forEach(el => {
-        el.addEventListener('click', (e) => {
-            const data = JSON.parse(e.currentTarget.dataset.selectItem);
-            closeModal('itemSelectorModal');
-            handleAddExisting(sectionName, data.desc, data.unit, data.rate);
-        });
+            // D. Bind Click Selection
+            const list = document.getElementById('itemSelectorList');
+            if (list) {
+                list.addEventListener('click', (e) => {
+                    const row = e.target.closest('[data-select-item]');
+                    if(row) {
+                        const data = JSON.parse(row.dataset.selectItem);
+                        mBTME.close('itemSelectorModal'); 
+                        handleAddExisting(sectionName, data.desc, data.unit, data.rate); 
+                    }
+                });
+            }
+        }
     });
 }
 
@@ -1753,8 +1738,11 @@ function showRecoveryModal() {
         </div>`;
     }
     
+    // Using simple createModal for now as Recovery is simple
     createModal('recovery', 'Recover Deleted Projects', content, 'max-w-lg');
 }
+
+
         // ---------------------------------------------------------
         // Event Handlers
         // ---------------------------------------------------------
@@ -3698,89 +3686,248 @@ const STAGE_PRESETS = {
 };
 
 /* ==========================================================================
+   mBTME (Moo Budget Tool Modal Engine) v1.0
+   Centralized controller for UI Modals, Transitions, and Search binding.
+   ========================================================================== */
+const mBTME = {
+    // Configuration
+    containerId: 'global-modal-container',
+
+    /**
+     * CORE: Open a new modal
+     * @param {string} id - Unique ID for the modal (e.g. 'settings')
+     * @param {string} title - Header title
+     * @param {string} contentHtml - The inner HTML body
+     * @param {string} maxWidth - Tailwind class (default: 'max-w-2xl')
+     * @param {object} options - { hideHeader: bool, noPadding: bool, onOpen: func }
+     */
+    open: function(id, title, contentHtml, maxWidth = 'max-w-2xl', options = {}) {
+        const container = document.getElementById(this.containerId);
+        if (!container) return console.error("mBTME: Container not found");
+
+        const modalId = `${id}Modal`;
+        
+        // 1. Cleanup existing if overwriting
+        this.close(modalId, true); 
+
+        // 2. Construct HTML
+        const headerHtml = options.hideHeader ? '' : `
+            <div class="p-4 border-b flex justify-between items-center bg-gray-50 rounded-t-lg">
+                <h2 class="text-xl font-bold text-gray-800">${title}</h2>
+                <button onclick="mBTME.close('${modalId}')" aria-label="Close" class="text-gray-500 hover:text-gray-800 text-2xl leading-none">&times;</button>
+            </div>`;
+
+        const fullHtml = `
+            <div id="${modalId}" class="fixed inset-0 bg-gray-900 bg-opacity-60 flex items-center justify-center p-4 z-50 transition-opacity duration-300 opacity-0 hidden" tabindex="-1">
+                <div id="${modalId}Content" class="bg-white rounded-lg shadow-xl w-full ${maxWidth} mx-auto max-h-[90vh] flex flex-col transition-all duration-300 transform scale-95">
+                    ${headerHtml}
+                    <div class="overflow-y-auto flex-grow ${options.noPadding ? 'p-0' : 'p-4'}" id="${modalId}Body">
+                        ${contentHtml}
+                    </div>
+                </div>
+            </div>`;
+
+        // 3. Inject
+        container.insertAdjacentHTML('beforeend', fullHtml);
+        const modal = document.getElementById(modalId);
+
+        // 4. Animate In
+        modal.classList.remove('hidden');
+        setTimeout(() => { 
+            modal.classList.remove('opacity-0'); 
+            document.getElementById(`${modalId}Content`)?.classList.remove('scale-95'); 
+        }, 10);
+
+        // 5. Bind Closers (Click Outside + Escape Key)
+        modal.addEventListener('click', (e) => { if (e.target === modal) this.close(modalId); });
+        
+        // One-time Escape key listener
+        const escListener = (e) => {
+            if (e.key === 'Escape') {
+                this.close(modalId);
+                document.removeEventListener('keydown', escListener);
+            }
+        };
+        document.addEventListener('keydown', escListener);
+
+        // 6. Run Post-Open Callbacks
+        if (options.onOpen && typeof options.onOpen === 'function') {
+            setTimeout(options.onOpen, 50);
+        }
+
+        return modal;
+    },
+
+    /**
+     * CORE: Close a modal
+     */
+    close: function(modalId, instant = false) {
+        const modal = document.getElementById(modalId);
+        if (!modal) return;
+
+        // Cleanup global state hooks if specific modals close
+        if (modalId === 'settingsModal' && typeof editingGlobalItemIndex !== 'undefined') editingGlobalItemIndex = -1;
+        if (modalId === 'settingsModal' && typeof tempTemplateData !== 'undefined') tempTemplateData = null;
+
+        if (instant) {
+            modal.remove();
+        } else {
+            modal.classList.add('opacity-0');
+            document.getElementById(`${modalId}Content`)?.classList.add('scale-95');
+            setTimeout(() => modal.remove(), 300);
+        }
+    },
+
+    /**
+     * UTILITY: Attach Live Search to a list inside a modal
+     * @param {string} inputId - ID of the search input field
+     * @param {string} listContainerId - ID of the div/ul containing items
+     * @param {Array} dataItems - Array of data objects to filter
+     * @param {Function} renderRowFn - Function(item) returning HTML string for one row
+     */
+    attachSearch: function(inputId, listContainerId, dataItems, renderRowFn) {
+        const input = document.getElementById(inputId);
+        const list = document.getElementById(listContainerId);
+        if (!input || !list) return;
+
+        input.focus();
+        input.addEventListener('input', (e) => {
+            const term = e.target.value.toLowerCase();
+            const filtered = dataItems.filter(item => {
+                // Default check: looks for 'description', 'name', or 'label'
+                const txt = (item.description || item.name || item.label || '').toLowerCase();
+                return txt.includes(term);
+            });
+            list.innerHTML = filtered.length > 0 
+                ? filtered.map(renderRowFn).join('') 
+                : `<div class="p-4 text-center text-gray-400 text-xs">No matches found.</div>`;
+        });
+    }
+};
+
+/* ==========================================================================
    mBTPublisher (Centralized Export Engine)
    Handles: PDF Generation, System Sharing, WhatsApp, Email, & Safe Downloads
    ========================================================================== */
+/* --- v19.54 mBTPublisher (The Export Engine) --- */
 const mBTPublisher = {
-    
-    // Default Settings for HTML2PDF
-    settings: {
+    // Default settings for HTML2PDF
+    defaultPdfOptions: {
         margin: 0.3,
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: { scale: 2, useCORS: true, logging: false },
         jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
     },
 
-    /**
-     * MAIN FUNCTION: Converts an HTML Element to PDF
-     * @param {string|HTMLElement} elementOrId - The DOM element to print
-     * @param {string} filename - Desired filename (e.g. "Budget_v1")
-     * @param {string} mode - 'download' (default) or 'share' (mobile menu)
-     */
-    async exportToPDF(elementOrId, filename, mode = 'download') {
+    // 1. PDF Export (DOM Element → PDF Download)
+    async toPDF(elementOrId, filename = 'Document', options = {}) {
         const element = typeof elementOrId === 'string' ? document.getElementById(elementOrId) : elementOrId;
-        if (!element) return alert("Error: Content to export not found.");
+        if (!element) return alert('Export target not found');
 
-        // 1. Sanitize Filename
         const safeName = filename.replace(/[^a-z0-9]/gi, '_') + '.pdf';
 
-        // 2. UI Prep (Hide buttons/controls during screenshot)
-        const ignoredElements = element.querySelectorAll('button, .no-print, input[type="file"]');
-        ignoredElements.forEach(el => el.style.opacity = '0');
+        // Hide interactive elements during capture
+        const interactive = element.querySelectorAll('button, input[type="file"], .no-print');
+        interactive.forEach(el => el.style.opacity = '0');
 
         try {
-            // 3. Generate PDF
-            const worker = html2pdf().set(this.settings).from(element);
-
-            if (mode === 'download') {
-                await worker.save(safeName);
-            } 
-            else if (mode === 'share') {
-                // Generate Blob for sharing
-                const pdfBlob = await worker.output('blob');
-                await this.smartShare(pdfBlob, safeName, "Document Shared via MooBudget");
-            }
-
-        } catch (err) {
-            console.error("mBTPublisher Failed:", err);
-            alert("Export failed. Please check the console.");
+            if (typeof html2pdf === 'undefined') throw new Error("html2pdf library not loaded");
+            const opt = { ...this.defaultPdfOptions, filename: safeName, ...options };
+            await html2pdf().set(opt).from(element).save();
+        } catch (e) {
+            console.error("mBTPublisher Error:", e);
+            alert("PDF generation failed. " + e.message);
         } finally {
-            // 4. Cleanup (Show buttons again)
-            ignoredElements.forEach(el => el.style.opacity = '1');
+            interactive.forEach(el => el.style.opacity = '1');
         }
     },
 
-    /**
-     * SMART SHARE: Handles the "Windows Error" automatically
-     */
-    async smartShare(blob, filename, title) {
-        const file = new File([blob], filename, { type: 'application/pdf' });
-        
-        // Critical Check: Browsers block 'navigator.share' on file:/// protocols
+    // Alias for backward compatibility with Part 5 calls
+    async exportToPDF(elementOrId, filename, mode) {
+        return this.toPDF(elementOrId, filename);
+    },
+
+    // 2. XLSX Export (Data Array → Excel File)
+    toXLSX(data, sheetName = 'Sheet1', filename = 'Budget') {
+        if (typeof XLSX === 'undefined') return alert("Excel library not loaded.");
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet(data);
+        XLSX.utils.book_append_sheet(wb, ws, sheetName);
+        XLSX.writeFile(wb, `${filename.replace(/[^a-z0-9]/gi, '_')}.xlsx`);
+    },
+
+    // 3. .moo Project Export (JSON → File)
+    toMoo() {
+        if (!budget) return alert('No active budget');
+        const dataStr = JSON.stringify(budget, null, 2);
+        const blob = new Blob([dataStr], { type: 'application/json' });
+        this.forceDownload(blob, `${(budget.projectName || 'untitled').replace(/[^a-z0-9]/gi, '_').toLowerCase()}.moo`);
+    },
+
+    // 4. Generate File from HTML String (For Sharing/Emailing)
+    async toFileFromHTML(containerHtml, filenameBase, formats = ['pdf']) {
+        // Create invisible container
+        const container = document.createElement('div');
+        container.style.position = 'absolute';
+        container.style.left = '-9999px';
+        container.style.width = '800px'; // Fixed width for consistent rendering
+        container.innerHTML = containerHtml;
+        document.body.appendChild(container);
+
+        const element = container.querySelector('#render-target') || container.firstElementChild;
+        const files = [];
+
+        try {
+            if (formats.includes('pdf')) {
+                const canvas = await html2canvas(element, { scale: 2, useCORS: true });
+                const imgData = canvas.toDataURL('image/jpeg', 0.95);
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF('p', 'mm', 'a4');
+                const pdfW = pdf.internal.pageSize.getWidth();
+                const pdfH = (canvas.height * pdfW) / canvas.width;
+                
+                pdf.addImage(imgData, 'JPEG', 0, 0, pdfW, pdfH);
+                files.push(new File([pdf.output('blob')], `${filenameBase}.pdf`, { type: 'application/pdf' }));
+            }
+            if (formats.includes('jpg')) {
+                const canvas = await html2canvas(element, { scale: 2, useCORS: true });
+                const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.95));
+                files.push(new File([blob], `${filenameBase}.jpg`, { type: 'image/jpeg' }));
+            }
+        } catch(e) {
+            console.error("Generation error:", e);
+        } finally {
+            document.body.removeChild(container);
+        }
+        return files.length === 1 ? files[0] : files;
+    },
+
+    // 5. Smart System Share (Falls back to Download)
+    async share(files, title = 'Document from mooBudgetTool') {
+        if (!Array.isArray(files)) files = [files];
+
         const isSecure = location.protocol === 'https:' || location.hostname === 'localhost';
-        const canShare = isSecure && navigator.share && navigator.canShare && navigator.canShare({ files: [file] });
+        const canShare = isSecure && navigator.share && navigator.canShare && navigator.canShare({ files });
 
         if (canShare) {
             try {
-                await navigator.share({
-                    files: [file],
-                    title: title,
-                    text: `Here is the document: ${filename}`
-                });
+                await navigator.share({ title, text: title, files });
+                return true;
             } catch (err) {
-                console.warn("Share cancelled/failed. Downloading instead.");
-                this.forceDownload(blob, filename);
+                console.warn('Share cancelled or failed, falling back to download.');
             }
-        } else {
-            // Silently fall back to download if system share isn't allowed
-            this.forceDownload(blob, filename);
         }
+        
+        // Fallback: Download files sequentially
+        files.forEach((file, i) => {
+            setTimeout(() => this.forceDownload(file, file.name), i * 500);
+        });
+        return false;
     },
 
-    /**
-     * HELPER: Forces a browser download
-     */
-    forceDownload(blob, filename) {
+    // 6. Force Download Helper
+    forceDownload(blobOrFile, filename) {
+        const blob = blobOrFile instanceof File ? blobOrFile : blobOrFile;
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -3791,54 +3938,17 @@ const mBTPublisher = {
         URL.revokeObjectURL(url);
     },
 
-    /**
-     * HELPER: WhatsApp Link Generator
-     */
-    shareWhatsApp(phone, text) {
-        if (!phone) return alert("No phone number provided.");
-        const cleanPhone = phone.replace(/[^0-9]/g, '');
-        window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(text)}`, '_blank');
+    // 7. Direct WhatsApp Link
+    shareWhatsApp(phone, text = '') {
+        if (!phone) return alert('No phone number available.');
+        const clean = phone.replace(/\D/g, '');
+        window.open(`https://wa.me/${clean}?text=${encodeURIComponent(text)}`, '_blank');
     },
 
-    /**
-     * HELPER: Email Link Generator
-     */
-    shareEmail(email, subject, body) {
-        if (!email) return alert("No email address provided.");
+    // 8. Direct Email Link
+    shareEmail(email, subject = '', body = '') {
+        if (!email) return alert('No email address available.');
         window.location.href = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    }
-};
-
-// 2. Sync Logic (Weighted Average)
-function syncStageToMain(item) {
-    if (!item.stageData) return;
-    let totalDays = 0, totalCost = 0;
-    Object.values(item.stageData).forEach(d => {
-        const days = parseFloat(d.days) || 0;
-        const rate = parseFloat(d.rate) || 0;
-        totalDays += days;
-        totalCost += (days * rate);
-    });
-    if (totalDays > 0) {
-        item.quantity = totalDays;
-        item.rate = totalCost / totalDays;
-        item.unit = 'Day'; 
-    }
-}
-
-// 3. Remove Item Helper
-window.removeStageItem = function(itemId, sectionName, stageKey) {
-    const item = budget.sections[sectionName].items.find(i => i.id === itemId);
-    if (item && item.stageData && item.stageData[stageKey]) {
-        if(confirm("Remove item from this stage?")) {
-            delete item.stageData[stageKey];
-            syncStageToMain(item);
-            pushToHistory(`Removed item from ${stageKey}`);
-            const card = document.querySelector(`.stage-card-item[data-item-id="${itemId}"][data-stage="${stageKey}"]`);
-            if(card) card.remove();
-            updateAllHeaders(); // Recalc totals without full re-render
-            render();
-        }
     }
 };
 
@@ -3960,17 +4070,6 @@ function showStagesModal() {
 
         const topSpenders = allItemsFlat.sort((a, b) => b.cost - a.cost).slice(0, 5);
 
-        // --- HELPER: Card HTML ---
-        const getCardHTML = (item, key) => `
-            <div class="stage-card-item bg-white p-2 rounded-lg border border-gray-200 shadow-sm group hover:border-blue-400 transition-all relative" data-item-id="${item.id}" data-stage="${key}">
-                <button onclick="removeStageItem('${item.id}', '${item._sec}', '${key}')" class="absolute -top-1.5 -right-1.5 bg-white text-gray-300 hover:text-red-500 border border-gray-200 hover:border-red-200 w-5 h-5 rounded-full flex items-center justify-center text-xs shadow-sm opacity-0 group-hover:opacity-100 transition-opacity z-10">&times;</button>
-                <div class="flex items-center gap-2 mb-2 cursor-pointer" onclick="openCrewProfile(this, event, '${item.id}', '${item._sec}')"><div class="w-7 h-7 rounded-full bg-gray-100 flex-shrink-0 flex items-center justify-center text-[10px] text-gray-500 font-bold border border-gray-200 hover:bg-blue-500 hover:text-white transition-colors">${item.crew?.name?.charAt(0) || '👤'}</div><div class="min-w-0 flex-1"><div class="text-xs font-bold text-gray-700 truncate" title="${item.description}">${item.description}</div></div><div class="text-xs font-mono font-bold text-blue-600 flex-shrink-0" id="cost-${item.id}-${key}">${formatAbbreviated(item._sCost, displayCurrency)}</div></div>
-                <div class="flex gap-2 items-center h-7">
-                    <div class="relative w-14 h-full"><span class="absolute left-1.5 top-1/2 -translate-y-1/2 text-[8px] text-gray-400 font-bold select-none">D</span><input type="number" value="${item._sDays}" class="w-full h-full pl-4 pr-1 text-center text-xs font-bold bg-gray-50 border border-gray-200 rounded focus:bg-white focus:border-blue-400 focus:ring-1 focus:ring-blue-200 outline-none transition-all" onfocus="this.dataset.old=this.value; this.value=''" onblur="if(this.value===''){this.value=this.dataset.old; this.dispatchEvent(new Event('input'));}" oninput="updateStageItem(this, '${item.id}', '${item._sec}', 'days')"></div>
-                    <div class="relative flex-1 h-full"><span class="absolute left-2 top-1/2 -translate-y-1/2 text-[8px] text-gray-400 font-bold select-none">$</span><input type="number" value="${item._sRate}" class="w-full h-full pl-4 pr-2 text-right text-xs font-mono bg-gray-50 border border-gray-200 rounded focus:bg-white focus:border-blue-400 focus:ring-1 focus:ring-blue-200 outline-none transition-all" onfocus="this.dataset.old=this.value; this.value=''" onblur="if(this.value===''){this.value=this.dataset.old; this.dispatchEvent(new Event('input'));}" oninput="updateStageItem(this, '${item.id}', '${item._sec}', 'rate')"></div>
-                </div>
-            </div>`;
-
         // 3. Render Views
         const renderSetupCard = () => `
             <div id="card-setup" class="stage-card min-w-[300px] flex-shrink-0 h-full bg-white border-r border-gray-200 flex flex-col snap-center relative">
@@ -4042,7 +4141,7 @@ function showStagesModal() {
                     <button onclick="openStageSearch('${key}')" class="w-full py-1 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded text-[10px] font-bold border border-blue-100 transition-colors">+ Item</button>
                 </div>
                 <div class="stage-drop-zone flex-grow overflow-y-auto p-2 space-y-2 bg-gray-50 h-full" data-stage-key="${key}">
-                    ${data.items.map(item => getCardHTML(item, key)).join('')}
+                    ${data.items.map(item => RenderEngine.stageCard(item, key)).join('')}
                 </div>
             </div>`;
         };
@@ -4327,6 +4426,72 @@ function showStagesModal() {
 
     } catch(err) { console.error(err); }
 }
+
+/* --- v19.54 Fix: Global Stage Handlers --- */
+// These must be global for RenderEngine onclick="" attributes to work
+
+window.removeStageItem = function(itemId, sectionName, stageKey) {
+    if (!sectionName || sectionName === 'undefined') {
+        // Fallback: Try to find the item if section is missing
+        for (const [name, sec] of Object.entries(budget.sections)) {
+            if (sec.items.find(i => i.id === itemId)) {
+                sectionName = name;
+                break;
+            }
+        }
+    }
+
+    if (!sectionName) return console.error("Section not found for item", itemId);
+
+    const item = budget.sections[sectionName].items.find(i => i.id === itemId);
+    if (!item) return;
+
+    // Remove stage data for this specific stage
+    if (item.stageData && item.stageData[stageKey]) {
+        delete item.stageData[stageKey];
+        
+        // Remove from DOM immediately to prevent ghosting
+        const card = document.querySelector(`.stage-card-item[data-item-id="${itemId}"][data-stage="${stageKey}"]`);
+        if(card) card.remove();
+
+        // Recalculate totals
+        if(typeof updateAllHeaders === 'function') updateAllHeaders();
+        
+        saveBudget();
+        
+        // If this was the last stage assignment, maybe warn user? 
+        // For now, we just save.
+    }
+};
+
+window.updateStageItem = function(inputEl, itemId, sectionName, field) {
+    const stageKey = inputEl.closest('[data-stage]').dataset.stage;
+    const item = budget.sections[sectionName]?.items.find(i => i.id === itemId);
+    
+    if (item && item.stageData && item.stageData[stageKey]) {
+        const val = parseFloat(inputEl.value) || 0;
+        item.stageData[stageKey][field] = val;
+        
+        // Update visual cost on card
+        const cost = item.stageData[stageKey].days * item.stageData[stageKey].rate;
+        const costEl = document.getElementById(`cost-${itemId}-${stageKey}`);
+        if(costEl) costEl.textContent = formatAbbreviated(cost, displayCurrency);
+        
+        saveBudget();
+        if(typeof updateAllHeaders === 'function') updateAllHeaders();
+        
+        // Debounced Main Render (prevents typing lag)
+        clearTimeout(window._renderDebounce);
+        window._renderDebounce = setTimeout(() => {
+            if(typeof render === 'function') render();
+        }, 500);
+    }
+};
+
+window.syncStageToMain = function(item) {
+    // Helper to sync specific stage changes back to main item if needed
+    // Currently stage data is separate, but we keep this stub for future "Two-Way Sync" features.
+};
 
 /* -- P5 -- */
 
@@ -4666,76 +4831,9 @@ function ensureDocumentData() {
     if (!budget.callSheet) budget.callSheet = JSON.parse(JSON.stringify(defaultCallSheet));
 }
 
-// 3. Document Action Buttons
-function renderDocActions(docId) {
-    if (window.docHubState.mode === 'select') {
-        const isChecked = window.docHubState.selected.has(docId);
-        return `
-            <div class="mr-3 w-5 h-5 rounded border flex items-center justify-center transition-colors ${isChecked ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-gray-300'}">
-                ${isChecked ? '<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>' : ''}
-            </div>`;
-    }
-    // Normal Mode - Icons updated to match Footer
-    return `
-        <div class="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1 bg-white pl-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-            <button onclick="event.stopPropagation(); handlePreviewDocument('${docId}')" class="w-8 h-8 flex items-center justify-center rounded-full bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white transition-colors border border-blue-100" title="Preview / Save Image">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-            </button>
-            <button onclick="event.stopPropagation(); handlePublishMenu('${docId}')" class="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-700 hover:bg-green-600 hover:text-white transition-colors border border-gray-200" title="Publish / Share">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
-            </button>
-            <button onclick="event.stopPropagation(); deleteSingleDoc('${docId}')" class="w-6 h-6 flex items-center justify-center rounded-full text-gray-300 hover:bg-red-50 hover:text-red-500 transition-colors ml-1 hidden group-hover:flex" title="Delete">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-            </button>
-        </div>`;
-}
 
 /* --- v19.53 Document Card Rendering v19.54 --- */
-function renderDocCard(doc, context = 'hub') {
-    const isSelectMode = window.docHubState.mode === 'select';
-    const isSelected = window.docHubState.selected.has(doc.id);
-    const clickHandler = isSelectMode 
-        ? `onclick="toggleDocSelection('${doc.id}')"` 
-        : `onclick="openDocumentViewer('${doc.id}', '${context}')"`; // Unified viewer
 
-    // Mobile: always show buttons; Desktop: show on hover
-    const actionButtons = `
-        <div class="flex gap-1.5 absolute right-2 top-1/2 -translate-y-1/2 
-                      ${context === 'stages' ? 'opacity-100' : 'opacity-0 sm:group-hover:opacity-100'} 
-                      transition-opacity">
-            <button onclick="event.stopPropagation(); openDocumentViewer('${doc.id}', '${context}')" 
-                    class="w-8 h-8 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white flex items-center justify-center border border-blue-100 shadow-sm" 
-                    title="Preview / Edit">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-            </button>
-            <button onclick="event.stopPropagation(); handlePublishMenu('${doc.id}')" 
-                    class="w-8 h-8 rounded-full bg-gray-100 text-gray-700 hover:bg-green-600 hover:text-white flex items-center justify-center border border-gray-200 shadow-sm" 
-                    title="Publish / Share">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
-            </button>
-        </div>`;
-
-    return `
-        <div ${clickHandler} 
-             class="doc-card group relative flex items-center p-3 bg-white border 
-                    ${isSelected && isSelectMode ? 'border-blue-500 ring-1 ring-blue-500 bg-blue-50' : 'border-gray-200'} 
-                    rounded-lg hover:shadow-md transition-all h-16 w-full select-none cursor-pointer" 
-             data-label="${doc.label.toLowerCase()}">
-            ${isSelectMode ? renderDocActions(doc.id) : `
-                <div class="w-10 h-10 rounded-md bg-gray-50 flex-shrink-0 flex items-center justify-center text-lg mr-3 border border-gray-100 shadow-sm">
-                    ${doc.icon || '📄'}
-                </div>`}
-            <div class="min-w-0 flex-1 flex flex-col justify-center">
-                <span class="text-sm font-bold text-gray-800 truncate leading-tight block" title="${doc.label}">
-                    ${doc.label}
-                </span>
-                <span class="text-[10px] text-gray-400 uppercase leading-tight mt-0.5 block">
-                    ${doc.status || 'Draft'}
-                </span>
-            </div>
-            ${!isSelectMode ? actionButtons : ''}
-        </div>`;
-}
 
 // 5. Main Hub Modal
 function showDocumentsModal(tab = null) {
@@ -4780,7 +4878,7 @@ function showDocumentsModal(tab = null) {
             </div>
             <div class="p-3 sm:p-4 overflow-y-auto flex-grow bg-gray-50 w-full">
                 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 group/list">
-                    ${visibleDocs.length > 0 ? visibleDocs.map(doc => renderDocCard(doc)).join('') : '<div class="col-span-full text-center py-12 text-xs text-gray-400 italic">No documents found.</div>'}
+                    ${visibleDocs.length > 0 ? visibleDocs.map(doc => RenderEngine.docCard(doc)).join('') : '<div class="col-span-full text-center py-12 text-xs text-gray-400 italic">No documents found.</div>'}
                 </div>
             </div>
         </div>`;
@@ -4806,28 +4904,30 @@ function showDocumentsModal(tab = null) {
 /* --- v19.54 [Publish] - Universal Share Module (Multi-Format Support) --- */
 
 // 1. Helper: Generate the File Blob
+/* --- v19.54 [Publish] - Document Generator (Uses mBTPublisher Engine) --- */
 async function generateDocumentFile(doc, format) {
-    const isPdf = format === 'pdf';
-    const filename = `${budget.projectName}_${doc.label.replace(/\s/g,'_')}.${format}`;
+    const filename = `${budget.projectName}_${doc.label.replace(/[^a-z0-9]/gi,'_')}`;
     const dateStr = new Date().toLocaleDateString();
-
+    
+    // 1. Build the HTML Content (The "What")
     let paperHTML = '';
 
     if (doc.id === 'callSheet') {
-        // High-Fidelity Call Sheet Layout
         const cs = budget.callSheet;
+        // Call Sheet Layout
         paperHTML = `
             <div id="render-target" class="bg-white text-black p-8 mx-auto font-sans" style="width: 794px; min-height: 1123px;">
                 <div class="flex justify-between items-end border-b-4 border-blue-900 pb-4 mb-6">
                     <div>
-                        <h1 class="text-4xl font-bold uppercase text-blue-900 tracking-tight">${budget.projectName}</h1>
+                        <h1 class="text-3xl font-bold uppercase text-blue-900">${budget.projectName}</h1>
                         <div class="text-sm font-bold tracking-widest text-gray-500 mt-1 uppercase">Call Sheet</div>
                     </div>
                     <div class="text-right">
-                        <div class="text-4xl font-bold text-gray-800">${new Date(cs.date).toLocaleDateString('en-GB', {weekday:'short', day:'numeric', month:'short'}).toUpperCase()}</div>
+                        <div class="text-3xl font-bold text-gray-800">${new Date(cs.date).toLocaleDateString('en-GB', {weekday:'short', day:'numeric', month:'short'}).toUpperCase()}</div>
                         <div class="text-sm font-bold text-gray-500 uppercase">Day ${cs.shootDay} of ${cs.totalDays}</div>
                     </div>
                 </div>
+                
                 <div class="grid grid-cols-3 gap-4 mb-6">
                     <div class="bg-blue-50 p-4 rounded-lg border border-blue-100">
                         <div class="text-[10px] font-bold text-blue-400 uppercase tracking-wider">General Call</div>
@@ -4842,24 +4942,43 @@ async function generateDocumentFile(doc, format) {
                         <div class="text-xl font-bold text-gray-800 truncate">${cs.weather}</div>
                     </div>
                 </div>
+
+                <div class="mb-8">
+                    <h3 class="text-xs font-bold text-gray-400 uppercase border-b-2 border-gray-100 pb-1 mb-3">Schedule</h3>
+                    <table class="w-full text-xs text-left border-collapse">
+                        <thead class="bg-blue-900 text-white uppercase"><tr><th class="p-2 w-16">Scene</th><th class="p-2">Set / Desc</th><th class="p-2 w-20">Cast</th><th class="p-2 text-center w-12">Pgs</th></tr></thead>
+                        <tbody class="divide-y divide-gray-200">
+                            ${cs.schedule.map(s => `<tr class="bg-white"><td class="p-3 font-bold text-lg text-gray-800 align-top">${s.scene}</td><td class="p-3 align-top"><div class="font-bold text-sm text-gray-900 uppercase">${s.set}</div><div class="text-gray-500 mt-1">${s.desc}</div></td><td class="p-3 font-mono text-gray-600 align-top">${s.cast}</td><td class="p-3 text-center font-bold text-gray-800 align-top">${s.pages}</td></tr>`).join('')}
+                        </tbody>
+                    </table>
+                </div>
+
                 <div class="mb-8">
                     <h3 class="text-xs font-bold text-gray-400 uppercase border-b-2 border-gray-100 pb-1 mb-3">Locations</h3>
                     <div class="space-y-3">
-                        ${cs.locations.map(l => `<div><div class="flex items-baseline gap-2"><span class="font-bold text-sm text-blue-900 uppercase min-w-[80px]">${l.label}:</span><span class="font-bold text-base text-gray-900">${l.name}</span></div><div class="text-sm text-gray-600 pl-[88px]">${l.address}</div></div>`).join('')}
+                        ${cs.locations ? cs.locations.map(l => `<div><div class="flex items-baseline gap-2"><span class="font-bold text-sm text-blue-900 uppercase min-w-[80px]">${l.label}:</span><span class="font-bold text-base text-gray-900">${l.name}</span></div><div class="text-sm text-gray-600 pl-[88px]">${l.address}</div></div>`).join('') : ''}
                     </div>
                 </div>
-                <div class="mb-8">
-                    <table class="w-full text-xs text-left border-collapse">
-                        <thead class="bg-blue-900 text-white uppercase tracking-wider"><tr><th class="p-2 w-16">Scene</th><th class="p-2">Set / Description</th><th class="p-2 w-20">Cast</th><th class="p-2 text-center w-12">Pgs</th></tr></thead>
-                        <tbody class="divide-y divide-gray-200">${cs.schedule.map(s => `<tr class="bg-white"><td class="p-3 font-bold text-lg text-gray-800 align-top">${s.scene}</td><td class="p-3 align-top"><div class="font-bold text-sm text-gray-900 uppercase">${s.set}</div><div class="text-gray-500 mt-1">${s.desc}</div></td><td class="p-3 font-mono text-gray-600 align-top">${s.cast}</td><td class="p-3 text-center font-bold text-gray-800 align-top">${s.pages}</td></tr>`).join('')}</tbody>
-                    </table>
+
+                <div class="absolute bottom-8 left-8 right-8 border-t pt-2 text-[10px] text-gray-400 flex justify-between">
+                    <span>Generated by mooBudgetTool</span>
+                    <span>${cs.hospital ? '🚑 Hospital: ' + cs.hospital : ''}</span>
                 </div>
-                <div class="absolute bottom-8 left-8 right-8 border-t pt-2 text-[10px] text-gray-400 flex justify-between"><span>Generated by mooBudgetTool</span><span>Production Office: 10a West Kings House Rd</span></div>
             </div>`;
     } else {
-        // Generic "White Paper" Layout
+        // Generic / Template Layout
+        let contentBody = `
+            <div class="text-gray-400 text-sm italic p-10 text-center border-2 border-dashed border-gray-100 rounded-lg">
+                (No preview content available for this document type)
+            </div>`;
+
+        // If it's a Crew List, render the table
+        if (doc.content && doc.content.templateId === 'crewList') {
+            contentBody = `<div class="space-y-6">${renderCrewListTable(doc)}</div>`;
+        }
+
         paperHTML = `
-            <div id="render-target" class="bg-white text-black p-8 shadow-lg mx-auto" style="width: 794px; height: 1123px;">
+            <div id="render-target" class="bg-white text-black p-8 shadow-lg mx-auto" style="width: 794px; min-height: 1123px;">
                 <div class="border-b-4 border-gray-800 pb-4 mb-8 flex justify-between items-end">
                     <div>
                         <h1 class="text-3xl font-bold uppercase tracking-tight">${budget.projectName}</h1>
@@ -4867,43 +4986,18 @@ async function generateDocumentFile(doc, format) {
                     </div>
                     <div class="text-right"><div class="text-xl font-bold text-gray-300">DRAFT</div><div class="text-xs text-gray-400">${dateStr}</div></div>
                 </div>
-                <div class="text-gray-400 text-sm italic p-10 text-center border-2 border-dashed border-gray-100 rounded-lg">
-                    (Document Content Placeholder)<br>Items from ${doc.cat} would appear here.
-                </div>
-                <div class="absolute bottom-8 left-8 right-8 border-t pt-2 text-[10px] text-gray-400">Generated by mooBudgetTool</div>
+                ${contentBody}
+                <div class="mt-8 border-t pt-2 text-[10px] text-gray-400 text-center">Generated by mooBudgetTool</div>
             </div>`;
     }
 
-    const container = document.createElement('div');
-    container.style.position = 'absolute'; container.style.left = '-9999px'; container.style.top = '0';
-    container.innerHTML = paperHTML;
-    document.body.appendChild(container);
-
-    try {
-        const element = document.getElementById('render-target');
-        const canvas = await html2canvas(element, { scale: 2, useCORS: true, logging: false });
-        let blob;
-        
-        if (isPdf) {
-            const imgData = canvas.toDataURL('image/jpeg', 0.85);
-            const pdf = new window.jspdf.jsPDF('p', 'mm', 'a4');
-            const pdfW = pdf.internal.pageSize.getWidth();
-            const imgProps = pdf.getImageProperties(imgData);
-            const pdfImgH = (imgProps.height * pdfW) / imgProps.width;
-            pdf.addImage(imgData, 'JPEG', 0, 0, pdfW, pdfImgH);
-            blob = pdf.output('blob');
-        } else {
-            blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.85));
-        }
-        document.body.removeChild(container);
-        return new File([blob], filename, { type: isPdf ? 'application/pdf' : 'image/jpeg' });
-    } catch (e) {
-        if(document.body.contains(container)) document.body.removeChild(container);
-        throw e;
-    }
+    // 2. Delegate generation to mBTPublisher (The "How")
+    // Note: we pass the format inside an array because toFileFromHTML accepts an array of formats
+    return await mBTPublisher.toFileFromHTML(paperHTML, filename, [format]);
 }
 
 // 2. Multi-File Share Handler
+/* --- v19.54 [Publish] - Robust Share Workflow (Fixed) --- */
 async function generateAndShare(docId, contact, method) {
     const doc = budget.documents.find(d => d.id === docId);
     if (!doc) return;
@@ -4915,37 +5009,46 @@ async function generateAndShare(docId, contact, method) {
 
     try {
         const files = [];
-        if (document.getElementById('fmtPdf').checked) files.push(await generateDocumentFile(doc, 'pdf'));
-        if (document.getElementById('fmtJpg').checked) files.push(await generateDocumentFile(doc, 'jpg'));
+        if (document.getElementById('fmtPdf').checked) {
+            console.log("Generating PDF...");
+            files.push(await generateDocumentFile(doc, 'pdf'));
+        }
+        if (document.getElementById('fmtJpg').checked) {
+            console.log("Generating JPG...");
+            files.push(await generateDocumentFile(doc, 'jpg'));
+        }
 
         if (files.length === 0) throw new Error("Please select PDF, JPG, or both.");
 
-        const text = `Hi ${contact.name.split(' ')[0]}, please review the attached ${doc.label} for ${budget.projectName}.`;
-
-        // A: Native Share (Mobile - Supports Arrays)
+        // Try Native Share First
         if (navigator.canShare && navigator.canShare({ files: files })) {
-            await navigator.share({ title: doc.label, text: text, files: files });
+            await navigator.share({
+                title: doc.label,
+                text: `Please review the attached ${doc.label}.`,
+                files: files
+            });
         } 
-        // B: Desktop Fallback (Download Loop)
+        // Desktop Fallback
         else {
+            // Trigger Downloads
             for (const file of files) {
-                const url = URL.createObjectURL(file);
-                const a = document.createElement('a');
-                a.href = url; a.download = file.name;
-                document.body.appendChild(a); a.click(); document.body.removeChild(a);
-                await new Promise(r => setTimeout(r, 500)); // Delay between downloads
+                mBTPublisher.forceDownload(file, file.name);
+                await new Promise(r => setTimeout(r, 800));
             }
             
+            // Open App
+            const text = `Hi ${contact.name.split(' ')[0]}, please review the attached ${doc.label} for ${budget.projectName}.`;
             if (method === 'whatsapp') {
                 const cleanPhone = contact.phone.replace(/\D/g, ''); 
-                window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(text + " (Files downloaded)")}`, '_blank');
+                window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(text)}`, '_blank');
             } else if (method === 'email') {
-                window.open(`mailto:${contact.email}?subject=${encodeURIComponent(doc.label)}&body=${encodeURIComponent(text)}`, '_self');
+                window.location.href = `mailto:${contact.email}?subject=${encodeURIComponent(doc.label)}&body=${encodeURIComponent(text)}`;
             }
-            alert(`Files downloaded.\n\nPlease drag them into the ${method === 'whatsapp' ? 'WhatsApp' : 'Email'} window.`);
+            alert("Files downloaded.\n\nPlease drag them into the message window.");
         }
     } catch (err) {
-        alert("Error: " + err.message);
+        console.error(err);
+        if (!err.message.includes('abort')) alert("Share Error: " + err.message);
     } finally {
         if(btn) btn.innerHTML = originalContent;
     }
@@ -5378,6 +5481,8 @@ function handleDocumentShare(filename) {
         alert("PDF Saver not loaded. Please refresh.");
     }
 }
+
+/* --- P6 ---*/
 
 /* --- v19.54 Template Picker & Loader --- */
 function startWithTemplate(docId) {
