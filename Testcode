@@ -688,7 +688,7 @@ const initialLineItem = {
     rateType: 'negotiable' 
 };
 
-/* v19.53 [Documents] - Default Data Structure --- */
+/* --- v19.53 [Documents] - Default Data Structure --- */
 const defaultCallSheet = {
     date: new Date().toISOString().split('T')[0],
     shootDay: "1",
@@ -711,67 +711,20 @@ const defaultCallSheet = {
     notes: "No social media photos on set."
 };
 
-/* v19.53 [Documents] - Master Template Database (Fixed Icons) --- */
-const DOCUMENT_TEMPLATES = [
-    // Pre-Production
-    { id: 'script', cat: 'Pre-Prod', label: 'Script', icon: '📝', default: true },
-    { id: 'treatment', cat: 'Pre-Prod', label: 'Story Treatment', icon: '📖', default: false },
-    { id: 'breakdown', cat: 'Pre-Prod', label: 'Script Breakdowns', icon: '🔍', default: true },
-    { id: 'shotlist', cat: 'Pre-Prod', label: 'Shot Lists', icon: '🎬', default: true },
-    { id: 'storyboard', cat: 'Pre-Prod', label: 'Storyboards', icon: '🎨', default: false },
-    { id: 'preCheck', cat: 'Pre-Prod', label: 'Pre-Prod Checklist', icon: '✅', default: true },
-    { id: 'charProf', cat: 'Pre-Prod', label: 'Character Profiles', icon: '👤', default: false },
-    { id: 'casting', cat: 'Pre-Prod', label: 'Casting Sheets', icon: '🎭', default: false },
-    { id: 'dood', cat: 'Pre-Prod', label: 'Day Out of Days', icon: '📅', default: false },
-    { id: 'stripboard', cat: 'Pre-Prod', label: 'Stripboard Schedule', icon: '🗓️', default: false },
-    { id: 'techScout', cat: 'Pre-Prod', label: 'Tech Scout Report', icon: '📍', default: false },
-    { id: 'budgetRep', cat: 'Pre-Prod', label: 'Budget/Cost Report', icon: '💰', default: true },
-    { id: 'vendorBid', cat: 'Pre-Prod', label: 'Vendor Bid Comparison', icon: '⚖️', default: false },
-    { id: 'pitchDeck', cat: 'Pre-Prod', label: 'Funding Pitch Deck', icon: '🚀', default: false },
+/* --- v19.54 Template System Helpers v19.55 --- */
 
-    // Production
-    { id: 'callSheet', cat: 'Production', label: 'Daily Call Sheet', icon: '📢', default: true },
-    { id: 'prodReport', cat: 'Production', label: 'Production Report', icon: '📊', default: true },
-    { id: 'continuity', cat: 'Production', label: 'Continuity/Sound Log', icon: '🎬', default: false },
-    { id: 'muahCont', cat: 'Production', label: 'Hair/Makeup Continuity', icon: '💄', default: false },
-    { id: 'propList', cat: 'Production', label: 'Prop List', icon: '🔫', default: false },
-    { id: 'crewList', cat: 'Production', label: 'Crew Contact List', icon: '📞', default: true },
-    { id: 'transport', cat: 'Production', label: 'Transport Schedule', icon: '🚗', default: false },
-    { id: 'catering', cat: 'Production', label: 'Catering/Meal Tracker', icon: '🍱', default: false },
-    { id: 'pettyCash', cat: 'Production', label: 'Petty Cash Log', icon: '💵', default: false },
-    { id: 'po', cat: 'Production', label: 'Purchase Order', icon: '🧾', default: false },
-    { id: 'timecard', cat: 'Production', label: 'Timecards', icon: '⏱️', default: false },
-    { id: 'riskAI', cat: 'Production', label: 'AI Risk Assessment', icon: '🤖', default: false },
-    { id: 'carbon', cat: 'Production', label: 'Carbon Calculator', icon: '🌱', default: false },
-
-    // Post-Production
-    { id: 'vfxBreak', cat: 'Post-Prod', label: 'VFX Breakdown', icon: '👾', default: false },
-    { id: 'postSched', cat: 'Post-Prod', label: 'Post Schedule', icon: '📅', default: true },
-    { id: 'delivery', cat: 'Post-Prod', label: 'Delivery Schedule', icon: '📦', default: false },
-    { id: 'festTrack', cat: 'Post-Prod', label: 'Festival Tracker', icon: '🏆', default: false },
-
-    // Legal / Compliance
-    { id: 'talentAgr', cat: 'Legal', label: 'Talent Agreement', icon: '🤝', default: true },
-    { id: 'locRel', cat: 'Legal', label: 'Location Release', icon: '🏠', default: true }, // Fixed Emoji
-    { id: 'kitRental', cat: 'Legal', label: 'Kit Rental Agreement', icon: '🎥', default: false },
-    { id: 'permit', cat: 'Legal', label: 'Filming Permit', icon: '📄', default: false },
-    { id: 'insurance', cat: 'Legal', label: 'Insurance Cert', icon: '🛡️', default: false },
-    { id: 'dealMemo', cat: 'Legal', label: 'Crew Deal Memo', icon: '✍️', default: false },
-    { id: 'covid', cat: 'Legal', label: 'COVID Protocols', icon: '😷', default: false },
-    { id: 'sag', cat: 'Legal', label: 'SAG-AFTRA Paperwork', icon: '⭐', default: false },
-    { id: 'crewList', cat: 'Production', label: 'Crew Contact List', icon: '📞', default: true }
-];
-
-/* --- v19.54 Template System Foundation v19.55 --- */
-// DO NOT initialize customTemplates here — budget is undefined at this point
-
-// Helper: Get all available templates (built-in + custom)
-// Safe to call anytime — handles missing budget gracefully
+// Helper: Get all available templates (Linked to Open Gate)
 function getAllAvailableTemplates() {
-    const builtIn = DOCUMENT_TEMPLATES.map(t => ({ ...t, isCustom: false }));
+    // UPDATED: Now pulls directly from mBTOG (Open Gate Engine)
+    // This ensures we always use the central database
+    const builtIn = (typeof mBTOG !== 'undefined' && mBTOG.templates) 
+        ? mBTOG.templates.map(t => ({ ...t, isCustom: false })) 
+        : [];
+        
     const custom = (budget && Array.isArray(budget.customTemplates)) 
         ? budget.customTemplates.map(t => ({ ...t, isCustom: true }))
         : [];
+        
     return [...builtIn, ...custom];
 }
 
@@ -789,20 +742,20 @@ function saveCustomTemplates() {
     saveBudget();
 }
 
-        /* --- v19.51 Helper Functions v19.52 --- */
-        // Generate collision-resistant IDs for attachments
-        function generateSafeId() {
-            return `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        }
+/* --- v19.51 Helper Functions v19.52 --- */
+// Generate collision-resistant IDs for attachments
+function generateSafeId() {
+    return `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+}
 
-        // Abbreviate long filenames for UI display
-        function getAbbreviatedName(name, maxLen = 25) {
-            if (name.length <= maxLen) return name;
-            const ext = name.split('.').pop();
-            const base = name.substring(0, name.lastIndexOf('.'));
-            const keep = maxLen - ext.length - 4; // "..." + ext
-            return base.substring(0, keep) + '...' + ext;
-        }
+// Abbreviate long filenames for UI display
+function getAbbreviatedName(name, maxLen = 25) {
+    if (name.length <= maxLen) return name;
+    const ext = name.split('.').pop();
+    const base = name.substring(0, name.lastIndexOf('.'));
+    const keep = maxLen - ext.length - 4; // "..." + ext
+    return base.substring(0, keep) + '...' + ext;
+}
 
 /* --- v19.56 File Size Formatter --- */
 function formatFileSize(bytes) {
@@ -1496,21 +1449,20 @@ const mBTOG = {
     
     // In-Memory Stores
     rates: [],    
-    contacts: [], 
+    contacts: [],
+    templates: [], // New Home for Document Templates
     
     init() {
         this.loadRates();
         this.loadContacts();
-        console.log(`Open Gate Initialized: ${this.rates.length} rates loaded.`);
+        this.loadTemplates();
+        console.log(`Open Gate Initialized: ${this.rates.length} rates, ${this.templates.length} templates.`);
     },
 
     // --- 1. Data Loading ---
     loadRates() {
         const stored = JSON.parse(localStorage.getItem('prodBudget_v5_globalItems') || '[]');
-        
-        // Auto-seed ONLY if empty (Safety fallback)
         if (stored.length === 0) {
-            console.log("Open Gate: Seeding default database...");
             this.rates = this._getJamaicaDatabase(); 
             this.saveRates();
         } else {
@@ -1518,30 +1470,74 @@ const mBTOG = {
         }
     },
 
-    saveRates() {
-        localStorage.setItem('prodBudget_v5_globalItems', JSON.stringify(this.rates));
-    },
-
     loadContacts() {
         this.contacts = JSON.parse(localStorage.getItem('moo_contacts') || '[]');
     },
 
-    saveContacts() {
-        localStorage.setItem('moo_contacts', JSON.stringify(this.contacts));
+    // NEW: Load Templates into Memory
+    loadTemplates() {
+        // In the future, this can pull from localStorage or Cloud
+        this.templates = [
+            // Pre-Production
+            { id: 'script', cat: 'Pre-Prod', label: 'Script', icon: '📝', default: true },
+            { id: 'treatment', cat: 'Pre-Prod', label: 'Story Treatment', icon: '📖', default: false },
+            { id: 'breakdown', cat: 'Pre-Prod', label: 'Script Breakdowns', icon: '🔍', default: true },
+            { id: 'shotlist', cat: 'Pre-Prod', label: 'Shot Lists', icon: '🎬', default: true },
+            { id: 'storyboard', cat: 'Pre-Prod', label: 'Storyboards', icon: '🎨', default: false },
+            { id: 'preCheck', cat: 'Pre-Prod', label: 'Pre-Prod Checklist', icon: '✅', default: true },
+            { id: 'charProf', cat: 'Pre-Prod', label: 'Character Profiles', icon: '👤', default: false },
+            { id: 'casting', cat: 'Pre-Prod', label: 'Casting Sheets', icon: '🎭', default: false },
+            { id: 'dood', cat: 'Pre-Prod', label: 'Day Out of Days', icon: '📅', default: false },
+            { id: 'stripboard', cat: 'Pre-Prod', label: 'Stripboard Schedule', icon: '🗓️', default: false },
+            { id: 'techScout', cat: 'Pre-Prod', label: 'Tech Scout Report', icon: '📍', default: false },
+            { id: 'budgetRep', cat: 'Pre-Prod', label: 'Budget/Cost Report', icon: '💰', default: true },
+            { id: 'vendorBid', cat: 'Pre-Prod', label: 'Vendor Bid Comparison', icon: '⚖️', default: false },
+            { id: 'pitchDeck', cat: 'Pre-Prod', label: 'Funding Pitch Deck', icon: '🚀', default: false },
+
+            // Production
+            { id: 'callSheet', cat: 'Production', label: 'Daily Call Sheet', icon: '📢', default: true },
+            { id: 'prodReport', cat: 'Production', label: 'Production Report', icon: '📊', default: true },
+            { id: 'continuity', cat: 'Production', label: 'Continuity/Sound Log', icon: '🎬', default: false },
+            { id: 'muahCont', cat: 'Production', label: 'Hair/Makeup Continuity', icon: '💄', default: false },
+            { id: 'propList', cat: 'Production', label: 'Prop List', icon: '🔫', default: false },
+            { id: 'crewList', cat: 'Production', label: 'Crew Contact List', icon: '📞', default: true },
+            { id: 'transport', cat: 'Production', label: 'Transport Schedule', icon: '🚗', default: false },
+            { id: 'catering', cat: 'Production', label: 'Catering/Meal Tracker', icon: '🍱', default: false },
+            { id: 'pettyCash', cat: 'Production', label: 'Petty Cash Log', icon: '💵', default: false },
+            { id: 'po', cat: 'Production', label: 'Purchase Order', icon: '🧾', default: false },
+            { id: 'timecard', cat: 'Production', label: 'Timecards', icon: '⏱️', default: false },
+            { id: 'riskAI', cat: 'Production', label: 'AI Risk Assessment', icon: '🤖', default: false },
+            { id: 'carbon', cat: 'Production', label: 'Carbon Calculator', icon: '🌱', default: false },
+
+            // Post-Production
+            { id: 'vfxBreak', cat: 'Post-Prod', label: 'VFX Breakdown', icon: '👾', default: false },
+            { id: 'postSched', cat: 'Post-Prod', label: 'Post Schedule', icon: '📅', default: true },
+            { id: 'delivery', cat: 'Post-Prod', label: 'Delivery Schedule', icon: '📦', default: false },
+            { id: 'festTrack', cat: 'Post-Prod', label: 'Festival Tracker', icon: '🏆', default: false },
+
+            // Legal / Compliance
+            { id: 'talentAgr', cat: 'Legal', label: 'Talent Agreement', icon: '🤝', default: true },
+            { id: 'locRel', cat: 'Legal', label: 'Location Release', icon: '🏠', default: true },
+            { id: 'kitRental', cat: 'Legal', label: 'Kit Rental Agreement', icon: '🎥', default: false },
+            { id: 'permit', cat: 'Legal', label: 'Filming Permit', icon: '📄', default: false },
+            { id: 'insurance', cat: 'Legal', label: 'Insurance Cert', icon: '🛡️', default: false },
+            { id: 'dealMemo', cat: 'Legal', label: 'Crew Deal Memo', icon: '✍️', default: false },
+            { id: 'covid', cat: 'Legal', label: 'COVID Protocols', icon: '😷', default: false },
+            { id: 'sag', cat: 'Legal', label: 'SAG-AFTRA Paperwork', icon: '⭐', default: false }
+        ];
     },
 
-    // --- 2. Database Options (The requested feature) ---
+    saveRates() { localStorage.setItem('prodBudget_v5_globalItems', JSON.stringify(this.rates)); },
+    saveContacts() { localStorage.setItem('moo_contacts', JSON.stringify(this.contacts)); },
+
+    // --- 2. Database Options ---
     loadJamaicaDefaults() {
-        if(confirm("Load 'Jamaica Database' (2025 Rates)?\n\nThis will add standard Jamaican rates to your database. Existing items will not be deleted.")) {
+        if(confirm("Load 'Jamaica Database' (2025 Rates)?")) {
             const defaults = this._getJamaicaDatabase();
-            const count = this.ingest(defaults, 'rate');
-            
-            // Refresh UI if Settings is open
+            this.ingest(defaults, 'rate');
             if(typeof window.switchSettingsTab === 'function') {
                 window.switchSettingsTab('database', document.querySelector('button[onclick*="database"]'));
             }
-            
-            alert(`Success.\n${count} new items added to your database.`);
         }
     },
 
@@ -1566,21 +1562,18 @@ const mBTOG = {
         return added;
     },
 
-    broadcastRate(role, rate, unit) {
-        if (!this.settings.optInSharing) return;
-        // console.log("Telemetry:", role, rate);
-    },
-
     setPrivacy(optIn) {
         this.settings.optInSharing = optIn;
         localStorage.setItem('moo_og_share', optIn);
     },
 
+    // Unified Search
     search(term, type = 'all') {
         term = term.toLowerCase();
-        const results = { rates: [], contacts: [] };
+        const results = { rates: [], contacts: [], templates: [] };
         if (type === 'all' || type === 'rate') results.rates = this.rates.filter(i => i.description.toLowerCase().includes(term));
         if (type === 'all' || type === 'contact') results.contacts = this.contacts.filter(c => c.name.toLowerCase().includes(term));
+        if (type === 'all' || type === 'template') results.templates = this.templates.filter(t => t.label.toLowerCase().includes(term));
         return results;
     },
 
@@ -1679,6 +1672,117 @@ const mBTOG = {
 
 // Initialize immediately
 mBTOG.init();
+
+/* --- P2 --- */
+
+/* --- v19.54 Template Helper Refactors (Using mBTOG) --- */
+
+// Helper: Get all available templates (built-in from Open Gate + custom from Budget)
+function getAllAvailableTemplates() {
+    const builtIn = mBTOG.templates.map(t => ({ ...t, isCustom: false }));
+    const custom = (budget && Array.isArray(budget.customTemplates)) 
+        ? budget.customTemplates.map(t => ({ ...t, isCustom: true }))
+        : [];
+    return [...builtIn, ...custom];
+}
+
+function ensureDocumentData() {
+    if (!budget.documents) {
+        // Use mBTOG.templates instead of DOCUMENT_TEMPLATES
+        budget.documents = mBTOG.templates.filter(t => t.default).map(t => ({ ...t, status: 'Draft', content: null }));
+    }
+    if (!budget.documentTrash) budget.documentTrash = [];
+    if (!budget.callSheet) budget.callSheet = JSON.parse(JSON.stringify(defaultCallSheet));
+}
+
+function showAddDocumentModal() {
+    const existingIds = (budget.documents || []).map(d => d.id);
+    // Use mBTOG.templates instead of DOCUMENT_TEMPLATES
+    const available = mBTOG.templates.filter(t => !existingIds.includes(t.id));
+    
+    const content = `
+        <div class="p-2">
+            <input type="text" id="docSearch" placeholder="Search templates..." class="w-full p-3 border rounded-lg mb-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <div id="docTemplateList" class="h-64 overflow-y-auto space-y-2">
+                ${renderTemplateList(available)}
+            </div>
+            <div class="mt-4 pt-4 border-t">
+                <p class="text-xs text-gray-500 mb-2 font-bold uppercase">Or create custom</p>
+                <form onsubmit="handleCustomDoc(event)" class="flex gap-2">
+                    <input type="text" id="customDocName" placeholder="Custom Document Name" class="flex-1 p-2 border rounded text-sm" required>
+                    <select id="customDocCat" class="p-2 border rounded text-sm bg-white"><option>Pre-Prod</option><option>Production</option><option>Post-Prod</option><option>Legal</option></select>
+                    <button type="submit" class="bg-gray-800 text-white px-4 py-2 rounded text-xs font-bold">Add</button>
+                </form>
+            </div>
+        </div>`;
+    createModal('addDoc', 'Add Document', content, 'max-w-md');
+    
+    document.getElementById('docSearch').addEventListener('input', (e) => {
+        const term = e.target.value.toLowerCase();
+        const filtered = available.filter(t => t.label.toLowerCase().includes(term));
+        document.getElementById('docTemplateList').innerHTML = renderTemplateList(filtered);
+    });
+}
+
+function addDocument(templateId) {
+    // Use mBTOG.templates instead of DOCUMENT_TEMPLATES
+    const template = mBTOG.templates.find(t => t.id === templateId);
+    if(template) {
+        budget.documents.push({ ...template, status: 'Draft', content: null, dateCreated: new Date().toISOString() });
+        saveBudget();
+        closeModal('addDocModal');
+        showDocumentsModal();
+    }
+}
+
+function applyTemplate(docId, templateId, isCustom) {
+    const doc = budget.documents.find(d => d.id === docId);
+    if (!doc) return;
+
+    let template;
+    if (isCustom) {
+        template = budget.customTemplates.find(t => t.id === templateId);
+    } else {
+        // Use mBTOG.templates instead of DOCUMENT_TEMPLATES
+        template = mBTOG.templates.find(t => t.id === templateId);
+    }
+
+    if (!template) {
+        alert("Template not found.");
+        return;
+    }
+
+    // Load template structure into document content
+    doc.content = {
+        type: 'template',
+        templateId: template.id,
+        templateLabel: template.label,
+        fields: template.fields || {}, 
+        data: {} 
+    };
+
+    if (!template.fields) {
+        doc.content.fields = {
+            projectName: { label: "Project Name", value: budget.projectName || "" },
+            director: { label: "Director", value: "" },
+            producer: { label: "Producer", value: "" },
+            shootDates: { label: "Shoot Dates", value: "" },
+            notes: { label: "Notes", value: "", multiline: true }
+        };
+        doc.content.data = {
+            projectName: budget.projectName || "",
+            director: "",
+            producer: "",
+            shootDates: "",
+            notes: ""
+        };
+    }
+
+    doc.status = 'In Progress';
+    saveBudget();
+    closeModal('templatePickerModal');
+    openDocumentViewer(docId); 
+}
 
 /* --- v19.53 Add Item Modal with Search Engine Update v19.54 --- */
 function showItemSelectorModal(sectionName) {
@@ -2027,8 +2131,6 @@ function handleUpdate(sectionName, itemId, field, value, description) {
         updateCalculations(); // Fast math update for numbers
     }
 }
-
-/* --- P2 --- */
 
         function handleAddExisting(sectionName, desc, unit, rate) {
             const newItem = { id: crypto.randomUUID(), description: desc, quantity: 1, unit: unit, multiplier: 1, rate: rate, actual: 0 };
@@ -3176,6 +3278,8 @@ function removeAttachment(id) {
             a.click();
         }
 
+/* --- P3 --- */
+
 /* --- v19.53 Project Management UI Consolidated, Minimal & Fitted --- */
 function renderProjectManagement() {
     const container = document.getElementById('project-management-container');
@@ -3897,9 +4001,6 @@ const mBTME = {
     }
 };
 
-
-/* --- P3 --- */
-
 /* ==========================================================================
    mBTPublisher (Centralized Export Engine)
    Handles: PDF Generation, System Sharing, WhatsApp, Email, & Safe Downloads
@@ -4619,6 +4720,8 @@ window.syncStageToMain = function(item) {
     // Helper to sync specific stage changes back to main item if needed
     // Currently stage data is separate, but we keep this stub for future "Two-Way Sync" features.
 };
+
+/* --- P4 --- */
 
 /* --- v19.53 [Stages] - Database Search & Smart Add --- */
 
@@ -5350,9 +5453,13 @@ function handleBulkTrash() {
     }
 }
 
+/* --- v19.54 [Documents] - Consolidated Hub & Viewer Logic --- */
+
 function showAddDocumentModal() {
     const existingIds = (budget.documents || []).map(d => d.id);
-    const available = DOCUMENT_TEMPLATES.filter(t => !existingIds.includes(t.id));
+    // Use mBTOG.templates instead of DOCUMENT_TEMPLATES
+    const sourceTemplates = (typeof mBTOG !== 'undefined' && mBTOG.templates) ? mBTOG.templates : [];
+    const available = sourceTemplates.filter(t => !existingIds.includes(t.id));
     
     const content = `
         <div class="p-2">
@@ -5392,7 +5499,8 @@ function renderTemplateList(list) {
 }
 
 function addDocument(templateId) {
-    const template = DOCUMENT_TEMPLATES.find(t => t.id === templateId);
+    const sourceTemplates = (typeof mBTOG !== 'undefined' && mBTOG.templates) ? mBTOG.templates : [];
+    const template = sourceTemplates.find(t => t.id === templateId);
     if(template) {
         budget.documents.push({ ...template, status: 'Draft', content: null, dateCreated: new Date().toISOString() });
         saveBudget();
@@ -5444,15 +5552,6 @@ window.permDeleteDoc = (idx) => {
     }
 };
 
-window.permDeleteDoc = (idx) => {
-    if(confirm("Delete forever?")) {
-        budget.documentTrash.splice(idx, 1);
-        saveBudget();
-        showBinModal();
-    }
-};
-
-/* --- v19.54 Document Viewer Modal & Safe PDF Export --- */
 function openDocumentViewer(docId, context = 'hub') {
     const doc = budget.documents.find(d => d.id === docId);
     if (!doc) return;
@@ -5461,17 +5560,13 @@ function openDocumentViewer(docId, context = 'hub') {
     const isTemplate = doc.content && doc.content.type === 'template';
     const hasAttachment = budget.attachments && budget.attachments.some(a => a.docId === docId);
 
-    // 2. Safe Title Logic (Escapes quotes to prevent syntax errors)
+    // 2. Safe Title Logic
     let rawLabel = (doc.content && doc.content.templateLabel) ? doc.content.templateLabel : doc.label;
-    // Remove special chars for the filename, keep spaces for the title
     const safeFilename = rawLabel.replace(/[^a-z0-9 ]/gi, '_'); 
-    
-    // We escape the label for HTML attributes to prevent breaking the onclick
-    const escapedLabel = rawLabel.replace(/'/g, "&apos;").replace(/"/g, "&quot;");
 
     let viewerContent = '';
 
-    // --- SCENARIO A: Template (Crew List, etc.) ---
+    // --- SCENARIO A: Active Template ---
     if (isTemplate) {
         if (doc.content.templateId === 'crewList') {
             viewerContent = `
@@ -5479,45 +5574,35 @@ function openDocumentViewer(docId, context = 'hub') {
                     <div class="flex justify-between items-center mb-6">
                         <h3 class="text-xl font-bold text-gray-800">${rawLabel}</h3>
                         <div class="flex gap-3 items-center">
-                            <button onclick="autoFillCrewList('${docId}')" class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 shadow-md transition-all text-sm">
-                                <span>✨</span> Fill
-                            </button>
-                            <button onclick="handleDocumentShare('${safeFilename}')" class="w-10 h-10 bg-gray-800 text-white rounded-lg hover:bg-gray-900 shadow-md flex items-center justify-center transition-all" title="Download PDF">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                            </button>
+                            <button onclick="autoFillCrewList('${docId}')" class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 shadow-md transition-all text-sm"><span>✨</span> Fill</button>
+                            <button onclick="mBTPublisher.exportToPDF('docViewerContent', '${safeFilename}', 'download')" class="w-10 h-10 bg-gray-800 text-white rounded-lg hover:bg-gray-900 shadow-md flex items-center justify-center transition-all" title="Download PDF"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg></button>
                         </div>
                     </div>
-                    <div id="crewListTable" class="space-y-8 bg-white p-4 rounded-lg shadow-sm border border-gray-100">
-                        ${renderCrewListTable(doc)}
-                    </div>
+                    <div id="crewListTable" class="space-y-8 bg-white p-4 rounded-lg shadow-sm border border-gray-100">${renderCrewListTable(doc)}</div>
                 </div>`;
         } else {
-            // Generic Template
+            // Generic Form Template
             viewerContent = `
                 <div class="p-12 bg-white" id="docViewerContent" style="min-height: 100vh;">
                     <div class="max-w-4xl mx-auto">
-                        <h1 class="text-4xl font-bold text-center mb-8 text-gray-800">${budget.projectName || 'Project'} - ${rawLabel}</h1>
+                        <h1 class="text-4xl font-bold text-center mb-8 text-gray-800">${budget.projectName} - ${rawLabel}</h1>
                         <p class="text-center text-gray-500 mb-12">Generated: ${new Date().toLocaleDateString()}</p>
                         <div class="bg-gray-50 rounded-xl border border-gray-200 p-20 text-center">
                             <p class="text-3xl text-gray-700 mb-6">${rawLabel}</p>
-                            <p class="text-xl text-gray-500 italic">Template Content</p>
+                            <p class="text-xl text-gray-500 italic">Template Fields Ready</p>
                         </div>
                     </div>
                     <div class="fixed bottom-6 right-6">
-                         <button onclick="handleDocumentShare('${safeFilename}')" class="bg-gray-900 text-white px-6 py-3 rounded-full shadow-xl hover:scale-105 transition-transform font-bold flex items-center gap-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                            Download PDF
-                        </button>
+                         <button onclick="mBTPublisher.exportToPDF('docViewerContent', '${safeFilename}', 'download')" class="bg-gray-900 text-white px-6 py-3 rounded-full shadow-xl hover:scale-105 transition-transform font-bold flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>Download PDF</button>
                     </div>
                 </div>`;
         }
     } 
-    // --- SCENARIO B: Attachment (File) ---
+    // --- SCENARIO B: File Attachment ---
     else if (hasAttachment) {
         const attachment = budget.attachments.find(a => a.docId === docId);
         if (attachment && attachment.previewContent) {
             const prev = attachment.previewContent;
-            
             let previewHTML = '';
             if (prev.type === 'image') previewHTML = `<img src="${prev.data}" class="max-w-full h-auto rounded-lg shadow-lg mx-auto">`;
             else if (prev.type === 'pdf') previewHTML = `<div class="text-center"><img src="${prev.thumbnail}" class="max-w-full h-auto rounded-lg shadow-lg mx-auto mb-4"><p>PDF • ${prev.pageCount} pages</p></div>`;
@@ -5527,102 +5612,107 @@ function openDocumentViewer(docId, context = 'hub') {
             viewerContent = `
                 <div class="p-6" id="docViewerContent">
                     <div class="flex justify-between items-center mb-6">
-                        <div>
-                            <h3 class="text-xl font-bold text-gray-800">${rawLabel}</h3>
-                            <p class="text-sm text-gray-600 mt-1">File: ${attachment.name}</p>
-                        </div>
+                        <div><h3 class="text-xl font-bold text-gray-800">${rawLabel}</h3><p class="text-sm text-gray-600 mt-1">File: ${attachment.name}</p></div>
                         <div class="flex gap-2">
-                             <button onclick="handleDocumentShare('${safeFilename}')" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-lg font-bold text-sm">Download</button>
+                             <button onclick="mBTPublisher.forceDownload(new Blob([''], {type:'text/plain'}), '${attachment.name}')" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-lg font-bold text-sm">Download Original</button>
                              <button onclick="removeAttachmentFromDocument('${attachment.id}', '${docId}')" class="px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg font-bold text-sm">Remove</button>
                         </div>
                     </div>
-                    <div class="border rounded-xl shadow-inner p-4 bg-white min-h-[400px] overflow-auto">
-                        ${previewHTML}
-                    </div>
+                    <div class="border rounded-xl shadow-inner p-4 bg-white min-h-[400px] overflow-auto">${previewHTML}</div>
                 </div>`;
         }
     } 
-    // --- SCENARIO C: Empty ---
+    // --- SCENARIO C: Empty State ---
     else {
         viewerContent = `
             <div class="p-12 text-center">
                 <div class="text-6xl mb-4 opacity-20">📄</div>
                 <h3 class="text-xl font-bold text-gray-400">Empty Document</h3>
-                <p class="text-gray-500 mb-8">Upload a file or choose a template.</p>
+                <p class="text-gray-500 mb-8">Upload a file or choose a template to get started.</p>
+                
                 <div class="flex justify-center gap-4">
-                     <button onclick="document.getElementById('docInput_${docId}').click()" class="px-6 py-3 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700">Upload File</button>
+                     <input type="file" id="viewerUpload_${docId}" class="hidden" onchange="handleDocUploadTrigger(this, '${docId}')">
+                     
+                     <button onclick="document.getElementById('viewerUpload_${docId}').click()" class="px-6 py-3 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 shadow-md transition-colors flex items-center gap-2">
+                        <span>📤</span> Upload File
+                     </button>
+                     
+                     <button onclick="startWithTemplate('${docId}')" class="px-6 py-3 bg-white text-gray-700 border border-gray-300 rounded-lg font-bold hover:bg-gray-50 shadow-sm transition-colors flex items-center gap-2">
+                        <span>📋</span> Use Template
+                     </button>
                 </div>
             </div>`;
     }
 
     createModal('documentViewer', rawLabel, viewerContent, 'max-w-5xl');
-
-    // Hide default header for cleaner look
     const header = document.querySelector('#documentViewerModal .bg-gray-50.border-b');
     if (header) header.style.display = 'none';
     const body = document.getElementById('documentViewerBody');
     if (body) body.classList.remove('p-4');
 }
 
-/* --- Updated Share Handler using mBTPublisher --- */
-function handleDocumentShare(filename) {
-    const element = document.getElementById('docViewerContent');
-    const safeName = filename || 'Document';
-
-    // One line to rule them all
-    mBTPublisher.exportToPDF(element, safeName, 'share');
-}
-
-// Overwrite old function name if it exists to prevent errors
-window.downloadCrewList = function(docId) {
-    const doc = budget.documents.find(d => d.id === docId);
-    if(doc) handleDocumentShare(doc.label);
-};
-
-/* --- Helper: PDF/Share Handler --- */
-function handleDocumentShare(filename) {
-    const element = document.getElementById('docViewerContent');
-    if (!element) return alert("Nothing to share!");
-
-    const opt = {
-        margin: 0.5,
-        filename: `${filename.replace(/[^a-z0-9]/gi, '_')}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2 },
-        jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
-    };
-
-    if (typeof html2pdf !== 'undefined') {
-        // Temporarily hide buttons for clean PDF
-        const buttons = element.querySelectorAll('button');
-        buttons.forEach(b => b.style.display = 'none');
-        
-        html2pdf().set(opt).from(element).save().then(() => {
-            buttons.forEach(b => b.style.display = ''); // Restore buttons
-        });
-    } else {
-        alert("PDF Saver not loaded. Please refresh.");
+function handleDocUploadTrigger(inputElement, docId) {
+    if (inputElement.files && inputElement.files[0]) {
+        processDocAttachment(inputElement.files[0], docId);
     }
 }
 
-/* --- P6 ---*/
+async function processDocAttachment(file, docId) {
+    if (!budget.attachments) budget.attachments = [];
 
-/* --- v19.54 Template Picker & Loader --- */
+    const attachment = {
+        id: generateSafeId(),
+        docId: docId,
+        name: file.name,
+        type: file.type || 'application/octet-stream',
+        size: file.size,
+        dateAdded: new Date().toISOString(),
+        previewContent: null
+    };
+
+    try {
+        const ext = file.name.split('.').pop().toLowerCase();
+        if (['jpg','jpeg','png','gif','webp'].includes(ext)) {
+            const base64 = await new Promise((r) => { const fr=new FileReader(); fr.onload=()=>r(fr.result); fr.readAsDataURL(file); });
+            attachment.previewContent = { type: 'image', data: base64 };
+        } else if (ext === 'pdf') {
+            const arrayBuffer = await file.arrayBuffer();
+            const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+            const page = await pdf.getPage(1);
+            const viewport = page.getViewport({ scale: 1.5 });
+            const canvas = document.createElement('canvas');
+            canvas.height = viewport.height; canvas.width = viewport.width;
+            await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+            attachment.previewContent = { type: 'pdf', thumbnail: canvas.toDataURL(), pageCount: pdf.numPages };
+        } else {
+            const text = await file.text();
+            attachment.previewContent = { type: 'text', content: text.substring(0, 5000) };
+        }
+    } catch (e) { console.warn(e); attachment.previewContent = { type: 'unknown' }; }
+
+    budget.attachments.push(attachment);
+    saveBudget();
+    closeModal('documentViewerModal');
+    openDocumentViewer(docId);
+}
+
 function startWithTemplate(docId) {
     const doc = budget.documents.find(d => d.id === docId);
     if (!doc) return;
 
-    const allTemplates = getAllAvailableTemplates();
+    // Use mBTOG templates + custom
+    const sourceTemplates = (typeof mBTOG !== 'undefined' && mBTOG.templates) ? mBTOG.templates : [];
+    const builtIn = sourceTemplates.map(t => ({ ...t, isCustom: false }));
+    const custom = (budget && Array.isArray(budget.customTemplates)) ? budget.customTemplates.map(t => ({ ...t, isCustom: true })) : [];
+    const allTemplates = [...builtIn, ...custom];
 
     const content = `
         <div class="p-4">
             <h3 class="text-lg font-bold text-gray-800 mb-4">Choose a Template</h3>
-            <input type="text" id="templateSearch" placeholder="Search templates..." 
-                   class="w-full p-3 border rounded-lg mb-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <input type="text" id="templateSearch" placeholder="Search templates..." class="w-full p-3 border rounded-lg mb-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
             <div id="templateGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-96 overflow-y-auto">
                 ${allTemplates.map(t => `
-                    <div onclick="applyTemplate('${docId}', '${t.id}', ${t.isCustom})" 
-                         class="p-4 bg-white border border-gray-200 rounded-lg cursor-pointer hover:border-blue-500 hover:shadow-md transition-all group">
+                    <div onclick="applyTemplate('${docId}', '${t.id}', ${t.isCustom})" class="p-4 bg-white border border-gray-200 rounded-lg cursor-pointer hover:border-blue-500 hover:shadow-md transition-all group">
                         <div class="text-3xl mb-2 text-center">${t.icon}</div>
                         <div class="font-bold text-gray-800 text-center">${t.label}</div>
                         <div class="text-xs text-gray-500 text-center uppercase mt-1">${t.cat}</div>
@@ -5631,29 +5721,21 @@ function startWithTemplate(docId) {
                 `).join('')}
             </div>
             <div class="mt-6 pt-4 border-t text-center">
-                <button onclick="importMtempFile('${docId}')" class="text-sm text-blue-600 hover:underline font-bold">
-                    + Import .mtemp File
-                </button>
+                <button onclick="importMtempFile('${docId}')" class="text-sm text-blue-600 hover:underline font-bold">+ Import .mtemp File</button>
             </div>
         </div>`;
 
     createModal('templatePicker', 'Select Template', content, 'max-w-2xl');
 
-    // Search functionality
     document.getElementById('templateSearch').addEventListener('input', (e) => {
         const term = e.target.value.toLowerCase();
-        const filtered = allTemplates.filter(t => 
-            t.label.toLowerCase().includes(term) || t.cat.toLowerCase().includes(term)
-        );
+        const filtered = allTemplates.filter(t => t.label.toLowerCase().includes(term) || t.cat.toLowerCase().includes(term));
         document.getElementById('templateGrid').innerHTML = filtered.map(t => `
-            <div onclick="applyTemplate('${docId}', '${t.id}', ${t.isCustom})" 
-                 class="p-4 bg-white border border-gray-200 rounded-lg cursor-pointer hover:border-blue-500 hover:shadow-md transition-all group">
+            <div onclick="applyTemplate('${docId}', '${t.id}', ${t.isCustom})" class="p-4 bg-white border border-gray-200 rounded-lg cursor-pointer hover:border-blue-500 hover:shadow-md transition-all group">
                 <div class="text-3xl mb-2 text-center">${t.icon}</div>
                 <div class="font-bold text-gray-800 text-center">${t.label}</div>
                 <div class="text-xs text-gray-500 text-center uppercase mt-1">${t.cat}</div>
-                ${t.isCustom ? '<div class="mt-2 text-[10px] text-blue-600 text-center font-bold">CUSTOM</div>' : ''}
-            </div>
-        `).join('');
+            </div>`).join('');
     });
 }
 
