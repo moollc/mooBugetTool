@@ -1154,9 +1154,7 @@ stageCard: (item, stageKey) => {
     },
 };
 
-/* --- v19.52 v19.53 --- */
-
-/* --- v19.53 [Interaction] - Toggle Rate Type --- */
+/* --- v19.52 [Interaction] - Toggle Rate Type v19.53 --- */
 window.toggleRateType = function(itemId, sectionName) {
     const item = budget.sections[sectionName].items.find(i => i.id === itemId);
     if (!item) return;
@@ -2841,7 +2839,8 @@ window.openCrewProfile = function(el, event, itemId, sectionName) {
 
 /* --- P3 --- */
 
-/* --- v19.51 Export PDF with Options v19.52 --- */
+/* --- v19.51 Export PDF with Options All exports now use mBTPublisher - v19.52, v19.53, v19.54 --- */
+
 function exportToPdf() {
     const content = `
         <div class="space-y-4 p-4">
@@ -2865,145 +2864,38 @@ function exportToPdf() {
                 </label>
             </div>
             <div class="mt-6 flex gap-3 justify-end border-t pt-4">
-                <button onclick="closeModal('pdfExportModal')" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">Cancel</button>
+                <button onclick="mBTME.close('pdfExportModal')" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">Cancel</button>
                 <button id="confirmPdfExport" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-bold">Export PDF</button>
             </div>
         </div>
     `;
-    
-    createModal('pdfExport', 'Export Budget to PDF', content, 'max-w-md');
-    
-    document.getElementById('confirmPdfExport').addEventListener('click', () => {
-        const fitToPage = document.getElementById('pdfFitToPageModal').checked;
-        const hideZeroQty = document.getElementById('pdfHideZeroQtyModal').checked;
-        const landscape = document.getElementById('pdfLandscapeModal').checked;
-        const includeStages = document.getElementById('pdfStagesModal').checked;
-        
-        closeModal('pdfExportModal');
-        generatePdfWithOptions(fitToPage, hideZeroQty, landscape, includeStages);
+
+    mBTME.open('pdfExport', 'Export Budget to PDF', content, 'max-w-md', {
+        onOpen: () => {
+            document.getElementById('confirmPdfExport').addEventListener('click', () => {
+                const hideZeroQty = document.getElementById('pdfHideZeroQtyModal').checked;
+                const landscape = document.getElementById('pdfLandscapeModal').checked;
+                const includeStages = document.getElementById('pdfStagesModal').checked;
+
+                mBTME.close('pdfExportModal');
+
+                // Capture current rendered app content
+                const appContent = document.getElementById('app').innerHTML;
+                const fullHtml = `
+                    <div style="padding:40px; font-family:'Inter',sans-serif; background:white;">
+                        ${appContent}
+                    </div>`;
+
+                const options = {
+                    jsPDF: { orientation: landscape ? 'landscape' : 'portrait' }
+                };
+
+                mBTPublisher.toFileFromHTML(fullHtml, budget.projectName || 'Budget', ['pdf']);
+            });
+        }
     });
 }
 
-function generatePdfWithOptions(fitToPage, hideZeroQty, landscape, includeStages) {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF({ orientation: landscape ? 'landscape' : 'portrait' });
-    
-    doc.setFontSize(18);
-    doc.text(budget.projectName || "Untitled Project", 14, 20);
-    
-    doc.setFontSize(10);
-    doc.setTextColor(100);
-    const dateStr = new Date().toLocaleDateString();
-    doc.text(`Generated: ${dateStr}`, 14, 26);
-    
-    const { subtotal } = calculateTotals(budget.sections);
-    const contingencyAmount = subtotal * (budget.contingencyPercentage / 100);
-    const taxAmount = subtotal * (budget.salesTaxPercentage / 100);
-    const totalBeforeDiscount = subtotal + contingencyAmount + taxAmount;
-    const discountAmount = totalBeforeDiscount * ((budget.discountPercentage || 0) / 100);
-    const grandTotal = totalBeforeDiscount - discountAmount;
-    
-    const summaryData = [
-        ['Subtotal', formatCurrency(toDisp(subtotal))],
-        [`Contingency (${budget.contingencyPercentage}%)`, formatCurrency(toDisp(contingencyAmount))],
-        [`Sales Tax (${budget.salesTaxPercentage}%)`, formatCurrency(toDisp(taxAmount))],
-        [`Discount (${budget.discountPercentage}%)`, `-${formatCurrency(toDisp(discountAmount))}`],
-        ['GRAND TOTAL', formatCurrency(toDisp(grandTotal))]
-    ];
-
-    doc.autoTable({
-        startY: 32,
-        head: [['Category', 'Amount']],
-        body: summaryData,
-        theme: 'striped',
-        headStyles: { fillColor: [66, 66, 66] },
-        columnStyles: { 
-            0: { fontStyle: 'bold' },
-            1: { halign: 'right' } 
-        },
-        margin: { left: 14, right: landscape ? 150 : 100 }
-    });
-
-    let finalY = doc.lastAutoTable.finalY + 10;
-    const tableRows = [];
-    
-    Object.entries(budget.sections).forEach(([sectionName, section]) => {
-        let sectionTotal = 0;
-        const sectionItems = [];
-        
-        section.items.forEach(item => {
-            if (hideZeroQty && (!item.quantity || item.quantity == 0)) return;
-            const { estimated } = calculateItem(item);
-            sectionTotal += estimated;
-            sectionItems.push([
-                item.description,
-                item.quantity,
-                item.unit,
-                formatCurrency(toDisp(item.rate)),
-                formatCurrency(toDisp(estimated))
-            ]);
-        });
-        
-        if (sectionItems.length === 0) return;
-        
-        tableRows.push([{ 
-            content: sectionName.toUpperCase(), 
-            colSpan: 5, 
-            styles: { fillColor: [220, 220, 220], fontStyle: 'bold', textColor: [0, 0, 0] } 
-        }]);
-        
-        tableRows.push(...sectionItems);
-        
-        tableRows.push([{ 
-            content: `Total ${sectionName}: ${formatCurrency(toDisp(sectionTotal))}`, 
-            colSpan: 5, 
-            styles: { halign: 'right', fontStyle: 'bold', fillColor: [245, 245, 245] } 
-        }]);
-    });
-
-    const tableConfig = {
-        startY: finalY,
-        head: [['Description', 'Qty', 'Unit', 'Rate', 'Total']],
-        body: tableRows,
-        theme: 'grid',
-        headStyles: { fillColor: [41, 128, 185] },
-        styles: { fontSize: fitToPage ? 8 : 9, cellPadding: fitToPage ? 2 : 3 },
-        pageBreak: 'auto',
-    };
-    
-    if (fitToPage) {
-        tableConfig.tableWidth = 'auto';
-        tableConfig.columnStyles = {
-            0: { cellWidth: 'auto' },
-            1: { cellWidth: 15, halign: 'center' },
-            2: { cellWidth: 15, halign: 'center' },
-            3: { cellWidth: 25, halign: 'right' },
-            4: { cellWidth: 30, halign: 'right', fontStyle: 'bold' }
-        };
-    } else {
-        tableConfig.columnStyles = {
-            0: { cellWidth: 'auto' },
-            1: { cellWidth: 20, halign: 'center' },
-            2: { cellWidth: 20, halign: 'center' },
-            3: { cellWidth: 30, halign: 'right' },
-            4: { cellWidth: 35, halign: 'right', fontStyle: 'bold' }
-        };
-    }
-
-    doc.autoTable(tableConfig);
-    
-    if (includeStages) {
-        doc.addPage();
-        doc.setFontSize(14);
-        doc.text('Production Stages Breakdown', 14, 20);
-        doc.setFontSize(10);
-        doc.text('(Feature coming in v19.52)', 14, 28);
-    }
-
-    doc.save(`${budget.projectName || 'Budget'}.pdf`);
-}
-        
- /* --- v19.51 Export Excel with Options v19.52 --- */
 function exportToXlsx() {
     const content = `
         <div class="space-y-4 p-4">
@@ -3019,117 +2911,80 @@ function exportToXlsx() {
                 </label>
             </div>
             <div class="mt-6 flex gap-3 justify-end border-t pt-4">
-                <button onclick="closeModal('xlsxExportModal')" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">Cancel</button>
+                <button onclick="mBTME.close('xlsxExportModal')" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">Cancel</button>
                 <button id="confirmXlsxExport" class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-bold">Export Excel</button>
             </div>
         </div>
     `;
-    
-    createModal('xlsxExport', 'Export Budget to Excel', content, 'max-w-md');
-    
-    document.getElementById('confirmXlsxExport').addEventListener('click', () => {
-        const hideZeroQty = document.getElementById('xlsxHideZeroQtyModal').checked;
-        const includeStages = document.getElementById('xlsxStagesModal').checked;
-        
-        closeModal('xlsxExportModal');
-        generateXlsxWithOptions(hideZeroQty, includeStages);
+
+    mBTME.open('xlsxExport', 'Export Budget to Excel', content, 'max-w-md', {
+        onOpen: () => {
+            document.getElementById('confirmXlsxExport').addEventListener('click', () => {
+                const hideZeroQty = document.getElementById('xlsxHideZeroQtyModal').checked;
+                const includeStages = document.getElementById('xlsxStagesModal').checked;
+
+                mBTME.close('xlsxExportModal');
+
+                const data = [];
+                data.push([budget.projectName || "Untitled Project"]);
+                data.push([`Generated: ${new Date().toLocaleDateString()}`]);
+                data.push([]);
+
+                const { subtotal } = calculateTotals(budget.sections);
+                const contingencyAmount = subtotal * (budget.contingencyPercentage / 100);
+                const taxAmount = subtotal * (budget.salesTaxPercentage / 100);
+                const totalBeforeDiscount = subtotal + contingencyAmount + taxAmount;
+                const discountAmount = totalBeforeDiscount * ((budget.discountPercentage || 0) / 100);
+                const grandTotal = totalBeforeDiscount - discountAmount;
+                const totalActual = calculateActuals(budget.sections);
+
+                data.push(["BUDGET SUMMARY", ""]);
+                data.push(["Subtotal", toDisp(subtotal)]);
+                data.push([`Contingency (${budget.contingencyPercentage}%)`, toDisp(contingencyAmount)]);
+                data.push([`Sales Tax (${budget.salesTaxPercentage}%)`, toDisp(taxAmount)]);
+                data.push([`Discount (${budget.discountPercentage}%)`, -toDisp(discountAmount)]);
+                data.push(["GRAND TOTAL", toDisp(grandTotal)]);
+                data.push(["TOTAL ACTUAL SPEND", toDisp(totalActual)]);
+                data.push([]);
+                data.push(["Description", "Qty", "Unit", "Rate", "Estimated", "Actual", "Variance"]);
+
+                Object.entries(budget.sections).forEach(([sectionName, section]) => {
+                    data.push([sectionName.toUpperCase(), "", "", "", "", "", ""]);
+                    let sectionEst = 0;
+                    let sectionAct = 0;
+                    section.items.forEach(item => {
+                        if (hideZeroQty && (!item.quantity || item.quantity == 0)) return;
+                        const { estimated, variance } = calculateItem(item);
+                        sectionEst += estimated;
+                        sectionAct += (parseFloat(item.actual) || 0);
+                        data.push([
+                            item.description,
+                            item.quantity,
+                            item.unit,
+                            toDisp(item.rate),
+                            toDisp(estimated),
+                            toDisp(item.actual),
+                            toDisp(variance)
+                        ]);
+                    });
+                    data.push([
+                        `Total ${sectionName}`,
+                        "", "", "",
+                        toDisp(sectionEst),
+                        toDisp(sectionAct),
+                        toDisp(sectionAct - sectionEst)
+                    ]);
+                    data.push([]);
+                });
+
+                mBTPublisher.toXLSX(data, 'Budget Detail', budget.projectName || 'Budget');
+            });
+        }
     });
 }
 
-function generateXlsxWithOptions(hideZeroQty, includeStages) {
-    const wb = XLSX.utils.book_new();
-    const { subtotal } = calculateTotals(budget.sections);
-    const contingencyAmount = subtotal * (budget.contingencyPercentage / 100);
-    const taxAmount = subtotal * (budget.salesTaxPercentage / 100);
-    const totalBeforeDiscount = subtotal + contingencyAmount + taxAmount;
-    const discountAmount = totalBeforeDiscount * ((budget.discountPercentage || 0) / 100);
-    const grandTotal = totalBeforeDiscount - discountAmount;
-    const totalActual = calculateActuals(budget.sections);
-
-    const data = [];
-    
-    data.push([budget.projectName || "Untitled Project"]);
-    data.push([`Generated: ${new Date().toLocaleDateString()}`]);
-    data.push([]);
-
-    data.push(["BUDGET SUMMARY", ""]);
-    data.push(["Subtotal", toDisp(subtotal)]);
-    data.push([`Contingency (${budget.contingencyPercentage}%)`, toDisp(contingencyAmount)]);
-    data.push([`Sales Tax (${budget.salesTaxPercentage}%)`, toDisp(taxAmount)]);
-    data.push([`Discount (${budget.discountPercentage}%)`, -toDisp(discountAmount)]); 
-    data.push(["GRAND TOTAL", toDisp(grandTotal)]);
-    data.push(["TOTAL ACTUAL SPEND", toDisp(totalActual)]);
-    data.push([]);
-
-    data.push(["Description", "Qty", "Unit", "Rate", "Estimated", "Actual", "Variance"]);
-
-    Object.entries(budget.sections).forEach(([sectionName, section]) => {
-        data.push([sectionName.toUpperCase(), "", "", "", "", "", ""]);
-        let sectionEst = 0;
-        let sectionAct = 0;
-
-        section.items.forEach(item => {
-            if (hideZeroQty && (!item.quantity || item.quantity == 0)) return;
-
-            const { estimated, variance } = calculateItem(item);
-            sectionEst += estimated;
-            sectionAct += (parseFloat(item.actual) || 0);
-
-            data.push([
-                item.description,
-                item.quantity,
-                item.unit,
-                toDisp(item.rate),
-                toDisp(estimated),
-                toDisp(item.actual),
-                toDisp(variance)
-            ]);
-        });
-
-        data.push([
-            `Total ${sectionName}`, 
-            "", "", "", 
-            toDisp(sectionEst), 
-            toDisp(sectionAct), 
-            toDisp(sectionAct - sectionEst)
-        ]);
-        data.push([]);
-    });
-
-    const ws = XLSX.utils.aoa_to_sheet(data);
-    ws['!cols'] = [
-        { wch: 40 }, { wch: 8 }, { wch: 10 }, { wch: 15 },
-        { wch: 15 }, { wch: 15 }, { wch: 15 }
-    ];
-
-    XLSX.utils.book_append_sheet(wb, ws, "Budget Detail");
-    
-    if (includeStages) {
-        const stagesData = [["Stages Breakdown"], ["Feature coming in v19.52"]];
-        const stagesWs = XLSX.utils.aoa_to_sheet(stagesData);
-        XLSX.utils.book_append_sheet(wb, stagesWs, "Stages");
-    }
-    
-    XLSX.writeFile(wb, `${budget.projectName || 'Budget'}.xlsx`);
-}
-
-/* --- v19.51 .moo File Export/Import Logic v19.52 --- */
-        function exportToMoo() {
-    if (!budget) {
-        alert("No active budget to export.");
-        return;
-    }
-    const dataStr = JSON.stringify(budget, null, 2);
-    const blob = new Blob([dataStr], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    const safeName = (budget.projectName || "untitled").replace(/[^a-z0-9]/gi, '_').toLowerCase();
-    a.href = url;
-    a.download = `${safeName}.moo`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.createObjectURL(url);
+function exportToMoo() {
+    mBTPublisher.toMoo();
 }
 
 function handleUniversalImport() {
