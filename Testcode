@@ -7,7 +7,7 @@
     <meta name="description" content="Offline-capable Film Production Budget Tool">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>mooBudgetTool v19.53</title>
+    <title>mooBudgetTool v19.54-Beta</title>
     
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/moollc/mooBudgetTool/refs/heads/main/assets/cow-512.png">
@@ -544,6 +544,54 @@
             }
         }
 
+/* --- mBTDB v3.4 Styles (Paper Aesthetic) --- */
+
+/* 1. The Canvas (Slate Background) */
+.grid-stack {
+    background-color: #cbd5e1; /* Slate-300 (Darker background for contrast) */
+    min-height: 100vh;
+}
+
+/* 2. The Widgets (Paper Cards) */
+.grid-stack-item-content {
+    background-color: white !important;
+    border-radius: 0.5rem !important; /* rounded-lg */
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important; /* shadow-md */
+    overflow: hidden !important; 
+}
+
+/* 3. Edit Mode Overrides */
+.editing-mode .grid-stack {
+    border: 2px dashed #94a3b8; /* Slate-400 Boundary */
+}
+.editing-mode .grid-stack-item-content {
+    border: 1px solid #94a3b8 !important; /* Visible border when editing */
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1) !important; /* Lifted effect */
+    z-index: 10 !important;
+}
+.editing-mode .grid-stack-item-content:hover {
+    border-color: #2563eb !important; /* Blue-600 */
+    border-width: 2px !important;
+}
+
+/* 4. Controls & Handles */
+.widget-header { display: none !important; } /* Hidden by default */
+.editing-mode .widget-header { display: flex !important; background-color: #f1f5f9; border-bottom: 1px solid #e2e8f0; }
+
+.widget-controls { display: none !important; }
+.editing-mode .widget-controls { display: inline-flex !important; }
+
+/* Resize Handles */
+.editing-mode .ui-resizable-handle { display: block !important; z-index: 100; }
+.editing-mode .ui-resizable-se {
+    width: 20px !important; height: 20px !important; right: 4px !important; bottom: 4px !important;
+    background: radial-gradient(circle, #94a3b8 2px, transparent 2.5px); /* Grip dots */
+    background-size: 4px 4px;
+}
+
+/* 5. Dropdown Styling */
+#mBTDB_WidgetSelect { background-color: #1e293b; color: white; border-radius: 4px; border: 1px solid #475569; }
+
     </style>
 
 </head>
@@ -578,6 +626,7 @@
         };
         requestAnimationFrame(tryRemove);
     });
+
 </script>
 
     <div id="app" class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8"></div>
@@ -4851,324 +4900,581 @@ const mBTAssign = {
 }
 
 /* --- P4 --- */
-/* ==========================================================================
-   mBTDB (Moo Budget Tool Document Builder) v2.1 - SVG & Open Gate Integrated
+/* /* ==========================================================================
+   mBTDB v3.5 - Phase 2: Weather & Talent Integrated
    ========================================================================== */
-window.CallSheetBuilder = {
-    // --- 1. Initial State (Schema) ---
-    defaultState: {
-        meta: {
-            productionTitle: "Untitled Production", productionCompany: "",
-            shootDate: new Date().toISOString().split('T')[0], shootDay: "1 of 1",
-            crewCallTime: "08:00", sunriseSunset: "06:00 / 18:00"
-        },
-        labels: {
-            director: "Director", producer: "Producer", ad: "1st AD",
-            weather: "Weather", sun: "Sun", hospital: "Hospital"
-        },
-        widgets: [
-            { id: 'contacts', x: 0, y: 0, w: 12, h: 4, content: 'contacts' },
-            { id: 'weather', x: 0, y: 4, w: 6, h: 4, content: 'weather' },
-            { id: 'locations', x: 6, y: 4, w: 6, h: 4, content: 'locations' },
-            { id: 'schedule', x: 0, y: 8, w: 12, h: 8, content: 'schedule' },
-            { id: 'crew', x: 0, y: 16, w: 6, h: 8, content: 'crew' },
-            { id: 'cast', x: 6, y: 16, w: 6, h: 8, content: 'cast' },
-            { id: 'notes', x: 0, y: 24, w: 12, h: 4, content: 'notes' }
-        ],
-        data: {
-            contacts: { director: "", producer: "", ad: "" },
-            schedule: [],
-            cast: [],
-            crew: [],
-            locations: [{ id: 'loc_1', name: "Base Camp", address: "", timeOnLocation: "07:00", parking: "", mapLink: "", weather: "", hospital: "" }],
-            additional: { notes: "", extras: "", walkies: "CH 1: General", transport: "", advance: "" }
+window.mBTDB = {
+    state: { 
+        currentDocId: null, 
+        isEditing: false, 
+        grid: null,
+        history: [],
+        historyPointer: -1
+    },
+    
+    icons: {
+        drag: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-slate-400"><circle cx="9" cy="12" r="1"/><circle cx="9" cy="5" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="19" r="1"/></svg>`,
+        userSearch: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>`,
+        plus: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>`,
+        close: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`,
+        trash: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`,
+        undo: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>`,
+        redo: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13"/></svg>`,
+        copy: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`,
+        print: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>`,
+        cloud: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path></svg>`
+    },
+
+    templates: {
+        'default': { label: "Blank Document", widgets: [{ id: 'meta_header', x: 0, y: 0, w: 12, h: 2, type: 'header' }] },
+        'callSheet': {
+            label: "Daily Call Sheet",
+            widgets: [
+                { id: 'contacts', x: 0, y: 0, w: 12, h: 4, type: 'contacts' },
+                { id: 'weather', x: 0, y: 4, w: 6, h: 4, type: 'weather' },
+                { id: 'locations', x: 6, y: 4, w: 6, h: 4, type: 'locations' },
+                { id: 'schedule', x: 0, y: 8, w: 12, h: 8, type: 'schedule' },
+                { id: 'cast', x: 0, y: 16, w: 6, h: 8, type: 'cast' },
+                { id: 'crew', x: 6, y: 16, w: 6, h: 8, type: 'crew' },
+                { id: 'notes', x: 0, y: 24, w: 12, h: 4, type: 'richText', label: "General Notes" }
+            ]
         }
     },
 
-    // --- 2. SVGs (No Emojis!) ---
-    icons: {
-        drag: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="12" r="1"/><circle cx="9" cy="5" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="19" r="1"/></svg>`,
-        print: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>`,
-        close: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`,
-        userSearch: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>`,
-        plus: `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>`,
-        trash: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`
+    // --- 1. Core Logic ---
+
+    open: function(docId) {
+        this.state.currentDocId = docId;
+        this.state.history = []; 
+        this.state.historyPointer = -1;
+
+        const doc = budget.documents.find(d => d.id === docId);
+        if (!doc) return;
+
+        if (!doc.content) doc.content = { data: {}, widgets: [] };
+        if (!doc.content.widgets || doc.content.widgets.length === 0) {
+            const tKey = this.templates[doc.type] ? doc.type : 'default';
+            doc.content.widgets = JSON.parse(JSON.stringify(this.templates[tKey].widgets));
+            if(!doc.content.data.meta) doc.content.data = this._generateDefaultData();
+        }
+
+        this._pushHistory(doc);
+        mBTME.open('documentViewerModal', 'Document Viewer', '<div id="mBTDB_Container"></div>', 'w-full h-full max-w-full', { noPadding: true, hideHeader: true });
+        this.renderFrame();
     },
 
-    // --- 3. Open Gate Pull ---
+    toggleEditMode: function() {
+        this.state.isEditing = !this.state.isEditing;
+        const container = document.getElementById('mBTDB_Workspace');
+        const grid = this.state.grid;
+
+        if (this.state.isEditing) {
+            container.classList.add('editing-mode');
+            grid.setStatic(false);
+            grid.enable();
+        } else {
+            container.classList.remove('editing-mode');
+            grid.setStatic(true);
+            grid.disable();
+        }
+        this._updateHeaderButtons();
+    },
+
+    // --- 2. Automation (Weather & Open Gate) ---
+
+    autoFillWeather: async function(docId, locationIndex, locationName) {
+        if(!locationName) return alert("Please enter a Location Name or City first.");
+        const btn = document.getElementById(`weather-btn-${locationIndex}`);
+        if(btn) btn.innerHTML = "⏳...";
+
+        try {
+            const geoRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(locationName)}&count=1&language=en&format=json`);
+            const geoData = await geoRes.json();
+            
+            if(!geoData.results || geoData.results.length === 0) {
+                alert("Location not found. Try a City name (e.g. 'Kingston').");
+                if(btn) btn.innerHTML = `${this.icons.cloud} Auto`;
+                return;
+            }
+            const { latitude, longitude, name, country } = geoData.results[0];
+            const weatherRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset&timezone=auto`);
+            const wData = await weatherRes.json();
+            const today = wData.daily;
+
+            const weatherString = `High: ${today.temperature_2m_max[0]}° | Low: ${today.temperature_2m_min[0]}°\nSunrise: ${today.sunrise[0].split('T')[1]} | Sunset: ${today.sunset[0].split('T')[1]}\n(Source: Open-Meteo for ${name}, ${country})`;
+
+            this.updateRow(docId, 'locations', locationIndex, 'weather', weatherString);
+            if(locationIndex === 0) {
+                this.updateData(docId, 'meta.sunriseSunset', `${today.sunrise[0].split('T')[1]} / ${today.sunset[0].split('T')[1]}`);
+            }
+            this.renderFrame();
+        } catch(e) {
+            console.error(e);
+            alert("Weather fetch failed. Check connection.");
+            if(btn) btn.innerHTML = `${this.icons.cloud} Auto`;
+        }
+    },
+
     pullFromOpenGate: function(docId, path, roleQuery) {
         if (typeof mBTOG === 'undefined' || !mBTOG.contacts) return alert("Open Gate Database not loaded.");
-        
-        const contacts = mBTOG.contacts;
-        const matches = contacts.filter(c => c.role && c.role.toLowerCase().includes(roleQuery.toLowerCase()));
-
-        if (matches.length === 0) return alert(`No contacts found with role "${roleQuery}" in Open Gate.`);
-        
-        if (matches.length === 1) {
-            const c = matches[0];
+        const matches = mBTOG.contacts.filter(c => c.role && c.role.toLowerCase().includes(roleQuery.toLowerCase()));
+        if (matches.length === 0) return alert(`No contacts found for "${roleQuery}".`);
+        const apply = (c) => {
             const val = `${c.name} ${c.contact ? '('+c.contact+')' : ''}`;
-            this.update(docId, path, val);
-            this.render(docId); // Refresh UI
-        } else {
-            // Simple selector for multiple matches
-            const choice = prompt(`Found ${matches.length} matches for ${roleQuery}:\n` + 
-                matches.map((c, i) => `${i+1}. ${c.name}`).join('\n') + 
-                `\nEnter number to select:`);
-            
-            const idx = parseInt(choice) - 1;
-            if (matches[idx]) {
-                const c = matches[idx];
-                const val = `${c.name} ${c.contact ? '('+c.contact+')' : ''}`;
-                this.update(docId, path, val);
-                this.render(docId);
-            }
-        }
-    },
-
-    // --- 4. Auto-Fill Logic (Budget Priority) ---
-    autoFillFromBudget: function(docId) {
-        const doc = budget.documents.find(d => d.id === docId);
-        if(!doc) return;
-        
-        if(!doc.content.data || !doc.content.data.meta) {
-            doc.content.data = JSON.parse(JSON.stringify(this.defaultState));
-        }
-        const state = doc.content.data;
-
-        // Meta
-        state.meta.productionTitle = budget.projectName || "Untitled";
-        state.meta.productionCompany = budget.company || "";
-
-        // Contacts Smart Search (Budget Only)
-        const findRole = (query) => {
-            for(const sec of Object.values(budget.sections)) {
-                const item = sec.items.find(i => i.description.toLowerCase().includes(query) && i.crew && i.crew.name);
-                if(item) return `${item.crew.name} ${item.crew.phone ? '('+item.crew.phone+')' : ''}`;
-            }
-            return "";
+            this.updateData(docId, path, val);
+            this.renderFrame(); 
         };
-        state.data.contacts.director = findRole('director');
-        state.data.contacts.producer = findRole('producer');
-        state.data.contacts.ad = findRole('1st ad') || findRole('assistant director');
+        if (matches.length === 1) apply(matches[0]);
+        else {
+            const choice = prompt(`Found ${matches.length} matches:\n${matches.map((c,i)=>`${i+1}. ${c.name}`).join('\n')}\nEnter #`);
+            const idx = parseInt(choice)-1;
+            if(matches[idx]) apply(matches[idx]);
+        }
+    },
 
-        // Crew
-        state.data.crew = [];
-        Object.entries(budget.sections).forEach(([secName, sec]) => {
-            sec.items.forEach(item => {
-                if(item.crew && item.crew.name) {
-                    state.data.crew.push({
-                        id: `cr_${Math.random().toString(36).substr(2,9)}`,
-                        department: secName,
-                        position: item.description,
-                        name: item.crew.name,
-                        callTime: state.meta.crewCallTime
-                    });
-                }
-            });
-        });
+    // --- 3. Undo/Redo & Snapshot ---
 
+    _pushHistory: function(doc) {
+        if (this.state.historyPointer < this.state.history.length - 1) {
+            this.state.history = this.state.history.slice(0, this.state.historyPointer + 1);
+        }
+        const snapshot = JSON.stringify(doc.content);
+        this.state.history.push(snapshot);
+        this.state.historyPointer++;
+        if(this.state.history.length > 50) {
+            this.state.history.shift();
+            this.state.historyPointer--;
+        }
+        this._updateHeaderButtons();
+    },
+
+    undo: function() {
+        if (this.state.historyPointer > 0) {
+            this.state.historyPointer--;
+            this._restoreHistory();
+        }
+    },
+
+    redo: function() {
+        if (this.state.historyPointer < this.state.history.length - 1) {
+            this.state.historyPointer++;
+            this._restoreHistory();
+        }
+    },
+
+    _restoreHistory: function() {
+        const doc = budget.documents.find(d => d.id === this.state.currentDocId);
+        const snapshot = JSON.parse(this.state.history[this.state.historyPointer]);
+        doc.content = snapshot;
         saveBudget();
-        this.render(docId);
-        alert("✅ Data populated from Budget.");
+        this.renderFrame();
     },
 
-    // --- 5. Content Rendering ---
-    renderSectionContent: function(docId, type, state) {
-        const d = state.data;
+    snapshotDoc: function() {
+        const doc = budget.documents.find(d => d.id === this.state.currentDocId);
+        if(!confirm(`Create a copy of "${doc.label}"?`)) return;
+
+        const newDoc = JSON.parse(JSON.stringify(doc));
+        newDoc.id = 'doc_' + Date.now();
+        newDoc.label = doc.label + " (Copy)";
+        newDoc.created = new Date().toISOString();
+        const match = doc.label.match(/(\d+)$/);
+        if(match) {
+            const num = parseInt(match[1]) + 1;
+            newDoc.label = doc.label.replace(/\d+$/, num);
+        }
+        budget.documents.push(newDoc);
+        saveBudget();
+        if (document.getElementById('documentsHubModal')) {
+            showDocumentsModal(window.docHubState ? window.docHubState.activeTab : null);
+        }
+        mBTDB.open(newDoc.id); 
+        alert("Snapshot created and opened.");
+    },
+
+    // --- 4. Widget Management ---
+
+    addWidget: function() {
+        const type = document.getElementById('mBTDB_WidgetSelect').value;
+        const doc = budget.documents.find(d => d.id === this.state.currentDocId);
+        const newWidget = {
+            id: type + '_' + Date.now(), type: type, label: type.charAt(0).toUpperCase() + type.slice(1),
+            w: 12, h: 4, autoPosition: true
+        };
+        const html = this._generateWidgetHTML(newWidget, doc);
+        const widgetNode = this.state.grid.addWidget({
+            w: newWidget.w, h: newWidget.h, content: html, id: newWidget.id, autoPosition: true
+        });
+        newWidget.x = widgetNode.gridstackNode.x;
+        newWidget.y = widgetNode.gridstackNode.y;
+        doc.content.widgets.push(newWidget);
+        this._triggerSave();
+    },
+
+    deleteWidget: function(id) {
+        if(!confirm("Delete widget?")) return;
+        const doc = budget.documents.find(d => d.id === this.state.currentDocId);
+        const el = document.querySelector(`.grid-stack-item[gs-id="${id}"]`);
+        if(el) this.state.grid.removeWidget(el);
+        doc.content.widgets = doc.content.widgets.filter(w => w.id !== id);
+        this._triggerSave();
+    },
+
+    // --- 5. Rendering ---
+
+    renderFrame: function() {
+        const doc = budget.documents.find(d => d.id === this.state.currentDocId);
+        const container = document.getElementById('mBTDB_Container');
         
-        // Helper: Input with "Open Gate" pull button
-        const renderContactField = (path, val, label, roleQuery) => `
-            <div class="mb-2 relative">
-                <div class="flex justify-between items-center mb-1">
-                    <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">${label}</div>
-                    <button onclick="CallSheetBuilder.pullFromOpenGate('${docId}', '${path}', '${roleQuery}')" class="text-blue-400 hover:text-blue-600 transition-colors" title="Search Open Gate">${this.icons.userSearch}</button>
+        const toolbarHTML = `
+            <div id="mBTDB_Header" class="bg-slate-800 text-white p-3 flex flex-wrap justify-between items-center sticky top-0 z-50 shadow-lg print:hidden gap-2">
+                <div class="flex items-center gap-4">
+                    <h2 class="font-black text-lg tracking-tight">📄 ${RenderEngine.esc(doc.label)}</h2>
                 </div>
-                <input type="text" value="${val||''}" onchange="CallSheetBuilder.update('${docId}', '${path}', this.value)" class="w-full bg-gray-50 border border-gray-200 rounded px-2 py-1 text-xs focus:bg-white focus:ring-1 focus:ring-blue-500 outline-none">
+                <div class="flex gap-2 items-center" id="mBTDB_Buttons"></div>
             </div>`;
 
-        const renderField = (path, val, label, isArea) => `
-            <div class="mb-2">
-                <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">${label}</div>
-                ${isArea 
-                    ? `<textarea onchange="CallSheetBuilder.update('${docId}', '${path}', this.value)" class="w-full bg-gray-50 border border-gray-200 rounded px-2 py-1 text-xs focus:bg-white focus:ring-1 focus:ring-blue-500 outline-none resize-none h-full" style="min-height:60px">${val||''}</textarea>`
-                    : `<input type="text" value="${val||''}" onchange="CallSheetBuilder.update('${docId}', '${path}', this.value)" class="w-full bg-gray-50 border border-gray-200 rounded px-2 py-1 text-xs focus:bg-white focus:ring-1 focus:ring-blue-500 outline-none">`
-                }
+        const workspaceHTML = `
+            <div id="mBTDB_Workspace" class="bg-slate-200 min-h-screen p-4 overflow-y-auto ${this.state.isEditing ? 'editing-mode' : ''}">
+                <div id="mBTDB_MetaArea" class="mb-6 border-b border-slate-300 pb-4 bg-white p-6 shadow-sm rounded-lg"></div>
+                <div class="grid-stack"></div>
             </div>`;
 
-        if(type === 'contacts') {
-            return `<div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                ${renderContactField('data.contacts.director', d.contacts.director, 'Director', 'director')}
-                ${renderContactField('data.contacts.producer', d.contacts.producer, 'Producer', 'producer')}
-                ${renderContactField('data.contacts.ad', d.contacts.ad, '1st AD', 'ad')}
-            </div>`;
-        }
-        if(type === 'weather') {
-            return `<div class="space-y-2 h-full flex flex-col">
-                ${renderField('meta.sunriseSunset', state.meta.sunriseSunset, 'Sunrise / Sunset')}
-                ${d.locations.map((l,i) => renderField(`data.locations.${i}.weather`, l.weather, `Weather (${l.name})`, true)).join('')}
-            </div>`;
-        }
-        if(type === 'locations') {
-             return `<div class="space-y-2">
-                ${d.locations.map((l,i) => `
-                    <div class="p-2 bg-blue-50/50 rounded border border-blue-100">
-                        <input value="${l.name}" onchange="CallSheetBuilder.updateRow('${docId}','locations',${i},'name',this.value)" class="font-bold text-xs bg-transparent w-full mb-1 text-blue-800">
-                        <textarea onchange="CallSheetBuilder.updateRow('${docId}','locations',${i},'address',this.value)" class="w-full text-[10px] bg-white border rounded p-1 h-12 mb-1" placeholder="Address...">${l.address}</textarea>
-                        <div class="flex gap-2">
-                            <input value="${l.hospital}" onchange="CallSheetBuilder.updateRow('${docId}','locations',${i},'hospital',this.value)" class="w-1/2 text-[10px] p-1 border rounded" placeholder="Hospital">
-                            <input value="${l.mapLink}" onchange="CallSheetBuilder.updateRow('${docId}','locations',${i},'mapLink',this.value)" class="w-1/2 text-[10px] p-1 border rounded" placeholder="Map Link">
-                        </div>
-                    </div>
-                `).join('')}
-            </div>`;
-        }
-        if(type === 'schedule') {
-            return `<div class="h-full flex flex-col">
-                <div class="flex-grow overflow-auto border rounded bg-white">
-                    <table class="w-full text-[10px] border-collapse">
-                        <thead class="bg-gray-100 sticky top-0 text-gray-600"><tr><th class="p-1 border w-12">Time</th><th class="p-1 border">Scene/Desc</th><th class="p-1 border w-8"></th></tr></thead>
-                        <tbody>
-                            ${d.schedule.map((row, i) => `
-                                <tr class="${row.type==='meal'?'bg-amber-50 font-bold':''}">
-                                    <td class="p-0 border"><input value="${row.time}" onchange="CallSheetBuilder.updateRow('${docId}','schedule',${i},'time',this.value)" class="w-full p-1 text-center bg-transparent outline-none"></td>
-                                    <td class="p-0 border"><input value="${row.description}" onchange="CallSheetBuilder.updateRow('${docId}','schedule',${i},'description',this.value)" class="w-full p-1 bg-transparent outline-none"></td>
-                                    <td class="p-0 border text-center"><button onclick="CallSheetBuilder.deleteRow('${docId}','schedule',${i})" class="text-gray-400 hover:text-red-500 px-1">${this.icons.close}</button></td>
-                                </tr>`).join('')}
-                        </tbody>
-                    </table>
-                </div>
-                <div class="mt-2 flex gap-2">
-                    <button onclick="CallSheetBuilder.addRow('${docId}','schedule','shot')" class="flex-1 bg-emerald-600 text-white text-[10px] font-bold py-1 rounded shadow flex items-center justify-center gap-1">${this.icons.plus} Shot</button>
-                    <button onclick="CallSheetBuilder.addRow('${docId}','schedule','meal')" class="flex-1 bg-amber-500 text-white text-[10px] font-bold py-1 rounded shadow flex items-center justify-center gap-1">${this.icons.plus} Meal</button>
-                </div>
-            </div>`;
-        }
-        if(type === 'crew') {
-            return `<div class="h-full flex flex-col">
-                <div class="flex-grow overflow-auto border rounded bg-white">
-                    <table class="w-full text-[10px] border-collapse">
-                        <thead class="bg-gray-100 sticky top-0"><tr><th class="p-1 text-left">Pos</th><th class="p-1 text-left">Name</th><th class="p-1 w-10">Call</th></tr></thead>
-                        <tbody class="divide-y">
-                            ${d.crew.map((c,i) => `<tr><td class="p-1 truncate max-w-[60px]">${c.position}</td><td class="p-1 font-bold truncate max-w-[80px]">${c.name}</td><td class="p-1"><input value="${c.callTime}" onchange="CallSheetBuilder.updateRow('${docId}','crew',${i},'callTime',this.value)" class="w-full text-center bg-gray-50 rounded"></td></tr>`).join('')}
-                        </tbody>
-                    </table>
-                </div>
-            </div>`;
-        }
-        return `<div class="text-gray-300 text-center text-xs italic p-4">Content Area (${type})</div>`;
-    },
-
-    // --- 6. The Gridstack Engine ---
-    render: function(docId) {
-        const doc = budget.documents.find(d => d.id === docId);
-        if(!doc) return;
-        const state = doc.content.data;
-        const container = document.getElementById('docViewerContent');
-        if(!container) return;
-
-        // Header (Fixed Meta)
-        const headerHTML = `
-            <div class="bg-white p-4 border-b border-gray-200 sticky top-0 z-50 shadow-sm flex flex-wrap gap-4 items-end justify-between">
-                <div class="w-full sm:w-auto">
-                    <input value="${state.meta.productionTitle}" onchange="CallSheetBuilder.update('${docId}', 'meta.productionTitle', this.value)" class="text-xl sm:text-2xl font-black uppercase w-full outline-none text-gray-800 placeholder-gray-300" placeholder="PRODUCTION TITLE">
-                    <div class="flex gap-4 mt-1">
-                        <div class="flex items-center gap-1"><span class="text-[10px] font-bold text-gray-400 uppercase">Date</span><input type="date" value="${state.meta.shootDate}" onchange="CallSheetBuilder.update('${docId}', 'meta.shootDate', this.value)" class="text-xs font-bold bg-transparent outline-none"></div>
-                        <div class="flex items-center gap-1"><span class="text-[10px] font-bold text-gray-400 uppercase">Call</span><input type="time" value="${state.meta.crewCallTime}" onchange="CallSheetBuilder.update('${docId}', 'meta.crewCallTime', this.value)" class="text-xs font-bold bg-yellow-100 px-1 rounded outline-none text-center"></div>
-                    </div>
-                </div>
-                <div class="flex gap-2">
-                    <button onclick="mBTPublisher.exportToPDF('docViewerContent', '${budget.projectName}_CallSheet')" class="bg-gray-800 text-white px-3 py-1.5 rounded text-xs font-bold hover:bg-black shadow-md flex items-center gap-2">${this.icons.print} PDF / Print</button>
-                    <button onclick="mBTME.close('documentViewerModal')" class="bg-gray-200 text-gray-600 px-3 py-1.5 rounded text-xs font-bold hover:bg-gray-300 flex items-center gap-1">${this.icons.close} Close</button>
-                </div>
-            </div>`;
-
-        const gridHTML = `<div class="grid-stack p-2"></div>`;
-        container.innerHTML = headerHTML + gridHTML;
+        container.innerHTML = toolbarHTML + workspaceHTML;
+        this._renderMetaHeader(doc);
 
         setTimeout(() => {
-            const grid = GridStack.init({
-                column: 12,
-                cellHeight: 70,
-                minRow: 1,
-                margin: 5,
-                animate: true,
-                float: true,
-                disableOneColumnMode: false,
-                oneColumnSize: 768
+            this.state.grid = GridStack.init({
+                column: 12, cellHeight: 70, minRow: 1, margin: 10, animate: true, float: true,
+                disableOneColumnMode: false, staticGrid: !this.state.isEditing 
             }, container.querySelector('.grid-stack'));
-
-            const widgets = state.widgets || this.defaultState.widgets;
-            grid.batchUpdate();
-            widgets.forEach(w => {
-                const widgetContent = `
-                    <div class="grid-stack-item-content bg-white shadow-sm border border-gray-200 rounded-lg flex flex-col overflow-hidden">
-                        <div class="widget-header px-3 py-1.5 bg-gray-50 border-b border-gray-100 flex justify-between items-center cursor-move">
-                            <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest">${w.id}</span>
-                            <span class="text-gray-300 text-xs">${this.icons.drag}</span>
-                        </div>
-                        <div class="widget-body flex-grow p-3 overflow-y-auto">
-                            ${this.renderSectionContent(docId, w.content, state)}
-                        </div>
-                    </div>`;
-                
-                grid.addWidget({
-                    x: w.x, y: w.y, w: w.w, h: w.h,
-                    content: widgetContent,
-                    id: w.id 
-                });
-            });
-            grid.commit();
-
-            grid.on('change', (event, items) => {
+            
+            this._loadWidgetsToGrid(doc);
+            this._updateHeaderButtons();
+            
+            this.state.grid.on('change', (e, items) => {
+                if(!items) return;
+                const docRef = budget.documents.find(d => d.id === this.state.currentDocId);
                 items.forEach(item => {
-                    const wIndex = state.widgets.findIndex(w => w.id === item.id);
-                    if(wIndex > -1) {
-                        state.widgets[wIndex].x = item.x;
-                        state.widgets[wIndex].y = item.y;
-                        state.widgets[wIndex].w = item.w;
-                        state.widgets[wIndex].h = item.h;
-                    }
+                    const w = docRef.content.widgets.find(x => x.id === item.id);
+                    if(w) { w.x = item.x; w.y = item.y; w.w = item.w; w.h = item.h; }
                 });
-                saveBudget();
+                this._triggerSave(); 
             });
-
         }, 50);
     },
 
+    _loadWidgetsToGrid: function(doc) {
+        const grid = this.state.grid;
+        grid.removeAll();
+        grid.batchUpdate();
+        doc.content.widgets.forEach(w => {
+            if(w.type === 'header') return; 
+            const html = this._generateWidgetHTML(w, doc);
+            grid.addWidget({ x: w.x, y: w.y, w: w.w, h: w.h, content: html, id: w.id });
+        });
+        grid.commit();
+    },
+
+    _updateHeaderButtons: function() {
+        const btnContainer = document.getElementById('mBTDB_Buttons');
+        if(!btnContainer) return;
+
+        const isEd = this.state.isEditing;
+        const canUndo = this.state.historyPointer > 0;
+        const canRedo = this.state.historyPointer < this.state.history.length - 1;
+        
+        const widgetOptions = `
+            <option value="richText">Text / Notes</option>
+            <option value="schedule">Schedule Grid</option>
+            <option value="cast">Talent / Cast Grid</option>
+            <option value="crew">Crew Grid</option>
+            <option value="contacts">Contacts Row</option>
+            <option value="weather">Weather</option>
+            <option value="locations">Locations</option>
+        `;
+
+        const editTools = isEd ? `
+            <div class="flex items-center gap-1 bg-slate-700 rounded px-2 py-1 mr-2 border border-slate-600">
+                <select id="mBTDB_WidgetSelect" class="bg-slate-800 text-xs text-white outline-none border-none h-6 cursor-pointer rounded">${widgetOptions}</select>
+                <button onclick="mBTDB.addWidget()" class="text-green-400 hover:text-green-300 font-bold px-2">${this.icons.plus}</button>
+            </div>
+        ` : '';
+
+        btnContainer.innerHTML = `
+            <div class="flex gap-1 mr-4 border-r border-slate-600 pr-4">
+                <button onclick="mBTDB.undo()" ${!canUndo ? 'disabled' : ''} class="p-1.5 rounded hover:bg-slate-700 text-slate-300 disabled:opacity-30" title="Undo">${this.icons.undo}</button>
+                <button onclick="mBTDB.redo()" ${!canRedo ? 'disabled' : ''} class="p-1.5 rounded hover:bg-slate-700 text-slate-300 disabled:opacity-30" title="Redo">${this.icons.redo}</button>
+                <button onclick="mBTDB.snapshotDoc()" class="p-1.5 rounded hover:bg-blue-900 text-blue-300" title="Snapshot / Duplicate">${this.icons.copy}</button>
+            </div>
+            ${editTools}
+            <button onclick="mBTDB.toggleEditMode()" class="${isEd ? 'bg-green-600 hover:bg-green-500' : 'bg-blue-600 hover:bg-blue-500'} text-white px-4 py-1.5 rounded text-xs font-bold shadow transition-colors flex items-center gap-2">
+                ${isEd ? 'Done ✓' : 'Edit Layout'}
+            </button>
+            <button onclick="mBTPublisher.exportToPDF('mBTDB_Workspace', '${budget.projectName}_Doc')" class="bg-slate-700 hover:bg-slate-600 text-white px-3 py-1.5 rounded text-xs font-bold flex items-center gap-2">${this.icons.print} PDF</button>
+            <button onclick="mBTME.close('documentViewerModal')" class="bg-red-900/50 hover:bg-red-900 text-red-200 hover:text-white px-3 py-1.5 rounded text-xs font-bold transition-colors">${this.icons.close}</button>
+        `;
+    },
+
+    _generateWidgetHTML: function(widget, doc) {
+        const data = doc.content.data;
+        const controls = `
+            <div class="widget-header px-3 py-1.5 flex justify-between items-center cursor-move select-none bg-slate-100 border-b border-slate-200">
+                <span class="text-[10px] font-black text-slate-500 uppercase tracking-widest">${widget.label || widget.type}</span>
+                <div class="flex items-center gap-2">
+                    <button onclick="mBTDB.deleteWidget('${widget.id}')" class="text-slate-400 hover:text-red-500 transition-colors">${this.icons.trash}</button>
+                    <span class="text-slate-300">${this.icons.drag}</span>
+                </div>
+            </div>`;
+        
+        let content = `<div class="p-4 text-slate-300 italic">Widget: ${widget.type}</div>`;
+
+        if (widget.type === 'contacts') content = this._renderContacts(doc.id, data);
+        else if (widget.type === 'weather') content = this._renderWeather(doc.id, data);
+        else if (widget.type === 'locations') content = this._renderLocations(doc.id, data);
+        else if (widget.type === 'schedule') content = this._renderSchedule(doc.id, data);
+        else if (widget.type === 'crew') content = this._renderCrew(doc.id, data);
+        else if (widget.type === 'cast') content = this._renderTalent(doc.id, data); 
+        else if (widget.type === 'richText') content = this._renderRichText(doc.id, widget.id, data);
+
+        return `
+            <div class="grid-stack-item-content flex flex-col h-full overflow-hidden bg-white shadow-sm border-0">
+                ${controls}
+                <div class="widget-body flex-grow overflow-y-auto relative text-slate-800">${content}</div>
+            </div>`;
+    },
+
+    // --- 6. Renderers ---
+
+    _renderMetaHeader: function(doc) {
+        const d = doc.content.data;
+        const inputClass = "w-full bg-slate-50 border border-slate-300 rounded px-2 py-1 text-slate-900 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition-all";
+        
+        const html = `
+             <div class="flex flex-wrap gap-8 items-end justify-between">
+                <div class="w-full sm:w-auto flex-grow">
+                    <input value="${d.meta.productionTitle || ''}" onchange="mBTDB.updateData('${doc.id}', 'meta.productionTitle', this.value)" class="text-3xl font-black uppercase w-full outline-none text-slate-900 placeholder-slate-300 bg-transparent mb-2" placeholder="PRODUCTION TITLE">
+                    <div class="flex gap-4">
+                        <div class="flex items-center gap-2"><span class="text-[10px] font-black text-slate-400 uppercase">Date</span><input type="date" value="${d.meta.shootDate}" onchange="mBTDB.updateData('${doc.id}', 'meta.shootDate', this.value)" class="${inputClass} text-sm font-bold w-auto"></div>
+                        <div class="flex items-center gap-2"><span class="text-[10px] font-black text-slate-400 uppercase">Call</span><input type="time" value="${d.meta.crewCallTime}" onchange="mBTDB.updateData('${doc.id}', 'meta.crewCallTime', this.value)" class="font-bold bg-yellow-400 text-slate-900 px-3 py-1 rounded shadow-sm text-sm outline-none"></div>
+                    </div>
+                </div>
+                <div class="w-48">
+                     <div class="text-[10px] font-black text-slate-400 uppercase text-right mb-1">Production Company</div>
+                     <input value="${d.meta.productionCompany || ''}" onchange="mBTDB.updateData('${doc.id}', 'meta.productionCompany', this.value)" class="${inputClass} text-right text-sm font-bold" placeholder="Company Name">
+                </div>
+            </div>`;
+        document.getElementById('mBTDB_MetaArea').innerHTML = html;
+    },
+
+    _renderContacts: function(docId, d) {
+        const inputClass = "w-full bg-slate-50 border border-slate-300 rounded px-2 py-1 text-xs text-slate-900 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition-all";
+        const renderField = (path, val, label, roleQuery) => `
+            <div class="mb-1 relative">
+                <div class="flex justify-between items-center mb-1">
+                    <div class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">${label}</div>
+                    <button onclick="mBTDB.pullFromOpenGate('${docId}', '${path}', '${roleQuery}')" class="text-blue-500 hover:text-blue-700 transition-colors" title="Search Open Gate">${this.icons.userSearch}</button>
+                </div>
+                <input value="${val||''}" onchange="mBTDB.updateData('${docId}', '${path}', this.value)" class="${inputClass}">
+            </div>`;
+
+        return `<div class="grid grid-cols-1 sm:grid-cols-3 gap-4 p-4">
+            ${renderField('contacts.director', d.contacts.director, 'Director', 'director')}
+            ${renderField('contacts.producer', d.contacts.producer, 'Producer', 'producer')}
+            ${renderField('contacts.ad', d.contacts.ad, '1st AD', 'ad')}
+        </div>`;
+    },
+
+    _renderWeather: function(docId, d) {
+        const inputClass = "w-full bg-slate-50 border border-slate-300 rounded px-2 py-1 text-xs text-slate-900 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition-all";
+        const renderF = (loc, i) => `
+            <div class="mb-3">
+                <div class="flex justify-between items-end mb-1">
+                    <div class="text-[10px] font-bold text-slate-500 uppercase">Weather (${loc.name || 'Location '+(i+1)})</div>
+                    <button id="weather-btn-${i}" onclick="mBTDB.autoFillWeather('${docId}', ${i}, '${loc.name}')" class="text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded hover:bg-blue-200 transition-colors font-bold flex items-center gap-1">${this.icons.cloud} Auto</button>
+                </div>
+                <textarea onchange="mBTDB.updateRow('${docId}','locations',${i},'weather',this.value)" class="${inputClass} h-16 resize-none">${loc.weather||''}</textarea>
+            </div>`;
+        return `<div class="p-4 h-full flex flex-col">
+            <div class="mb-3"><div class="text-[10px] font-bold text-slate-500 uppercase mb-1">Sunrise / Sunset</div><input value="${d.meta.sunriseSunset||''}" onchange="mBTDB.updateData('${docId}','meta.sunriseSunset',this.value)" class="${inputClass}"></div>
+            ${(d.locations||[]).map((l,i) => renderF(l, i)).join('')}
+            ${(!d.locations || d.locations.length === 0) ? '<div class="text-xs text-slate-400 italic">Add locations in the Locations widget to see weather fields here.</div>' : ''}
+        </div>`;
+    },
+
+    _renderLocations: function(docId, d) {
+        const inputClass = "w-full bg-slate-50 border border-slate-300 rounded px-2 py-1 text-xs text-slate-900 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition-all";
+        return `<div class="space-y-4 p-4">
+            ${(d.locations||[]).map((l,i) => `
+                <div class="p-3 bg-slate-50 rounded-lg border border-slate-200">
+                    <input value="${l.name}" onchange="mBTDB.updateRow('${docId}','locations',${i},'name',this.value)" class="font-black text-sm w-full mb-2 text-slate-800 bg-transparent uppercase tracking-wide" placeholder="LOCATION NAME">
+                    <textarea onchange="mBTDB.updateRow('${docId}','locations',${i},'address',this.value)" class="${inputClass} h-12 mb-2" placeholder="Address...">${l.address}</textarea>
+                    <div class="flex gap-2">
+                        <div class="flex-1"><div class="text-[10px] font-bold text-slate-400 uppercase mb-0.5">Hospital</div><input value="${l.hospital}" onchange="mBTDB.updateRow('${docId}','locations',${i},'hospital',this.value)" class="${inputClass}"></div>
+                        <div class="flex-1"><div class="text-[10px] font-bold text-slate-400 uppercase mb-0.5">Map Link</div><input value="${l.mapLink}" onchange="mBTDB.updateRow('${docId}','locations',${i},'mapLink',this.value)" class="${inputClass}"></div>
+                    </div>
+                </div>
+            `).join('')}
+        </div>`;
+    },
+
+    _renderSchedule: function(docId, d) {
+        const inputClass = "w-full bg-transparent px-1 py-1 text-xs text-slate-900 outline-none focus:bg-blue-50";
+        return `<div class="h-full flex flex-col">
+            <div class="flex-grow overflow-auto px-4">
+                <table class="w-full text-xs border-collapse">
+                    <thead class="bg-slate-100 text-slate-600 border-b border-slate-200">
+                        <tr><th class="p-2 text-left uppercase font-black w-16">Time</th><th class="p-2 text-left uppercase font-black">Scene / Desc</th><th class="p-2 w-8"></th></tr>
+                    </thead>
+                    <tbody>
+                        ${d.schedule.map((row, i) => `
+                            <tr class="border-b border-slate-100 ${row.type==='meal'?'bg-amber-50 font-bold':''}">
+                                <td class="border-r border-slate-100"><input value="${row.time}" onchange="mBTDB.updateRow('${docId}','schedule',${i},'time',this.value)" class="${inputClass} text-center font-mono"></td>
+                                <td><input value="${row.description}" onchange="mBTDB.updateRow('${docId}','schedule',${i},'description',this.value)" class="${inputClass} ${row.type==='meal'?'uppercase tracking-widest text-center text-amber-900':''}"></td>
+                                <td class="text-center widget-controls"><button onclick="mBTDB.deleteRow('${docId}','schedule',${i})" class="text-slate-300 hover:text-red-500">${this.icons.close}</button></td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+            <div class="mt-2 flex gap-3 widget-controls p-4 border-t border-slate-100">
+                <button onclick="mBTDB.addRow('${docId}','schedule','shot')" class="bg-emerald-600 text-white text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded shadow hover:bg-emerald-700 transition-colors">+ Add Shot</button>
+                <button onclick="mBTDB.addRow('${docId}','schedule','meal')" class="bg-amber-600 text-white text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded shadow hover:bg-amber-700 transition-colors">+ Add Meal</button>
+            </div>
+        </div>`;
+    },
+
+    _renderCrew: function(docId, d, key='crew') {
+        const list = d[key] || [];
+        const inputClass = "w-full bg-transparent px-1 py-1 text-xs text-slate-900 outline-none focus:bg-blue-50";
+        return `<div class="h-full flex flex-col">
+            <div class="flex-grow overflow-auto px-4">
+                <table class="w-full text-xs border-collapse">
+                    <thead class="bg-slate-100 text-slate-600 border-b border-slate-200"><tr><th class="p-2 text-left uppercase font-black">Pos</th><th class="p-2 text-left uppercase font-black">Name</th><th class="p-2 text-center uppercase font-black w-16">Call</th></tr></thead>
+                    <tbody class="divide-y divide-slate-100">
+                        ${list.map((c,i) => `
+                            <tr>
+                                <td class="border-r border-slate-100"><input value="${c.position||''}" onchange="mBTDB.updateRow('${docId}','${key}',${i},'position',this.value)" class="${inputClass} font-bold text-slate-500"></td>
+                                <td class="border-r border-slate-100"><input value="${c.name||''}" onchange="mBTDB.updateRow('${docId}','${key}',${i},'name',this.value)" class="${inputClass} font-medium"></td>
+                                <td><input value="${c.callTime||''}" onchange="mBTDB.updateRow('${docId}','${key}',${i},'callTime',this.value)" class="${inputClass} text-center font-mono"></td>
+                            </tr>`).join('')}
+                    </tbody>
+                </table>
+            </div>
+             <div class="mt-2 widget-controls p-4 border-t border-slate-100">
+                <button onclick="mBTDB.addRow('${docId}','${key}','person')" class="bg-slate-800 text-white text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded shadow hover:bg-slate-900 transition-colors">+ Add Row</button>
+            </div>
+        </div>`;
+    },
+
+    _renderTalent: function(docId, d) {
+        const list = d.cast || [];
+        const inputClass = "w-full bg-transparent px-1 py-1 text-xs text-slate-900 outline-none focus:bg-blue-50";
+        return `<div class="h-full flex flex-col">
+            <div class="flex-grow overflow-auto px-4">
+                <table class="w-full text-xs border-collapse min-w-[600px]">
+                    <thead class="bg-slate-100 text-slate-600 border-b border-slate-200">
+                        <tr>
+                            <th class="p-2 text-left uppercase font-black">Character</th>
+                            <th class="p-2 text-left uppercase font-black">Actor</th>
+                            <th class="p-2 text-center uppercase font-black w-12">Stat</th>
+                            <th class="p-2 text-center uppercase font-black w-16">Pickup</th>
+                            <th class="p-2 text-center uppercase font-black w-16">HMU</th>
+                            <th class="p-2 text-center uppercase font-black w-16">Call</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        ${list.map((c,i) => `
+                            <tr>
+                                <td class="border-r border-slate-100"><input value="${c.character||''}" onchange="mBTDB.updateRow('${docId}','cast',${i},'character',this.value)" class="${inputClass} font-bold text-slate-600"></td>
+                                <td class="border-r border-slate-100"><input value="${c.actor||''}" onchange="mBTDB.updateRow('${docId}','cast',${i},'actor',this.value)" class="${inputClass} font-black"></td>
+                                <td class="border-r border-slate-100"><input value="${c.status||''}" onchange="mBTDB.updateRow('${docId}','cast',${i},'status',this.value)" class="${inputClass} text-center uppercase" placeholder="S/W"></td>
+                                <td class="border-r border-slate-100"><input type="time" value="${c.pickup||''}" onchange="mBTDB.updateRow('${docId}','cast',${i},'pickup',this.value)" class="${inputClass} text-center"></td>
+                                <td class="border-r border-slate-100"><input type="time" value="${c.hmu||''}" onchange="mBTDB.updateRow('${docId}','cast',${i},'hmu',this.value)" class="${inputClass} text-center"></td>
+                                <td><input type="time" value="${c.setCall||''}" onchange="mBTDB.updateRow('${docId}','cast',${i},'setCall',this.value)" class="${inputClass} text-center font-bold bg-yellow-50"></td>
+                            </tr>`).join('')}
+                    </tbody>
+                </table>
+            </div>
+             <div class="mt-2 widget-controls p-4 border-t border-slate-100">
+                <button onclick="mBTDB.addRow('${docId}','cast','talent')" class="bg-slate-800 text-white text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded shadow hover:bg-slate-900 transition-colors">+ Add Talent</button>
+            </div>
+        </div>`;
+    },
+
+    _renderRichText: function(docId, widgetId, data) {
+        const val = data.additional ? data.additional[widgetId] : (data[widgetId] || "");
+        return `<textarea onchange="mBTDB.updateData('${docId}', 'additional.${widgetId}', this.value)" class="w-full h-full p-3 text-sm text-slate-800 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none" placeholder="Type notes here...">${val||''}</textarea>`;
+    },
+
     // --- 7. Data Actions ---
-    update: function(docId, path, value) {
+
+    _triggerSave: function() {
+        const doc = budget.documents.find(d => d.id === this.state.currentDocId);
+        saveBudget();
+        this._pushHistory(doc);
+    },
+
+    _generateDefaultData: function() {
+        const findRole = (q) => {
+            for(const sec of Object.values(budget.sections)) {
+                const i = sec.items.find(x => x.description.toLowerCase().includes(q) && x.crew && x.crew.name);
+                if(i) return `${i.crew.name} ${i.crew.phone||''}`;
+            }
+            return "";
+        };
+        const crewList = [];
+        Object.entries(budget.sections).forEach(([k, s]) => {
+            s.items.forEach(i => { if(i.crew && i.crew.name) crewList.push({id:Date.now()+Math.random(), department:k, position:i.description, name:i.crew.name, callTime:"08:00"}); });
+        });
+        return {
+            meta: { productionTitle: budget.projectName||"", productionCompany: budget.company||"", shootDate: new Date().toISOString().split('T')[0], crewCallTime: "08:00", sunriseSunset: "06:00 / 18:00" },
+            contacts: { director: findRole('director'), producer: findRole('producer'), ad: findRole('1st ad') },
+            schedule: [], crew: crewList, cast: [],
+            locations: [{name:"Base Camp", address:"", timeOnLocation:"07:00", hospital: "", mapLink: "", weather: ""}],
+            additional: {}
+        };
+    },
+    updateData: function(docId, path, value) {
         const doc = budget.documents.find(d => d.id === docId);
         const parts = path.split('.');
-        let target = doc.content;
-        for(let i=0; i<parts.length-1; i++) target = target[parts[i]];
+        let target = doc.content.data;
+        for(let i=0; i<parts.length-1; i++) { if(!target[parts[i]]) target[parts[i]]={}; target = target[parts[i]]; }
         target[parts[parts.length-1]] = value;
-        saveBudget();
+        this._triggerSave();
     },
     updateRow: function(docId, section, index, key, value) {
         const doc = budget.documents.find(d => d.id === docId);
-        doc.content.data[section][index][key] = value;
-        saveBudget();
+        if(doc.content.data[section] && doc.content.data[section][index]) {
+            doc.content.data[section][index][key] = value;
+            this._triggerSave();
+        }
     },
-    addRow: function(docId, section, type='shot') {
+    addRow: function(docId, section, type) {
         const doc = budget.documents.find(d => d.id === docId);
-        const newRow = section === 'schedule' 
-            ? { id: Date.now(), type, time: "", scene: "", description: type==='meal'?"LUNCH":"New Scene", cast: "", ie_dn: "", location: "" }
-            : { id: Date.now(), department: "", position: "", name: "", callTime: "" };
+        if(!doc.content.data[section]) doc.content.data[section] = [];
+        let newRow;
+        if (section === 'schedule') {
+            newRow = { id: Date.now(), type, time: "", description: "New Item" };
+        } else if (section === 'cast') {
+            newRow = { id: Date.now(), character: "", actor: "", status: "", pickup: "", hmu: "", setCall: "" };
+        } else {
+            newRow = { id: Date.now(), position: "", name: "", callTime: "" };
+        }
         doc.content.data[section].push(newRow);
-        saveBudget();
-        this.render(docId); 
+        this._triggerSave();
+        this.renderFrame();
     },
     deleteRow: function(docId, section, index) {
         const doc = budget.documents.find(d => d.id === docId);
         doc.content.data[section].splice(index, 1);
-        saveBudget();
-        this.render(docId);
+        this._triggerSave();
+        this.renderFrame();
     }
 };
+window.CallSheetBuilder = { render: function(docId) { mBTDB.open(docId); } };
 
-//--------------------------------------------------------------------------//
 // ------------------------ DOCUMENTS ------------------------- //
-//--------------------------------------------------------------------------//
 /* --- v19.55 [Documents] - Viewer Integration (Builder Support) --- */
 
 function openDocumentViewer(docId) {
