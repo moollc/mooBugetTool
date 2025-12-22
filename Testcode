@@ -836,7 +836,54 @@
     <script>
         /* --- v19.51 App Version v19.54 --- */
         const APP_VERSION = "19.54";
-        
+/* --- v19.54 mBTState: Expansion-Ready Governor --- */
+const mBTState = {
+    _timer: null,
+    _isInitialLoad: true,
+    _subscribers: [], // The "Expansion Port" for future tools
+
+    // 1. Add a new tool to the watch-list (e.g., Carbon Calc, AI Auditor)
+    subscribe: function(callback) {
+        this._subscribers.push(callback);
+    },
+
+    handler: {
+        set(target, prop, value) {
+            if (target[prop] === value) return true; // Optimization: No change, no work
+            target[prop] = value;
+            if (!mBTState._isInitialLoad) mBTState.requestReconciliation();
+            return true;
+        }
+    },
+
+    requestReconciliation() {
+        clearTimeout(this._timer);
+        this._timer = setTimeout(() => {
+            console.log("mBTState: Broadasting changes to subscribers...");
+            
+            // A. Run Core Calculations
+            if (typeof updateCalculations === 'function') updateCalculations();
+            
+            // B. Run Expansion Tools (Subscribers)
+            this._subscribers.forEach(cb => {
+                try { cb(budget); } catch(e) { console.error("Subscriber Error:", e); }
+            });
+
+            // C. Final Save
+            if (typeof saveBudget === 'function') saveBudget();
+            
+            const statusMsg = document.getElementById('statusBarMessage');
+            if (statusMsg) statusMsg.textContent = "Budget synchronized and saved.";
+        }, 150);
+    },
+
+    wrap: function(data) {
+        this._isInitialLoad = true;
+        const proxied = new Proxy(data, this.handler);
+        this._isInitialLoad = false;
+        return proxied;
+    }
+};
         const ROADMAP_LOG = [
             "v19.54: Optimization. Removed redundancies and unified systems.",
             "v19.53: Stages & UI Polish. Added 'Target Lock' balancing, 'Top Spenders' analysis, and 'Sync Days' automation.",
@@ -1001,13 +1048,57 @@
             return ['text', 'docx', 'xlsx', 'pdf'].includes(type);
         }
 
-        // ---------------------------------------------------------
-        // State & Persistence
-        // ---------------------------------------------------------
+// --------------- State & Persistence ------------------------------------------
 
         const getGlobalItems = () => JSON.parse(localStorage.getItem(globalItemsKey) || '[]');
         const saveGlobalItems = (items) => localStorage.setItem(globalItemsKey, JSON.stringify(items));
+/* --- v19.54 mBTStorage: The Hybrid Persistence Engine (With Library Guard) --- */
+const mBTStorage = {
+    // REGISTRY: Add any key here to auto-move it to IndexedDB
+    heavyKeys: ['attachments', 'previews', 'scripts', 'photos'],
 
+    // 1. Split budget into "Light" and "Heavy" components
+    dehydrate: async function(budgetData) {
+        // Soft Guard: If library is missing, save everything to LocalStorage (old way)
+        if (typeof window.localforage === 'undefined') {
+            return { light: budgetData, heavy: {} };
+        }
+
+        const light = { ...budgetData };
+        const heavy = {};
+
+        this.heavyKeys.forEach(key => {
+            if (light[key]) {
+                heavy[key] = light[key]; // Move to heavy stream
+                delete light[key];       // Remove from light stream
+            }
+        });
+
+        return { light, heavy };
+    },
+
+    // 2. Combine streams back into one object for the app
+    hydrate: async function(lightData) {
+        const budgetObj = { ...lightData };
+        
+        // Soft Guard: If library is missing, skip hydration to prevent crash
+        if (typeof window.localforage === 'undefined') {
+            console.warn("mBTStorage: localforage not ready. Postponing hydration.");
+            return budgetObj;
+        }
+
+        for (const key of this.heavyKeys) {
+            try {
+                const storageKey = `${budgetObj.projectName}_${key}`;
+                const data = await window.localforage.getItem(storageKey);
+                if (data) budgetObj[key] = data;
+            } catch (e) { 
+                console.warn(`mBTStorage: Could not hydrate ${key}`, e); 
+            }
+        }
+        return budgetObj;
+    }
+};
         const projectDateFormatKey = `${storageKeyPrefix}projectDateFormat`;
         const projectNameSeparatorKey = `${storageKeyPrefix}projectNameSeparator`;
 
@@ -1020,58 +1111,55 @@
         };
         const setProjectNameSeparator = (separator) => localStorage.setItem(projectNameSeparatorKey, separator);
 
-        function saveBudget() {
+function saveBudget() {
             try {
                 if (!budget || !budget.projectName) return;
-                localStorage.setItem(storageKeyPrefix + budget.projectName, JSON.stringify(budget));
-                localStorage.setItem(`${storageKeyPrefix}lastLoaded`, budget.projectName);
-                localStorage.setItem(`${storageKeyPrefix}currency`, displayCurrency);
-                currentProjectName = budget.projectName;
+
+                // 1. We call dehydrate to split light vs heavy
+                mBTStorage.dehydrate(budget).then(({ light, heavy }) => {
+                    // 2. Save the "Light" JSON instantly to LocalStorage
+                    localStorage.setItem(storageKeyPrefix + budget.projectName, JSON.stringify(light));
+                    localStorage.setItem(`${storageKeyPrefix}lastLoaded`, budget.projectName);
+                    localStorage.setItem(`${storageKeyPrefix}currency`, displayCurrency);
+
+                    // 3. Save the "Heavy" Blobs to localForage (IndexedDB)
+                    for (const [key, value] of Object.entries(heavy)) {
+                        localforage.setItem(`${budget.projectName}_${key}`, value);
+                    }
+                    
+                    currentProjectName = budget.projectName;
+                    console.log("mBTStorage: Split-save successful.");
+                }).catch(err => console.error("Dehydration failed", err));
+
             } catch (e) { console.error("Could not save budget", e); }
         }
 
         /* --- v19.53 [Data] - Load Budget w/ AI Persistence --- */
-        function loadBudget(projectName) {
+       function loadBudget(projectName) {
             try {
                 const data = localStorage.getItem(storageKeyPrefix + projectName);
-                if (data) { 
-                    budget = JSON.parse(data); 
+                if (!data) { handleNewProject(false); return; }
+
+                const lightData = JSON.parse(data);
+                currentProjectName = projectName;
+
+                // 1. Start with Light Data immediately
+                budget = mBTState.wrap(lightData);
+                
+                // 2. Lazy Load Heavy Data in background
+                mBTStorage.hydrate(lightData).then(fullData => {
+                    budget = mBTState.wrap(fullData);
                     
-                    // v19.53: Ensure AI Context Structure
-                    if (!budget.aiContext) {
-                        budget.aiContext = {
-                            saveHistory: true, // Auto-on by default
-                            analysis: "",
-                            chat: []
-                        };
-                    }
-
-                    // v19.53: Ensure Target Lock Structure
-                    if (!budget.targetLock) {
-                        budget.targetLock = {
-                            enabled: false, totalCap: 0,
-                            stages: {
-                                'dev': { label: 'Development', ratio: 5, days: 0 },
-                                'pre': { label: 'Pre-Production', ratio: 20, days: 0 },
-                                'prod': { label: 'Production', ratio: 55, days: 0 },
-                                'post': { label: 'Post-Production', ratio: 15, days: 0 },
-                                'dist': { label: 'Distribution', ratio: 5, days: 0 }
-                            }
-                        };
-                    }
-
-                    // Sanitize Data
-                    Object.values(budget.sections).forEach(section => {
-                        section.items.forEach(item => {
-                            if (item.multiplier === undefined) item.multiplier = 1;
-                        });
-                    });
-
-                    historyStack = [{ budget: JSON.parse(JSON.stringify(budget)), description: 'Project Loaded', timestamp: new Date().toISOString()}];
+                    historyStack = [{ 
+                        budget: JSON.parse(JSON.stringify(fullData)), 
+                        description: 'Project Loaded', 
+                        timestamp: new Date().toISOString()
+                    }];
                     historyIndex = 0;
-                } 
-                else { handleNewProject(false); return; }
-                currentProjectName = budget.projectName;
+
+                    if (typeof render === 'function') render();
+                });
+
                 localStorage.setItem(`${storageKeyPrefix}lastLoaded`, currentProjectName);
             } catch (e) { console.error("Could not load budget", e); handleNewProject(false); }
         }
@@ -4223,6 +4311,140 @@ const mBTPublisher = {
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: { scale: 2, useCORS: true, logging: false },
         jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+    },/* --- BUNDLE 1: PUBLISHER LOGIC --- */
+    // 1. Industry Standard Fragments
+    fragments: {
+        header: (meta) => `
+            <div style="border-bottom: 3px solid black; padding-bottom: 10px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: flex-end; font-family: Arial, sans-serif;">
+                <div style="width: 65%;">
+                    <h1 style="margin:0; font-size: 28px; text-transform: uppercase; font-weight: 900;">${meta.productionTitle || 'UNNAMED PROJECT'}</h1>
+                    <div style="font-size: 14px; font-weight: bold;">${meta.productionCompany || ''}</div>
+                </div>
+                <div style="width: 30%; text-align: right; font-size: 12px;">
+                    <div><strong>DATE:</strong> ${meta.shootDate || 'TBD'}</div>
+                    <div style="background: #000; color: #fff; padding: 4px 8px; display: inline-block; margin-top: 5px; font-size: 14px;"><strong>CREW CALL:</strong> ${meta.crewCallTime || '00:00'}</div>
+                </div>
+            </div>`,
+        table: (title, headers, rows) => `
+            <div style="margin-bottom: 15px; font-family: Arial, sans-serif;">
+                <div style="background: #333; color: white; padding: 4px 8px; font-size: 11px; font-weight: 900; text-transform: uppercase;">${title}</div>
+                <table style="width: 100%; border-collapse: collapse; font-size: 11px; border: 1px solid black;">
+                    <thead><tr style="background: #eee; border-bottom: 1px solid black;">${headers.map(h => `<th style="text-align: left; padding: 6px; border-right: 1px solid #ccc;">${h}</th>`).join('')}</tr></thead>
+                    <tbody>${rows.map(row => `<tr style="border-bottom: 1px solid #eee;">${Object.values(row).filter(v => typeof v !== 'object').map(val => `<td style="padding: 4px 6px; border-right: 1px solid #eee;">${val || ''}</td>`).join('')}</tr>`).join('')}</tbody>
+                </table>
+            </div>`,
+        note: (title, content) => `
+            <div style="border: 2px solid black; margin-bottom: 15px; font-family: Arial, sans-serif;">
+                <div style="background: #eee; padding: 4px 8px; font-size: 11px; font-weight: 900; border-bottom: 1px solid black; text-transform: uppercase;">${title}</div>
+                <div style="padding: 10px; font-size: 12px; white-space: pre-wrap;">${content || 'N/A'}</div>
+            </div>`
+    },
+
+    // 2. Generation & Conversion Engine
+  async generateFastPreview(mode, data, callback) {
+    const docId = mBTDB.state.currentDocId;
+    const doc = budget.documents.find(d => d.id === docId);
+    if (!doc) return alert("Document not found for preview.");
+
+    if (mode === 'graphic') {
+        const element = document.getElementById('mBTDB_Workspace');
+        const canvas = await html2canvas(element, this.defaultPdfOptions.html2canvas);
+        callback(canvas.toDataURL('image/jpeg', 0.9));
+        return;
+    }
+
+    // INDUSTRY STANDARD ASSEMBLY (Full-Length)
+    // We sort by 'y' to ensure the preview matches the builder's vertical order
+    const sortedWidgets = [...doc.content.widgets].sort((a, b) => a.y - b.y);
+    
+    let html = `<div id="standard-render-box" style="width: 760px; background: white; color: black; padding: 40px; margin: 0 auto; font-family: Arial, sans-serif; display: block; overflow: visible;">`;
+    
+    // Always start with Meta Header (Priority 1)
+    html += this.fragments.header(data.meta);
+
+    sortedWidgets.forEach(w => {
+        const type = w.type;
+        const label = w.label || type.toUpperCase();
+
+        if (type === 'header') return; // Handled above
+
+        if (type === 'contacts') {
+            const c = data.contacts;
+            const cStr = `Director: ${c.director || ''}\nProducer: ${c.producer || ''}\n1st AD: ${c.ad || ''}`;
+            html += this.fragments.note(label, cStr);
+        } 
+        else if (type === 'logistics' || type === 'locations' || type === 'weather') {
+            const locStr = (data.locations || []).map(l => `[${l.name.toUpperCase()}]\n${l.address}\nWeather: ${l.weather}`).join('\n\n');
+            html += this.fragments.note(label, locStr || "No Location Data");
+        } 
+        else if (type === 'schedule') {
+            const rows = data.schedule || [];
+            if(rows.length) html += this.fragments.table(label, ["Time", "Scn", "Description", "Cast", "Loc"], rows);
+        } 
+        else if (type === 'cast') {
+            const rows = data.cast || [];
+            if(rows.length) html += this.fragments.table(label, ["Role", "Actor", "Stat", "Pick", "Call"], rows);
+        } 
+        else if (type === 'crew') {
+            const rows = data.crew || [];
+            if(rows.length) html += this.fragments.table(label, ["Dept", "Pos", "Name", "Call"], rows);
+        } 
+        // CATCH-ALL: For Notes, RichText, and anything else containing text
+        else {
+            const noteContent = data.additional?.[w.id] || data[w.id] || data[type] || "";
+            if (noteContent || label) {
+                html += this.fragments.note(label, noteContent || "...");
+            }
+        }
+    });
+
+    html += `</div>`;
+    this.htmlToJPEG(html, callback);
+},
+
+    htmlToJPEG(htmlString, callback) {
+    const iframe = document.createElement('iframe');
+    iframe.style.visibility = 'hidden'; 
+    iframe.style.position = 'absolute'; 
+    iframe.style.width = '850px';
+    iframe.style.height = '5000px'; // Over-large initial height to prevent cropping
+    document.body.appendChild(iframe);
+    
+    const doc = iframe.contentWindow.document;
+    doc.open();
+    doc.write(`<html><body style="margin:0; padding:0;">${htmlString}</body></html>`);
+    doc.close();
+
+    // Small delay to let fonts/tables settle
+    setTimeout(async () => {
+        const target = doc.getElementById('standard-render-box');
+        
+        // Use html2canvas to capture the EXACT height of the rendered box
+        html2canvas(target, {
+            scale: 2,
+            useCORS: true,
+            logging: false,
+            backgroundColor: '#ffffff',
+            windowHeight: target.scrollHeight, // Force capture of full content
+            height: target.scrollHeight        // Force capture of full content
+        }).then(canvas => {
+            const imgData = canvas.toDataURL('image/jpeg', 0.9);
+            document.body.removeChild(iframe);
+            callback(imgData);
+        });
+    }, 600);
+},
+
+    convertToPDFBlob(jpegURL) {
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        pdf.addImage(jpegURL, 'JPEG', 0, 0, pdfWidth, 0); 
+        return pdf.output('blob');
+    },
+
+    downloadJPEG(url, filename) {
+        this.forceDownload(url, `${filename.replace(/[^a-z0-9]/gi, '_')}.jpg`);
     },
 
     // --- Core Export Methods ---
@@ -4256,6 +4478,48 @@ const mBTPublisher = {
         }
     },
 
+// --- 1. Industry Standard Fragments (New) ---
+  fragments: {
+    header: (meta) => `
+        <div style="border-bottom: 2px solid black; padding-bottom: 8px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: flex-end; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;">
+            <div style="width: 70%;">
+                <h1 style="margin:0; font-size: 22px; text-transform: uppercase; font-weight: 900; letter-spacing: -0.5px;">${meta.productionTitle || 'UNNAMED PROJECT'}</h1>
+                <div style="font-size: 11px; font-weight: bold; color: #333; text-transform: uppercase;">${meta.productionCompany || ''}</div>
+            </div>
+            <div style="width: 28%; text-align: right; font-size: 10px; line-height: 1.2;">
+                <div><strong>DATE:</strong> ${meta.shootDate || 'TBD'}</div>
+                <div style="background: #000; color: #fff; padding: 3px 6px; display: inline-block; margin-top: 4px; font-size: 12px; font-weight: 900;"><strong>CREW CALL:</strong> ${meta.crewCallTime || '00:00'}</div>
+            </div>
+        </div>`,
+
+    table: (title, headers, rows) => `
+        <div style="margin-bottom: 10px; font-family: Arial, sans-serif;">
+            <div style="background: #000; color: white; padding: 2px 6px; font-size: 9px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.5px;">${title}</div>
+            <table style="width: 100%; border-collapse: collapse; font-size: 9px; border: 1px solid black;">
+                <thead>
+                    <tr style="background: #e5e5e5; border-bottom: 1px solid black;">
+                        ${headers.map(h => `<th style="text-align: left; padding: 3px 5px; border-right: 1px solid #999; text-transform: uppercase;">${h}</th>`).join('')}
+                    </tr>
+                </thead>
+                <tbody>
+                    ${rows.map(row => `
+                        <tr style="border-bottom: 1px solid #eee;">
+                            ${Object.values(row).filter(v => typeof v !== 'object').map(val => `
+                                <td style="padding: 2px 5px; border-right: 1px solid #eee; line-height: 1.1;">${val || ''}</td>
+                            `).join('')}
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        </div>`,
+
+    note: (title, content) => `
+        <div style="border: 1px solid black; margin-bottom: 10px; font-family: Arial, sans-serif; page-break-inside: avoid;">
+            <div style="background: #e5e5e5; padding: 2px 6px; font-size: 9px; font-weight: 900; border-bottom: 1px solid black; text-transform: uppercase;">${title}</div>
+            <div style="padding: 6px; font-size: 10px; white-space: pre-wrap; line-height: 1.3;">${content || '...'}</div>
+        </div>`
+},
+
     async exportToPDF(elementOrId, filename, mode) { return this.toPDF(elementOrId, filename); },
 
     toXLSX(data, sheetName = 'Sheet1', filename = 'Budget') {
@@ -4271,6 +4535,27 @@ const mBTPublisher = {
         const dataStr = JSON.stringify(budget, null, 2);
         const blob = new Blob([dataStr], { type: 'application/json' });
         this.forceDownload(blob, `${(budget.projectName || 'untitled').replace(/[^a-z0-9]/gi, '_').toLowerCase()}.moo`);
+    },
+
+// --- 2. Call Sheet Specific Generation (New) ---
+    async generateFastPreview(mode, data, callback) {
+        if (mode === 'graphic') {
+            // Use your existing html2canvas logic to snapshot the editor
+            const element = document.getElementById('mBTDB_Workspace');
+            const canvas = await html2canvas(element, this.defaultPdfOptions.html2canvas);
+            callback(canvas.toDataURL('image/jpeg', 0.9));
+            return;
+        }
+
+        // Standard Industry Assembly
+        let html = `<div id="standard-render-box" style="width: 760px; background: white; color: black; padding: 40px; margin: 0 auto;">`;
+        html += this.fragments.header(data.meta);
+        if (data.locations?.length) html += this.fragments.note("LOCATIONS & WEATHER", data.locations.map(l => `${l.name.toUpperCase()}: ${l.address}\nWeather: ${l.weather}`).join('\n\n'));
+        if (data.schedule?.length) html += this.fragments.table("SHOOTING SCHEDULE", ["Time", "Scn", "Description", "Cast", "Loc"], data.schedule);
+        if (data.cast?.length) html += this.fragments.table("CAST & TALENT", ["Role", "Actor", "Status", "Pickup", "Call"], data.cast);
+        html += `</div>`;
+
+        this.htmlToJPEG(html, callback);
     },
 
     // --- Template Engine (The "What") ---
@@ -4814,8 +5099,7 @@ window.openDocumentShareSelector = function(docId) {
             </div>
         </div>
     `;
-
-    mBTME.open('docShareContacts', `Send ${doc.label}`, content, 'max-w-md', {
+ mBTME.open('docShareContacts', `Send ${doc.label}`, content, 'max-w-md', {
         onOpen: () => {
             const multiToggle = document.getElementById('multiSelectToggle');
             const checkboxes = document.querySelectorAll('.contactCheckbox');
@@ -5061,6 +5345,7 @@ const mBTAssign = {
         alert('AoD auto-assign coming soon – location & availability matching');
         return { assigned: 0, skipped: 0 };
     }
+
 };
 
 }
@@ -5171,7 +5456,46 @@ window.mBTDB = {
         
         this._triggerSave();
     },
+/* --- BUNDLE 2: BUILDER ROUTING --- */
+    previewDoc: function(mode) {
+        const doc = budget.documents.find(d => d.id === this.state.currentDocId);
+        if (!doc) return;
+        if(window.mBTME && mBTME.showLoader) mBTME.showLoader("Generating Industry Preview...");
 
+        mBTPublisher.generateFastPreview(mode, doc.content.data, (jpegURL) => {
+            if(window.mBTME && mBTME.hideLoader) mBTME.hideLoader();
+            mBTME.open('previewModal', `Preview - ${mode.toUpperCase()}`, 
+                `<div class="flex flex-col items-center bg-slate-900 h-full p-6 overflow-auto">
+                    <img src="${jpegURL}" id="finalPreviewImage" class="shadow-2xl border border-black max-w-full h-auto mb-20 bg-white">
+                </div>`, 'w-full h-full'
+            );
+
+            const footer = `
+                <div class="fixed bottom-10 left-1/2 -translate-x-1/2 flex gap-4 z-[10001]">
+                    <button onclick="mBTPublisher.downloadJPEG('${jpegURL}', '${doc.label}')" class="flex items-center gap-2 bg-blue-600 text-white px-8 py-3 rounded-full font-bold shadow-xl hover:bg-blue-500 transition-all active:scale-95">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                        Download JPEG
+                    </button>
+                    <button onclick="mBTDB.sendToDistribution('${jpegURL}')" class="flex items-center gap-2 bg-green-600 text-white px-8 py-3 rounded-full font-bold shadow-xl hover:bg-green-500 transition-all active:scale-95">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                        Send to Crew (PDF)
+                    </button>
+                    <button onclick="mBTME.close('previewModal')" class="flex items-center gap-2 bg-white text-slate-900 px-8 py-3 rounded-full font-bold shadow-xl hover:bg-slate-100 transition-all">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                        Close
+                    </button>
+                </div>`;
+            document.getElementById('previewModal').insertAdjacentHTML('beforeend', footer);
+        });
+    },
+
+    sendToDistribution: function(jpegURL) {
+        const doc = budget.documents.find(d => d.id === this.state.currentDocId);
+        const pdfBlob = mBTPublisher.convertToPDFBlob(jpegURL);
+        this.close(); 
+        if(window.openDocumentShareSelector) openDocumentShareSelector(doc.id); 
+    },
+/* --- END BUNDLE 2 --- */
     // --- 2. Smart Features ---
 
     autoFillWidget: function(type, docId) {
@@ -5716,37 +6040,47 @@ window.mBTDB = {
 
     // --- Header Update ---
 
-    _updateHeaderButtons: function() {
-        const btnContainer = document.getElementById('mBTDB_Buttons');
-        if(!btnContainer) return;
-        const isEd = this.state.isEditing;
-        
-        // Print Dropdown HTML
-        const printMenu = `
-            <div class="relative group inline-block">
-                <button class="bg-slate-700 text-white px-3 py-1 rounded text-xs font-bold hover:bg-slate-600 flex items-center gap-1">
-                    ${this.icons.print} Print ▼
-                </button>
-                <div class="absolute right-0 mt-1 w-32 bg-white rounded shadow-xl border border-slate-200 hidden group-hover:block z-50">
-                    <button onclick="mBTDB.printToPDF('standard')" class="block w-full text-left px-3 py-2 text-xs text-slate-700 hover:bg-slate-100 font-bold">📄 Standard</button>
-                    <button onclick="mBTDB.printToPDF('graphic')" class="block w-full text-left px-3 py-2 text-xs text-slate-700 hover:bg-slate-100">🖼️ Graphic</button>
-                </div>
-            </div>
-        `;
+_updateHeaderButtons: function() {
+    const btnContainer = document.getElementById('mBTDB_Buttons');
+    if(!btnContainer) return;
+    const isEd = this.state.isEditing;
 
-        btnContainer.innerHTML = `
-            <div class="flex gap-1 mr-2 border-r border-slate-600 pr-2">
-                <button onclick="mBTDB.undo()" class="p-1 hover:bg-slate-700 rounded text-slate-300" title="Undo">${this.icons.undo}</button>
-                <button onclick="mBTDB.redo()" class="p-1 hover:bg-slate-700 rounded text-slate-300" title="Redo">${this.icons.redo}</button>
-                <button onclick="mBTDB.snapshotDoc()" class="p-1 hover:bg-blue-900 rounded text-blue-300" title="Clone">${this.icons.copy}</button>
-                <button onclick="mBTDB.saveTemplate()" class="p-1 hover:bg-blue-900 rounded text-green-300" title="Save Template">${this.icons.save}</button>
-            </div>
-            ${isEd ? `<select id="mBTDB_WidgetSelect" class="bg-slate-700 text-xs text-white h-6 rounded mr-1"><option value="richText">Note</option><option value="schedule">Schedule</option><option value="cast">Cast</option><option value="crew">Crew</option><option value="logistics">Logistics</option><option value="contacts">Contacts</option></select><button onclick="mBTDB.addWidget()" class="text-green-400 font-bold mr-2">${this.icons.plus}</button>` : ''}
-            <button onclick="mBTDB.toggleEditMode()" class="${isEd ? 'bg-green-600' : 'bg-blue-600'} text-white px-3 py-1 rounded text-xs font-bold shadow">${isEd ? 'Done' : 'Edit'}</button>
-            ${printMenu}
-            <button onclick="mBTDB.close()" class="bg-red-900 text-red-200 px-2 py-1 rounded hover:text-white">${this.icons.close}</button>
-        `;
-    },
+    // 1. Define the Preview Menu (SVG Version - No Emojis)
+const previewMenu = `
+    <div class="relative inline-block">
+        <button onclick="const m = this.nextElementSibling; m.classList.toggle('hidden');" 
+            class="bg-slate-700 text-white px-3 py-1 rounded text-xs font-bold hover:bg-slate-600 flex items-center gap-1 transition-all outline-none">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+            Preview
+        </button>
+        <div class="hidden absolute right-0 mt-2 w-44 bg-white rounded shadow-2xl border border-slate-200 z-[9999] overflow-hidden">
+            <button onclick="mBTDB.previewDoc('standard'); this.parentElement.classList.add('hidden')" 
+                class="flex items-center gap-2 w-full text-left px-4 py-3 text-[11px] text-slate-700 hover:bg-blue-50 hover:text-blue-700 font-bold border-b border-slate-100 transition-colors">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+                Industry Standard
+            </button>
+            <button onclick="mBTDB.previewDoc('graphic'); this.parentElement.classList.add('hidden')" 
+                class="flex items-center gap-2 w-full text-left px-4 py-3 text-[11px] text-slate-700 hover:bg-blue-50 hover:text-blue-700 font-medium transition-colors">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                Graphic View
+            </button>
+        </div>
+    </div>`;
+
+    // 2. Inject into the DOM (Crucial: Using the new previewMenu variable here)
+    btnContainer.innerHTML = `
+        <div class="flex gap-1 mr-2 border-r border-slate-600 pr-2">
+            <button onclick="mBTDB.undo()" class="p-1 hover:bg-slate-700 rounded text-slate-300" title="Undo">${this.icons.undo}</button>
+            <button onclick="mBTDB.redo()" class="p-1 hover:bg-slate-700 rounded text-slate-300" title="Redo">${this.icons.redo}</button>
+            <button onclick="mBTDB.snapshotDoc()" class="p-1 hover:bg-blue-900 rounded text-blue-300" title="Clone">${this.icons.copy}</button>
+            <button onclick="mBTDB.saveTemplate()" class="p-1 hover:bg-blue-900 rounded text-green-300" title="Save Template">${this.icons.save}</button>
+        </div>
+        ${isEd ? `<select id="mBTDB_WidgetSelect" class="bg-slate-700 text-xs text-white h-6 rounded mr-1"><option value="richText">Note</option><option value="schedule">Schedule</option><option value="cast">Cast</option><option value="crew">Crew</option><option value="logistics">Logistics</option><option value="contacts">Contacts</option></select><button onclick="mBTDB.addWidget()" class="text-green-400 font-bold mr-2">${this.icons.plus}</button>` : ''}
+        <button onclick="mBTDB.toggleEditMode()" class="${isEd ? 'bg-green-600' : 'bg-blue-600'} text-white px-3 py-1 rounded text-xs font-bold shadow">${isEd ? 'Done' : 'Edit'}</button>
+        ${previewMenu} 
+        <button onclick="mBTDB.close()" class="bg-red-900 text-red-200 px-2 py-1 rounded hover:text-white">${this.icons.close}</button>
+    `;
+},
     aiCleanup: async function(docId, path, text) {
         if(!text) return;
         if(!localStorage.getItem('mBT_API_KEY') && !window.API_KEY) return alert("AI functionality requires an API Key.");
