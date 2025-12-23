@@ -7,11 +7,13 @@
     <meta name="description" content="Offline-capable Film Production Budget Tool">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>mooBudgetTool v19.53</title>
+    <title>mooBudgetTool v19.54-Beta</title>
     
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/moollc/mooBudgetTool/refs/heads/main/assets/cow-512.png">
+	<link href="https://cdnjs.cloudflare.com/ajax/libs/gridstack.js/10.1.2/gridstack.min.css" rel="stylesheet"/>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gridstack.js/10.1.2/gridstack-all.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
@@ -487,6 +489,275 @@
     pointer-events: auto; /* Ensures you can click into inputs */
 }
 
+/* --- mBTDB Gridstack Styles (Fluid Canvas) --- */
+        /* The Canvas Background */
+        .grid-stack {
+            background-color: #f3f4f6; /* Gray-50 match */
+            min-height: 80vh;
+            padding: 10px !important;
+        }
+
+        /* The Draggable Widget Card */
+        .grid-stack-item-content {
+            background-color: white;
+            border-radius: 0.75rem; /* rounded-xl */
+            border: 1px solid #e5e7eb; /* gray-200 */
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06); /* shadow-sm */
+            overflow: hidden !important; /* Contains inner content */
+            display: flex;
+            flex-direction: column;
+            cursor: grab; /* Shows it's draggable */
+        }
+
+        /* Drag Handle (The Header Bar) */
+        .grid-stack-item-content .widget-header {
+            cursor: grab;
+            touch-action: none; /* Critical for mobile drag */
+        }
+        .grid-stack-item-content .widget-header:active {
+            cursor: grabbing;
+        }
+
+        /* Content Area inside the widget */
+        .grid-stack-item-content .widget-body {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 1rem;
+        }
+
+        /* Placeholder (Where the item will drop) */
+        .grid-stack-placeholder > .placeholder-content {
+            background-color: #eff6ff !important; /* blue-50 */
+            border: 2px dashed #3b82f6 !important; /* blue-500 */
+            border-radius: 0.75rem;
+            opacity: 0.5;
+        }
+
+        /* Mobile specific fixes */
+        @media (max-width: 768px) {
+            .grid-stack {
+                padding: 5px !important;
+            }
+            /* Force standard height on mobile if auto-scaling fails */
+            .grid-stack-item-content {
+                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            }
+        }
+
+/* --- mBTDB v9.0 Styles (Stable & Print Ready) --- */
+
+/* 1. Canvas */
+.grid-stack { 
+    background-color: #e2e8f0; 
+    min-height: 100vh; 
+    padding-bottom: 400px;
+}
+
+/* 2. Widgets (Clean Single Border) */
+.grid-stack-item-content {
+    background-color: white !important;
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 4px !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important;
+    display: flex; 
+    flex-direction: column;
+    overflow: hidden !important;
+    height: 100% !important; /* <--- THIS FIXES THE MID-WIDGET TRAIL */
+}
+
+/* 3. Edit Mode Overrides */
+.editing-mode .grid-stack-item-content {
+    border: 2px dashed #94a3b8 !important; 
+    box-shadow: none !important;
+    z-index: 10;
+}
+
+/* 4. Controls (Header & Buttons) */
+.widget-header { 
+    display: none !important; 
+    background-color: #f8fafc; 
+    border-bottom: 1px solid #e2e8f0;
+    padding: 4px 8px;
+    height: 30px;
+    align-items: center; justify-content: space-between;
+    cursor: move;
+}
+.editing-mode .widget-header { display: flex !important; }
+.widget-controls { display: none !important; }
+.editing-mode .widget-controls { display: flex !important; }
+
+/* 5. Inputs (Clean & distinct) */
+.mbt-input {
+    width: 100%;
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0; /* Subtle border */
+    color: #0f172a;
+    padding: 3px 5px;
+    font-size: 11px;
+    border-radius: 2px;
+    outline: none;
+    transition: all 0.2s;
+}
+.mbt-input:focus {
+    background-color: white;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 1px #3b82f6;
+}
+.mbt-input::placeholder { color: #cbd5e1; font-style: italic; }
+
+/* 6. Tables */
+.mbt-table th { 
+    background-color: #f1f5f9; 
+    color: #475569; 
+    font-weight: 800; 
+    text-transform: uppercase; 
+    font-size: 10px; 
+    padding: 6px; 
+    text-align: left;
+    border-bottom: 2px solid #e2e8f0;
+}
+.mbt-table td { 
+    border-bottom: 1px solid #f1f5f9; 
+    padding: 2px; 
+    vertical-align: middle;
+}
+.mbt-table tr:last-child td { border-bottom: none; }
+
+/* 7. Resize Handles (Fix for "Can't Resize") */
+.ui-resizable-handle { display: none !important; }
+.editing-mode .ui-resizable-handle { display: block !important; }
+.editing-mode .ui-resizable-se {
+    width: 15px !important; height: 15px !important;
+    right: 2px !important; bottom: 2px !important;
+    background: radial-gradient(circle, #64748b 2px, transparent 2.5px);
+    background-size: 4px 4px;
+    cursor: se-resize;
+    z-index: 999 !important; /* Force on top */
+}
+
+/* 8. STANDARD CALL SHEET PRINT MODE */
+@media print {
+    body { background: white; font-family: 'Helvetica', 'Arial', sans-serif; -webkit-print-color-adjust: exact; }
+    
+    /* Hide Everything Else */
+    body > *:not(#documentViewerModal) { display: none !important; }
+    
+    /* Reset Canvas */
+    #mBTDB_Container, #mBTDB_Workspace, .grid-stack {
+        position: static !important;
+        width: 100% !important;
+        height: auto !important;
+        overflow: visible !important;
+        background: white !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        display: block !important;
+    }
+/* --- mBTDB Print Modes (Standard vs Graphic) --- */
+
+/* Base Print Reset (Applies to both) */
+.print-container {
+    background: white;
+    width: 100%;
+    position: absolute; top: 0; left: 0; z-index: 9999;
+    padding: 20px;
+}
+.print-container .widget-header, 
+.print-container .widget-controls, 
+.print-container .ui-resizable-handle,
+.print-container .icon-btn { 
+    display: none !important; 
+}
+.print-container textarea { resize: none !important; }
+
+/* OPTION A: Standard Sheet View (Dense, High Contrast) */
+.print-standard .grid-stack {
+    display: block !important;
+    height: auto !important;
+}
+.print-standard .grid-stack-item {
+    position: relative !important;
+    float: left !important; /* Allows side-by-side if width < 12 */
+    top: auto !important; left: auto !important; /* Removes grid gaps */
+    margin-bottom: 0 !important;
+    box-shadow: none !important;
+    border: 1px solid black !important;
+    margin-right: -1px; /* Collapse borders */
+    margin-bottom: -1px;
+}
+.print-standard .grid-stack-item-content {
+    box-shadow: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+}
+.print-standard .mbt-input {
+    background: transparent !important;
+    border: none !important;
+    padding: 1px !important;
+    font-size: 9px !important;
+    font-weight: 600;
+    color: black !important;
+}
+.print-standard .mbt-table th {
+    background: #ddd !important;
+    color: black !important;
+    border-bottom: 1px solid black !important;
+    padding: 2px !important;
+    font-size: 9px !important;
+}
+.print-standard .mbt-table td {
+    border-bottom: 1px solid #ccc !important;
+    padding: 1px !important;
+}
+
+/* OPTION B: Graphic View (Preserves Screen Layout) */
+.print-graphic .grid-stack-item {
+    /* Keeps original absolute positioning */
+    box-shadow: none !important;
+    border: 1px solid #ddd !important;
+}
+.print-graphic .mbt-input {
+    border: none !important;
+    background: transparent !important;
+}
+    /* Tighten Layout */
+    .grid-stack-item {
+        position: relative !important;
+        width: 100% !important;
+        left: auto !important; top: auto !important;
+        margin-bottom: 10px !important; /* Tight spacing */
+        break-inside: avoid;
+        page-break-inside: avoid;
+        display: block !important;
+    }
+
+    /* Borders & Contrast */
+    .grid-stack-item-content {
+        border: 2px solid #000 !important; /* Solid Black Borders */
+        box-shadow: none !important;
+        border-radius: 0 !important; /* Sharp corners */
+    }
+
+    /* Hide UI */
+    #mBTDB_Header, .widget-header, .widget-controls, .ui-resizable-handle, .icon-btn, .input-action-btn { 
+        display: none !important; 
+    }
+
+    /* Dense Text */
+    .mbt-input, textarea {
+        border: none !important;
+        background: transparent !important;
+        padding: 0 !important;
+        color: black !important;
+        font-weight: 600;
+        font-size: 10px !important;
+        resize: none;
+    }
+    
+    /* Table Density */
+    .mbt-table th { background-color: #ddd !important; color: black !important; border-bottom: 1px solid black !important; padding: 2px !important; }
+    .mbt-table td { border-bottom: 1px solid #ccc !important; padding: 2px !important; }
+}
     </style>
 
 </head>
@@ -521,6 +792,7 @@
         };
         requestAnimationFrame(tryRemove);
     });
+
 </script>
 
     <div id="app" class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8"></div>
@@ -564,7 +836,54 @@
     <script>
         /* --- v19.51 App Version v19.54 --- */
         const APP_VERSION = "19.54";
-        
+/* --- v19.54 mBTState: Expansion-Ready Governor --- */
+const mBTState = {
+    _timer: null,
+    _isInitialLoad: true,
+    _subscribers: [], // The "Expansion Port" for future tools
+
+    // 1. Add a new tool to the watch-list (e.g., Carbon Calc, AI Auditor)
+    subscribe: function(callback) {
+        this._subscribers.push(callback);
+    },
+
+    handler: {
+        set(target, prop, value) {
+            if (target[prop] === value) return true; // Optimization: No change, no work
+            target[prop] = value;
+            if (!mBTState._isInitialLoad) mBTState.requestReconciliation();
+            return true;
+        }
+    },
+
+    requestReconciliation() {
+        clearTimeout(this._timer);
+        this._timer = setTimeout(() => {
+            console.log("mBTState: Broadasting changes to subscribers...");
+            
+            // A. Run Core Calculations
+            if (typeof updateCalculations === 'function') updateCalculations();
+            
+            // B. Run Expansion Tools (Subscribers)
+            this._subscribers.forEach(cb => {
+                try { cb(budget); } catch(e) { console.error("Subscriber Error:", e); }
+            });
+
+            // C. Final Save
+            if (typeof saveBudget === 'function') saveBudget();
+            
+            const statusMsg = document.getElementById('statusBarMessage');
+            if (statusMsg) statusMsg.textContent = "Budget synchronized and saved.";
+        }, 150);
+    },
+
+    wrap: function(data) {
+        this._isInitialLoad = true;
+        const proxied = new Proxy(data, this.handler);
+        this._isInitialLoad = false;
+        return proxied;
+    }
+};
         const ROADMAP_LOG = [
             "v19.54: Optimization. Removed redundancies and unified systems.",
             "v19.53: Stages & UI Polish. Added 'Target Lock' balancing, 'Top Spenders' analysis, and 'Sync Days' automation.",
@@ -729,13 +1048,57 @@
             return ['text', 'docx', 'xlsx', 'pdf'].includes(type);
         }
 
-        // ---------------------------------------------------------
-        // State & Persistence
-        // ---------------------------------------------------------
+// --------------- State & Persistence ------------------------------------------
 
         const getGlobalItems = () => JSON.parse(localStorage.getItem(globalItemsKey) || '[]');
         const saveGlobalItems = (items) => localStorage.setItem(globalItemsKey, JSON.stringify(items));
+/* --- v19.54 mBTStorage: The Hybrid Persistence Engine (With Library Guard) --- */
+const mBTStorage = {
+    // REGISTRY: Add any key here to auto-move it to IndexedDB
+    heavyKeys: ['attachments', 'previews', 'scripts', 'photos'],
 
+    // 1. Split budget into "Light" and "Heavy" components
+    dehydrate: async function(budgetData) {
+        // Soft Guard: If library is missing, save everything to LocalStorage (old way)
+        if (typeof window.localforage === 'undefined') {
+            return { light: budgetData, heavy: {} };
+        }
+
+        const light = { ...budgetData };
+        const heavy = {};
+
+        this.heavyKeys.forEach(key => {
+            if (light[key]) {
+                heavy[key] = light[key]; // Move to heavy stream
+                delete light[key];       // Remove from light stream
+            }
+        });
+
+        return { light, heavy };
+    },
+
+    // 2. Combine streams back into one object for the app
+    hydrate: async function(lightData) {
+        const budgetObj = { ...lightData };
+        
+        // Soft Guard: If library is missing, skip hydration to prevent crash
+        if (typeof window.localforage === 'undefined') {
+            console.warn("mBTStorage: localforage not ready. Postponing hydration.");
+            return budgetObj;
+        }
+
+        for (const key of this.heavyKeys) {
+            try {
+                const storageKey = `${budgetObj.projectName}_${key}`;
+                const data = await window.localforage.getItem(storageKey);
+                if (data) budgetObj[key] = data;
+            } catch (e) { 
+                console.warn(`mBTStorage: Could not hydrate ${key}`, e); 
+            }
+        }
+        return budgetObj;
+    }
+};
         const projectDateFormatKey = `${storageKeyPrefix}projectDateFormat`;
         const projectNameSeparatorKey = `${storageKeyPrefix}projectNameSeparator`;
 
@@ -748,58 +1111,55 @@
         };
         const setProjectNameSeparator = (separator) => localStorage.setItem(projectNameSeparatorKey, separator);
 
-        function saveBudget() {
+function saveBudget() {
             try {
                 if (!budget || !budget.projectName) return;
-                localStorage.setItem(storageKeyPrefix + budget.projectName, JSON.stringify(budget));
-                localStorage.setItem(`${storageKeyPrefix}lastLoaded`, budget.projectName);
-                localStorage.setItem(`${storageKeyPrefix}currency`, displayCurrency);
-                currentProjectName = budget.projectName;
+
+                // 1. We call dehydrate to split light vs heavy
+                mBTStorage.dehydrate(budget).then(({ light, heavy }) => {
+                    // 2. Save the "Light" JSON instantly to LocalStorage
+                    localStorage.setItem(storageKeyPrefix + budget.projectName, JSON.stringify(light));
+                    localStorage.setItem(`${storageKeyPrefix}lastLoaded`, budget.projectName);
+                    localStorage.setItem(`${storageKeyPrefix}currency`, displayCurrency);
+
+                    // 3. Save the "Heavy" Blobs to localForage (IndexedDB)
+                    for (const [key, value] of Object.entries(heavy)) {
+                        localforage.setItem(`${budget.projectName}_${key}`, value);
+                    }
+                    
+                    currentProjectName = budget.projectName;
+                    console.log("mBTStorage: Split-save successful.");
+                }).catch(err => console.error("Dehydration failed", err));
+
             } catch (e) { console.error("Could not save budget", e); }
         }
 
         /* --- v19.53 [Data] - Load Budget w/ AI Persistence --- */
-        function loadBudget(projectName) {
+       function loadBudget(projectName) {
             try {
                 const data = localStorage.getItem(storageKeyPrefix + projectName);
-                if (data) { 
-                    budget = JSON.parse(data); 
+                if (!data) { handleNewProject(false); return; }
+
+                const lightData = JSON.parse(data);
+                currentProjectName = projectName;
+
+                // 1. Start with Light Data immediately
+                budget = mBTState.wrap(lightData);
+                
+                // 2. Lazy Load Heavy Data in background
+                mBTStorage.hydrate(lightData).then(fullData => {
+                    budget = mBTState.wrap(fullData);
                     
-                    // v19.53: Ensure AI Context Structure
-                    if (!budget.aiContext) {
-                        budget.aiContext = {
-                            saveHistory: true, // Auto-on by default
-                            analysis: "",
-                            chat: []
-                        };
-                    }
-
-                    // v19.53: Ensure Target Lock Structure
-                    if (!budget.targetLock) {
-                        budget.targetLock = {
-                            enabled: false, totalCap: 0,
-                            stages: {
-                                'dev': { label: 'Development', ratio: 5, days: 0 },
-                                'pre': { label: 'Pre-Production', ratio: 20, days: 0 },
-                                'prod': { label: 'Production', ratio: 55, days: 0 },
-                                'post': { label: 'Post-Production', ratio: 15, days: 0 },
-                                'dist': { label: 'Distribution', ratio: 5, days: 0 }
-                            }
-                        };
-                    }
-
-                    // Sanitize Data
-                    Object.values(budget.sections).forEach(section => {
-                        section.items.forEach(item => {
-                            if (item.multiplier === undefined) item.multiplier = 1;
-                        });
-                    });
-
-                    historyStack = [{ budget: JSON.parse(JSON.stringify(budget)), description: 'Project Loaded', timestamp: new Date().toISOString()}];
+                    historyStack = [{ 
+                        budget: JSON.parse(JSON.stringify(fullData)), 
+                        description: 'Project Loaded', 
+                        timestamp: new Date().toISOString()
+                    }];
                     historyIndex = 0;
-                } 
-                else { handleNewProject(false); return; }
-                currentProjectName = budget.projectName;
+
+                    if (typeof render === 'function') render();
+                });
+
                 localStorage.setItem(`${storageKeyPrefix}lastLoaded`, currentProjectName);
             } catch (e) { console.error("Could not load budget", e); handleNewProject(false); }
         }
@@ -1086,14 +1446,52 @@ const RenderEngine = {
         const isSelectMode = window.docHubState && window.docHubState.mode === 'select';
         const isSelected = window.docHubState && window.docHubState.selected.has(doc.id);
         const clickAction = isSelectMode ? `toggleDocSelection('${doc.id}')` : `openDocumentViewer('${doc.id}', '${context}')`;
-        const safeLabel = this.esc(doc.label);
+        const safeLabel = this.esc(doc.label || 'Untitled');
+        const status = doc.status || 'Draft';
+        const lastExport = doc.lastExport ? new Date(doc.lastExport).toLocaleDateString() : 'Never';
 
-        return `<div onclick="${clickAction}" class="doc-card group relative flex items-center p-3 bg-white border ${isSelected && isSelectMode ? 'border-blue-500 ring-1 ring-blue-500 bg-blue-50' : 'border-gray-200'} rounded-lg hover:shadow-md transition-all h-16 w-full select-none cursor-pointer" data-label="${safeLabel.toLowerCase()}">${isSelectMode ? `<div class="mr-3 w-5 h-5 rounded border flex items-center justify-center ${isSelected ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-gray-300'}">${isSelected ? '✓' : ''}</div>` : `<div class="w-10 h-10 rounded-md bg-gray-50 flex-shrink-0 flex items-center justify-center text-lg mr-3 border border-gray-100 shadow-sm">${doc.icon || '📄'}</div>`}<div class="min-w-0 flex-1 flex flex-col justify-center"><span class="text-sm font-bold text-gray-800 truncate leading-tight block" title="${safeLabel}">${safeLabel}</span><span class="text-[10px] text-gray-400 uppercase leading-tight mt-0.5 block">${this.esc(doc.status || 'Draft')}</span></div>${!isSelectMode ? RenderEngine.docActions(doc.id, context) : ''}</div>`;
+        const statusColor = {
+            'Draft': 'bg-gray-100 text-gray-600',
+            'In Progress': 'bg-blue-100 text-blue-700',
+            'Ready': 'bg-green-100 text-green-700',
+            'Exported': 'bg-purple-100 text-purple-700'
+        }[status] || 'bg-gray-100 text-gray-600';
+
+        return `<div onclick="${clickAction}" class="doc-card group relative flex items-center p-3 bg-white border ${isSelected && isSelectMode ? 'border-blue-500 ring-1 ring-blue-500 bg-blue-50' : 'border-gray-200'} rounded-lg hover:shadow-md transition-all h-16 w-full select-none cursor-pointer" data-label="${safeLabel.toLowerCase()}">
+            ${isSelectMode ? `<div class="mr-3 w-5 h-5 rounded border flex items-center justify-center ${isSelected ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-gray-300'}">${isSelected ? '✓' : ''}</div>` : `<div class="w-10 h-10 rounded-md bg-gray-50 flex-shrink-0 flex items-center justify-center text-lg mr-3 border border-gray-100 shadow-sm">${doc.icon || '📄'}</div>`}
+            <div class="min-w-0 flex-1 flex flex-col justify-center">
+                <span class="text-sm font-bold text-gray-800 truncate leading-tight block" title="${safeLabel}">${safeLabel}</span>
+                <div class="flex items-center gap-2 mt-1">
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[9px] font-bold ${statusColor}">${status}</span>
+                    <span class="text-[9px] text-gray-400">Exported: ${lastExport}</span>
+                </div>
+            </div>
+            ${!isSelectMode ? RenderEngine.docActions(doc.id, context) : ''}
+        </div>`;
     },
 
     // 7. Document Actions (Aeroplane Share + Delete)
     docActions(docId, context = 'hub') {
-        return `<div class="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1 bg-white pl-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"><button onclick="event.stopPropagation(); handlePublishMenu('${docId}')" class="w-8 h-8 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white flex items-center justify-center border border-blue-100 transition-colors" title="Share"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg></button><button onclick="event.stopPropagation(); deleteSingleDoc('${docId}')" class="w-8 h-8 flex items-center justify-center rounded-full text-gray-300 hover:bg-red-50 hover:text-red-500 transition-colors border border-transparent hover:border-red-100" title="Delete"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button></div>`;
+        return `<div class="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1 bg-white pl-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+            <!-- Share: Paper-plane SVG → Contact Selector with Validation -->
+            <button onclick="event.stopPropagation(); if(typeof openDocumentShareSelector === 'function') { openDocumentShareSelector('${docId}'); } else { console.error('Share function missing'); alert('Share feature unavailable - check console'); }" 
+                    class="w-8 h-8 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white flex items-center justify-center border border-blue-100 transition-colors" 
+                    title="Share with Contact">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="22" y1="2" x2="11" y2="13"></line>
+                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                </svg>
+            </button>
+<!-- Delete: Trash SVG → Move to Bin with Validation -->
+		<button onclick="event.stopPropagation(); handleDocTrash('${docId}')"
+        class="w-8 h-8 flex items-center justify-center rounded-full text-gray-300 hover:bg-red-50 hover:text-red-500 transition-colors border border-transparent hover:border-red-100"
+        title="Move to Bin">
+    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="3 6 5 6 21 6"></polyline>
+        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+    </svg>
+	</button>
+        </div>`;
     },
 
 stageCard: (item, stageKey) => {
@@ -1154,9 +1552,7 @@ stageCard: (item, stageKey) => {
     },
 };
 
-/* --- v19.52 v19.53 --- */
-
-/* --- v19.53 [Interaction] - Toggle Rate Type --- */
+/* --- v19.52 [Interaction] - Toggle Rate Type v19.53 --- */
 window.toggleRateType = function(itemId, sectionName) {
     const item = budget.sections[sectionName].items.find(i => i.id === itemId);
     if (!item) return;
@@ -1419,7 +1815,6 @@ function showSettingsModal(defaultTab = 'general') {
 }
 
 /* --- P2 --- */
-
 /* --- v19.53 Film Industry Database, Open Gate v 1.1 Expanded Industry Database v19.54 --- */
 /* ==========================================================================
    mBTOG (Open Gate Engine) v1.0
@@ -1870,42 +2265,7 @@ function handleAddBlank(sectionName) {
     render(); 
 }
 
-function showRecoveryModal() {
-    const trash = JSON.parse(localStorage.getItem(trashKey) || '[]');
-    
-    let content = trash.length > 0 ? 
-        `<div class="max-h-[60vh] overflow-y-auto">` + 
-        trash.map((p, index) => `
-        <div class="flex justify-between items-center p-2 ${index < trash.length -1 ? 'border-b' : ''}">
-            <div><p class="font-semibold">${p.projectName}</p><p class="text-xs text-gray-500">Deleted: ${new Date(p.deletedTimestamp).toLocaleString()}</p></div>
-            <div>
-                <button onclick="handleRestore(${index})" class="text-sm bg-blue-500 text-white px-2 py-1 rounded-md hover:bg-blue-600">Restore</button>
-                <button onclick="handlePermanentDelete(${index})" class="text-sm bg-red-500 text-white px-2 py-1 rounded-md hover:bg-red-600 ml-2">Delete Forever</button>
-            </div>
-        </div>`).join('') + 
-        `</div>`
-        : `<p class="text-center text-gray-500 py-8">No recently deleted projects.</p>`;
-    
-    if (trash.length > 0) {
-        content += `
-        <div class="mt-4 pt-3 border-t border-gray-200 flex justify-between items-center bg-gray-50 p-2 rounded-lg">
-            <span class="text-xs text-gray-500 font-medium">Bulk Actions</span>
-            <div class="flex gap-2">
-                <button onclick="handleRestoreAll()" class="px-3 py-1.5 bg-green-600 text-white text-xs font-bold rounded hover:bg-green-700 shadow-sm transition-colors">Restore All</button>
-                <button onclick="handleDeleteAllTrash()" class="px-3 py-1.5 bg-red-600 text-white text-xs font-bold rounded hover:bg-red-700 shadow-sm transition-colors">Delete All</button>
-            </div>
-        </div>`;
-    }
-    
-    // Using simple createModal for now as Recovery is simple
-    createModal('recovery', 'Recover Deleted Projects', content, 'max-w-lg');
-}
-
-
-        // ---------------------------------------------------------
-        // Event Handlers
-        // ---------------------------------------------------------
-
+// Event Handlers
         function bindAppEventListeners() {
             const appContainer = document.getElementById('app');
             const footer = document.querySelector('footer');
@@ -2839,7 +3199,9 @@ window.openCrewProfile = function(el, event, itemId, sectionName) {
             }
         };
 
-/* --- v19.51 Export PDF with Options v19.52 --- */
+/* --- P3 --- */
+/* --- v19.51 Export PDF with Options All exports now use mBTPublisher - v19.52, v19.53, v19.54 --- */
+
 function exportToPdf() {
     const content = `
         <div class="space-y-4 p-4">
@@ -2863,145 +3225,119 @@ function exportToPdf() {
                 </label>
             </div>
             <div class="mt-6 flex gap-3 justify-end border-t pt-4">
-                <button onclick="closeModal('pdfExportModal')" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">Cancel</button>
+                <button onclick="mBTME.close('pdfExportModal')" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">Cancel</button>
                 <button id="confirmPdfExport" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-bold">Export PDF</button>
             </div>
         </div>
     `;
-    
-    createModal('pdfExport', 'Export Budget to PDF', content, 'max-w-md');
-    
-    document.getElementById('confirmPdfExport').addEventListener('click', () => {
-        const fitToPage = document.getElementById('pdfFitToPageModal').checked;
-        const hideZeroQty = document.getElementById('pdfHideZeroQtyModal').checked;
-        const landscape = document.getElementById('pdfLandscapeModal').checked;
-        const includeStages = document.getElementById('pdfStagesModal').checked;
-        
-        closeModal('pdfExportModal');
-        generatePdfWithOptions(fitToPage, hideZeroQty, landscape, includeStages);
+
+    mBTME.open('pdfExport', 'Export Budget to PDF', content, 'max-w-md', {
+        onOpen: () => {
+            document.getElementById('confirmPdfExport').addEventListener('click', () => {
+                const fitToPage = document.getElementById('pdfFitToPageModal').checked;
+                const hideZeroQty = document.getElementById('pdfHideZeroQtyModal').checked;
+                const landscape = document.getElementById('pdfLandscapeModal').checked;
+                const includeStages = document.getElementById('pdfStagesModal').checked;
+
+                mBTME.close('pdfExportModal');
+
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF({ orientation: landscape ? 'landscape' : 'portrait' });
+
+                doc.setFontSize(18);
+                doc.text(budget.projectName || "Untitled Project", 14, 20);
+                doc.setFontSize(10);
+                doc.setTextColor(100);
+                doc.text(`Generated: ${new Date().toLocaleDateString()}`, 14, 26);
+
+                const { subtotal } = calculateTotals(budget.sections);
+                const contingencyAmount = subtotal * (budget.contingencyPercentage / 100);
+                const taxAmount = subtotal * (budget.salesTaxPercentage / 100);
+                const totalBeforeDiscount = subtotal + contingencyAmount + taxAmount;
+                const discountAmount = totalBeforeDiscount * ((budget.discountPercentage || 0) / 100);
+                const grandTotal = totalBeforeDiscount - discountAmount;
+
+                const summaryData = [
+                    ['Subtotal', formatCurrency(toDisp(subtotal))],
+                    [`Contingency (${budget.contingencyPercentage}%)`, formatCurrency(toDisp(contingencyAmount))],
+                    [`Sales Tax (${budget.salesTaxPercentage}%)`, formatCurrency(toDisp(taxAmount))],
+                    [`Discount (${budget.discountPercentage}%)`, `-${formatCurrency(toDisp(discountAmount))}`],
+                    ['GRAND TOTAL', formatCurrency(toDisp(grandTotal))]
+                ];
+
+                doc.autoTable({
+                    startY: 32,
+                    head: [['Category', 'Amount']],
+                    body: summaryData,
+                    theme: 'striped',
+                    headStyles: { fillColor: [66, 66, 66] },
+                    columnStyles: { 0: { fontStyle: 'bold' }, 1: { halign: 'right' } },
+                    margin: { left: 14, right: landscape ? 150 : 100 }
+                });
+
+                let finalY = doc.lastAutoTable.finalY + 10;
+                const tableRows = [];
+
+                Object.entries(budget.sections).forEach(([sectionName, section]) => {
+                    let sectionTotal = 0;
+                    const sectionItems = [];
+
+                    section.items.forEach(item => {
+                        if (hideZeroQty && (!item.quantity || item.quantity == 0)) return;
+                        const { estimated } = calculateItem(item);
+                        sectionTotal += estimated;
+                        sectionItems.push([
+                            item.description,
+                            item.quantity,
+                            item.unit,
+                            formatCurrency(toDisp(item.rate)),
+                            formatCurrency(toDisp(estimated))
+                        ]);
+                    });
+
+                    if (sectionItems.length === 0) return;
+
+                    tableRows.push([{ content: sectionName.toUpperCase(), colSpan: 5, styles: { fillColor: [220, 220, 220], fontStyle: 'bold', textColor: [0, 0, 0] } }]);
+                    tableRows.push(...sectionItems);
+                    tableRows.push([{ content: `Total ${sectionName}: ${formatCurrency(toDisp(sectionTotal))}`, colSpan: 5, styles: { halign: 'right', fontStyle: 'bold', fillColor: [245, 245, 245] } }]);
+                });
+
+                doc.autoTable({
+                    startY: finalY,
+                    head: [['Description', 'Qty', 'Unit', 'Rate', 'Total']],
+                    body: tableRows,
+                    theme: 'grid',
+                    headStyles: { fillColor: [41, 128, 185] },
+                    styles: { fontSize: fitToPage ? 8 : 9, cellPadding: fitToPage ? 2 : 3 },
+                    columnStyles: fitToPage ? {
+                        0: { cellWidth: 'auto' },
+                        1: { cellWidth: 15, halign: 'center' },
+                        2: { cellWidth: 15, halign: 'center' },
+                        3: { cellWidth: 25, halign: 'right' },
+                        4: { cellWidth: 30, halign: 'right', fontStyle: 'bold' }
+                    } : {
+                        0: { cellWidth: 'auto' },
+                        1: { cellWidth: 20, halign: 'center' },
+                        2: { cellWidth: 20, halign: 'center' },
+                        3: { cellWidth: 30, halign: 'right' },
+                        4: { cellWidth: 35, halign: 'right', fontStyle: 'bold' }
+                    }
+                });
+
+                if (includeStages) {
+                    doc.addPage();
+                    doc.setFontSize(14);
+                    doc.text('Production Stages Breakdown', 14, 20);
+                    doc.setFontSize(10);
+                    doc.text('(Coming soon)', 14, 28);
+                }
+
+                doc.save(`${budget.projectName || 'Budget'}.pdf`);
+            });
+        }
     });
 }
 
-function generatePdfWithOptions(fitToPage, hideZeroQty, landscape, includeStages) {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF({ orientation: landscape ? 'landscape' : 'portrait' });
-    
-    doc.setFontSize(18);
-    doc.text(budget.projectName || "Untitled Project", 14, 20);
-    
-    doc.setFontSize(10);
-    doc.setTextColor(100);
-    const dateStr = new Date().toLocaleDateString();
-    doc.text(`Generated: ${dateStr}`, 14, 26);
-    
-    const { subtotal } = calculateTotals(budget.sections);
-    const contingencyAmount = subtotal * (budget.contingencyPercentage / 100);
-    const taxAmount = subtotal * (budget.salesTaxPercentage / 100);
-    const totalBeforeDiscount = subtotal + contingencyAmount + taxAmount;
-    const discountAmount = totalBeforeDiscount * ((budget.discountPercentage || 0) / 100);
-    const grandTotal = totalBeforeDiscount - discountAmount;
-    
-    const summaryData = [
-        ['Subtotal', formatCurrency(toDisp(subtotal))],
-        [`Contingency (${budget.contingencyPercentage}%)`, formatCurrency(toDisp(contingencyAmount))],
-        [`Sales Tax (${budget.salesTaxPercentage}%)`, formatCurrency(toDisp(taxAmount))],
-        [`Discount (${budget.discountPercentage}%)`, `-${formatCurrency(toDisp(discountAmount))}`],
-        ['GRAND TOTAL', formatCurrency(toDisp(grandTotal))]
-    ];
-
-    doc.autoTable({
-        startY: 32,
-        head: [['Category', 'Amount']],
-        body: summaryData,
-        theme: 'striped',
-        headStyles: { fillColor: [66, 66, 66] },
-        columnStyles: { 
-            0: { fontStyle: 'bold' },
-            1: { halign: 'right' } 
-        },
-        margin: { left: 14, right: landscape ? 150 : 100 }
-    });
-
-    let finalY = doc.lastAutoTable.finalY + 10;
-    const tableRows = [];
-    
-    Object.entries(budget.sections).forEach(([sectionName, section]) => {
-        let sectionTotal = 0;
-        const sectionItems = [];
-        
-        section.items.forEach(item => {
-            if (hideZeroQty && (!item.quantity || item.quantity == 0)) return;
-            const { estimated } = calculateItem(item);
-            sectionTotal += estimated;
-            sectionItems.push([
-                item.description,
-                item.quantity,
-                item.unit,
-                formatCurrency(toDisp(item.rate)),
-                formatCurrency(toDisp(estimated))
-            ]);
-        });
-        
-        if (sectionItems.length === 0) return;
-        
-        tableRows.push([{ 
-            content: sectionName.toUpperCase(), 
-            colSpan: 5, 
-            styles: { fillColor: [220, 220, 220], fontStyle: 'bold', textColor: [0, 0, 0] } 
-        }]);
-        
-        tableRows.push(...sectionItems);
-        
-        tableRows.push([{ 
-            content: `Total ${sectionName}: ${formatCurrency(toDisp(sectionTotal))}`, 
-            colSpan: 5, 
-            styles: { halign: 'right', fontStyle: 'bold', fillColor: [245, 245, 245] } 
-        }]);
-    });
-
-    const tableConfig = {
-        startY: finalY,
-        head: [['Description', 'Qty', 'Unit', 'Rate', 'Total']],
-        body: tableRows,
-        theme: 'grid',
-        headStyles: { fillColor: [41, 128, 185] },
-        styles: { fontSize: fitToPage ? 8 : 9, cellPadding: fitToPage ? 2 : 3 },
-        pageBreak: 'auto',
-    };
-    
-    if (fitToPage) {
-        tableConfig.tableWidth = 'auto';
-        tableConfig.columnStyles = {
-            0: { cellWidth: 'auto' },
-            1: { cellWidth: 15, halign: 'center' },
-            2: { cellWidth: 15, halign: 'center' },
-            3: { cellWidth: 25, halign: 'right' },
-            4: { cellWidth: 30, halign: 'right', fontStyle: 'bold' }
-        };
-    } else {
-        tableConfig.columnStyles = {
-            0: { cellWidth: 'auto' },
-            1: { cellWidth: 20, halign: 'center' },
-            2: { cellWidth: 20, halign: 'center' },
-            3: { cellWidth: 30, halign: 'right' },
-            4: { cellWidth: 35, halign: 'right', fontStyle: 'bold' }
-        };
-    }
-
-    doc.autoTable(tableConfig);
-    
-    if (includeStages) {
-        doc.addPage();
-        doc.setFontSize(14);
-        doc.text('Production Stages Breakdown', 14, 20);
-        doc.setFontSize(10);
-        doc.text('(Feature coming in v19.52)', 14, 28);
-    }
-
-    doc.save(`${budget.projectName || 'Budget'}.pdf`);
-}
-        
- /* --- v19.51 Export Excel with Options v19.52 --- */
 function exportToXlsx() {
     const content = `
         <div class="space-y-4 p-4">
@@ -3017,119 +3353,92 @@ function exportToXlsx() {
                 </label>
             </div>
             <div class="mt-6 flex gap-3 justify-end border-t pt-4">
-                <button onclick="closeModal('xlsxExportModal')" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">Cancel</button>
+                <button onclick="mBTME.close('xlsxExportModal')" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">Cancel</button>
                 <button id="confirmXlsxExport" class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-bold">Export Excel</button>
             </div>
         </div>
     `;
-    
-    createModal('xlsxExport', 'Export Budget to Excel', content, 'max-w-md');
-    
-    document.getElementById('confirmXlsxExport').addEventListener('click', () => {
-        const hideZeroQty = document.getElementById('xlsxHideZeroQtyModal').checked;
-        const includeStages = document.getElementById('xlsxStagesModal').checked;
-        
-        closeModal('xlsxExportModal');
-        generateXlsxWithOptions(hideZeroQty, includeStages);
+
+    mBTME.open('xlsxExport', 'Export Budget to Excel', content, 'max-w-md', {
+        onOpen: () => {
+            document.getElementById('confirmXlsxExport').addEventListener('click', () => {
+                const hideZeroQty = document.getElementById('xlsxHideZeroQtyModal').checked;
+                const includeStages = document.getElementById('xlsxStagesModal').checked;
+
+                mBTME.close('xlsxExportModal');
+
+                const data = [];
+                data.push([budget.projectName || "Untitled Project"]);
+                data.push([`Generated: ${new Date().toLocaleDateString()}`]);
+                data.push([]);
+
+                const { subtotal } = calculateTotals(budget.sections);
+                const contingencyAmount = subtotal * (budget.contingencyPercentage / 100);
+                const taxAmount = subtotal * (budget.salesTaxPercentage / 100);
+                const totalBeforeDiscount = subtotal + contingencyAmount + taxAmount;
+                const discountAmount = totalBeforeDiscount * ((budget.discountPercentage || 0) / 100);
+                const grandTotal = totalBeforeDiscount - discountAmount;
+                const totalActual = calculateActuals(budget.sections);
+
+                data.push(["BUDGET SUMMARY", ""]);
+                data.push(["Subtotal", toDisp(subtotal)]);
+                data.push([`Contingency (${budget.contingencyPercentage}%)`, toDisp(contingencyAmount)]);
+                data.push([`Sales Tax (${budget.salesTaxPercentage}%)`, toDisp(taxAmount)]);
+                data.push([`Discount (${budget.discountPercentage}%)`, -toDisp(discountAmount)]);
+                data.push(["GRAND TOTAL", toDisp(grandTotal)]);
+                data.push(["TOTAL ACTUAL SPEND", toDisp(totalActual)]);
+                data.push([]);
+                data.push(["Description", "Qty", "Unit", "Rate", "Estimated", "Actual", "Variance"]);
+
+                Object.entries(budget.sections).forEach(([sectionName, section]) => {
+                    data.push([sectionName.toUpperCase(), "", "", "", "", "", ""]);
+                    let sectionEst = 0;
+                    let sectionAct = 0;
+                    section.items.forEach(item => {
+                        if (hideZeroQty && (!item.quantity || item.quantity == 0)) return;
+                        const { estimated, variance } = calculateItem(item);
+                        sectionEst += estimated;
+                        sectionAct += (parseFloat(item.actual) || 0);
+                        data.push([
+                            item.description,
+                            item.quantity,
+                            item.unit,
+                            toDisp(item.rate),
+                            toDisp(estimated),
+                            toDisp(item.actual),
+                            toDisp(variance)
+                        ]);
+                    });
+                    data.push([
+                        `Total ${sectionName}`,
+                        "", "", "",
+                        toDisp(sectionEst),
+                        toDisp(sectionAct),
+                        toDisp(sectionAct - sectionEst)
+                    ]);
+                    data.push([]);
+                });
+
+                mBTPublisher.toXLSX(data, 'Budget Detail', budget.projectName || 'Budget');
+            });
+        }
     });
 }
 
-function generateXlsxWithOptions(hideZeroQty, includeStages) {
-    const wb = XLSX.utils.book_new();
-    const { subtotal } = calculateTotals(budget.sections);
-    const contingencyAmount = subtotal * (budget.contingencyPercentage / 100);
-    const taxAmount = subtotal * (budget.salesTaxPercentage / 100);
-    const totalBeforeDiscount = subtotal + contingencyAmount + taxAmount;
-    const discountAmount = totalBeforeDiscount * ((budget.discountPercentage || 0) / 100);
-    const grandTotal = totalBeforeDiscount - discountAmount;
-    const totalActual = calculateActuals(budget.sections);
-
-    const data = [];
-    
-    data.push([budget.projectName || "Untitled Project"]);
-    data.push([`Generated: ${new Date().toLocaleDateString()}`]);
-    data.push([]);
-
-    data.push(["BUDGET SUMMARY", ""]);
-    data.push(["Subtotal", toDisp(subtotal)]);
-    data.push([`Contingency (${budget.contingencyPercentage}%)`, toDisp(contingencyAmount)]);
-    data.push([`Sales Tax (${budget.salesTaxPercentage}%)`, toDisp(taxAmount)]);
-    data.push([`Discount (${budget.discountPercentage}%)`, -toDisp(discountAmount)]); 
-    data.push(["GRAND TOTAL", toDisp(grandTotal)]);
-    data.push(["TOTAL ACTUAL SPEND", toDisp(totalActual)]);
-    data.push([]);
-
-    data.push(["Description", "Qty", "Unit", "Rate", "Estimated", "Actual", "Variance"]);
-
-    Object.entries(budget.sections).forEach(([sectionName, section]) => {
-        data.push([sectionName.toUpperCase(), "", "", "", "", "", ""]);
-        let sectionEst = 0;
-        let sectionAct = 0;
-
-        section.items.forEach(item => {
-            if (hideZeroQty && (!item.quantity || item.quantity == 0)) return;
-
-            const { estimated, variance } = calculateItem(item);
-            sectionEst += estimated;
-            sectionAct += (parseFloat(item.actual) || 0);
-
-            data.push([
-                item.description,
-                item.quantity,
-                item.unit,
-                toDisp(item.rate),
-                toDisp(estimated),
-                toDisp(item.actual),
-                toDisp(variance)
-            ]);
-        });
-
-        data.push([
-            `Total ${sectionName}`, 
-            "", "", "", 
-            toDisp(sectionEst), 
-            toDisp(sectionAct), 
-            toDisp(sectionAct - sectionEst)
-        ]);
-        data.push([]);
-    });
-
-    const ws = XLSX.utils.aoa_to_sheet(data);
-    ws['!cols'] = [
-        { wch: 40 }, { wch: 8 }, { wch: 10 }, { wch: 15 },
-        { wch: 15 }, { wch: 15 }, { wch: 15 }
-    ];
-
-    XLSX.utils.book_append_sheet(wb, ws, "Budget Detail");
-    
-    if (includeStages) {
-        const stagesData = [["Stages Breakdown"], ["Feature coming in v19.52"]];
-        const stagesWs = XLSX.utils.aoa_to_sheet(stagesData);
-        XLSX.utils.book_append_sheet(wb, stagesWs, "Stages");
-    }
-    
-    XLSX.writeFile(wb, `${budget.projectName || 'Budget'}.xlsx`);
+function exportToMoo() {
+    mBTPublisher.toMoo();
 }
 
-/* --- v19.51 .moo File Export/Import Logic v19.52 --- */
-        function exportToMoo() {
-    if (!budget) {
-        alert("No active budget to export.");
-        return;
-    }
-    const dataStr = JSON.stringify(budget, null, 2);
-    const blob = new Blob([dataStr], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    const safeName = (budget.projectName || "untitled").replace(/[^a-z0-9]/gi, '_').toLowerCase();
-    a.href = url;
-    a.download = `${safeName}.moo`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.createObjectURL(url);
-}
+/* JPG Combo Helpers (Ready for Document Viewer) */
+window.generateMtempJPG = (docId) => {
+    const doc = budget.documents.find(d => d.id === docId);
+    mBTPublisher.toFileFromHTML('', `${budget.projectName}_${doc.label}`, ['jpg'], doc);
+};
 
+window.generateMtempBoth = (docId) => {
+    const doc = budget.documents.find(d => d.id === docId);
+    mBTPublisher.toFileFromHTML('', `${budget.projectName}_${doc.label}`, ['pdf','jpg'], doc);
+};
 function handleUniversalImport() {
     if (budget && budget.projectName) saveBudget();
 
@@ -3243,6 +3552,59 @@ function handleUniversalImport() {
 
     input.click();
 }
+/* --- v19.54 Auto-Assign Modal --- */
+window.openAutoAssignModal = function() {
+    const contacts = (typeof getGlobalContacts === 'function' ? getGlobalContacts() : (mBTOG && mBTOG.contacts) || []);
+
+    const content = `
+        <div class="p-6 max-w-md mx-auto space-y-6">
+            <h3 class="text-xl font-bold text-gray-800 text-center">Auto-Assign Crew</h3>
+            <p class="text-sm text-gray-600 text-center">Match budget roles with your contact database</p>
+            
+            <div class="space-y-4">
+                <button id="autoAssignPersonalBtn" class="w-full p-4 bg-teal-50 hover:bg-teal-100 rounded-xl border-2 border-teal-200 transition-all flex items-center justify-center gap-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="9" cy="7" r="4"></circle>
+                        <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+                        <path d="M15 3.13a4 4 0 0 1 0 7.75"></path>
+                    </svg>
+                    <div class="text-left">
+                        <div class="font-bold text-teal-800">Auto-Assign from Personal Contacts</div>
+                        <div class="text-xs text-teal-600">${contacts.length} contacts available</div>
+                    </div>
+                </button>
+                
+                <button disabled class="w-full p-4 bg-gray-50 rounded-xl border-2 border-dashed border-gray-300 opacity-60 cursor-not-allowed flex items-center justify-center gap-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <path d="M8 14s1.5 2 4 2 4-2 4-2"></path>
+                        <line x1="9" y1="9" x2="9.01" y2="9"></line>
+                        <line x1="15" y1="9" x2="15.01" y2="9"></line>
+                    </svg>
+                    <div class="text-left">
+                        <div class="font-bold text-gray-600">Auto-Assign from AoD Database</div>
+                        <div class="text-xs text-gray-500">Coming soon – location & availability matching</div>
+                    </div>
+                </button>
+            </div>
+            
+            <div class="pt-4 border-t text-center">
+                <button onclick="mBTME.close('autoAssignModal')" class="text-sm text-gray-500 hover:text-gray-700 font-bold">Cancel</button>
+            </div>
+        </div>
+    `;
+
+    mBTME.open('autoAssignModal', 'Auto-Assign Crew', content, 'max-w-md', {
+        onOpen: () => {
+            document.getElementById('autoAssignPersonalBtn')?.addEventListener('click', () => {
+                mBTME.close('autoAssignModal');
+                const result = mBTAssign.assignFromContacts();
+                alert(result.message + (result.skipped > 0 ? `\n${result.skipped} already assigned` : ''));
+            });
+        }
+    });
+};
 
 function removeAttachment(id) {
     if(!budget || !budget.attachments) return;
@@ -3260,7 +3622,6 @@ function removeAttachment(id) {
             a.click();
         }
 
-/* --- P3 --- */
 /* --- v19.53 Project Management UI Consolidated v19.54 --- */
 function renderProjectManagement() {
     const container = document.getElementById('project-management-container');
@@ -3294,6 +3655,18 @@ function renderProjectManagement() {
                     </select>
                 </div>
             </div>
+
+<!-- Crew-Vendor Button -->
+                <button onclick="openCrewVendorsHub()"
+                        class="p-2.5 bg-blue-400 text-white rounded-lg hover:bg-blue-300 border border-blue-500 shadow-sm transition-colors flex items-center justify-center"
+                        title="Crew & Vendors – Manage Assigned, Contacts, Auto-Assign">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="9" cy="7" r="4"></circle>
+                        <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+                        <path d="M15 3.13a4 4 0 0 1 0 7.75"></path>
+                    </svg>
+                </button>
 
             <div class="flex items-center gap-1.5 flex-shrink-0">
                 
@@ -3604,42 +3977,6 @@ function renderTemplateEditor(container) {
 window.editGlobalItem = function(index) { editingGlobalItemIndex = index; window.switchSettingsTab('database', document.querySelector('button[onclick*="database"]')); };
 window.cancelEditGlobalItem = function() { editingGlobalItemIndex = -1; window.switchSettingsTab('database', document.querySelector('button[onclick*="database"]')); };
 window.deleteGlobalItem = function(idx) { if (confirm("Remove item?")) { const items = getGlobalItems(); items.splice(idx, 1); mBTOG.rates = items; mBTOG.saveRates(); if(editingGlobalItemIndex === idx) editingGlobalItemIndex = -1; window.switchSettingsTab('database', document.querySelector('button[onclick*="database"]')); } };
-window.handleRestore = function(index) {
-    const trash = JSON.parse(localStorage.getItem(trashKey) || '[]');
-    const projectToRestore = trash.splice(index, 1)[0];
-    if (projectToRestore) {
-        delete projectToRestore.deletedTimestamp;
-        localStorage.setItem(storageKeyPrefix + projectToRestore.projectName, JSON.stringify(projectToRestore));
-        localStorage.setItem(trashKey, JSON.stringify(trash));
-        loadBudget(projectToRestore.projectName);
-        render();
-    }
-    closeModal('recoveryModal');
-};
-window.handlePermanentDelete = function(index) {
-    if (confirm("Delete forever?")) { const trash = JSON.parse(localStorage.getItem(trashKey) || '[]'); trash.splice(index, 1); localStorage.setItem(trashKey, JSON.stringify(trash)); showRecoveryModal(); }
-}
-
-window.handleRestoreAll = function() {
-    const trash = JSON.parse(localStorage.getItem(trashKey) || '[]');
-    if (trash.length === 0) return;
-    if (confirm(`Restore all ${trash.length} projects?`)) {
-        trash.forEach(project => {
-            delete project.deletedTimestamp;
-            localStorage.setItem(storageKeyPrefix + project.projectName, JSON.stringify(project));
-        });
-        localStorage.removeItem(trashKey);
-        showRecoveryModal();
-        render(); 
-    }
-};
-
-window.handleDeleteAllTrash = function() {
-    if (confirm("Permanently delete ALL projects in trash?")) {
-        localStorage.removeItem(trashKey);
-        showRecoveryModal();
-    }
-};
 
 /* --- v19.53 AI Handlers with Persistence --- */
 async function handleAnalyzeBudget() {
@@ -3974,6 +4311,140 @@ const mBTPublisher = {
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: { scale: 2, useCORS: true, logging: false },
         jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+    },/* --- BUNDLE 1: PUBLISHER LOGIC --- */
+    // 1. Industry Standard Fragments
+    fragments: {
+        header: (meta) => `
+            <div style="border-bottom: 3px solid black; padding-bottom: 10px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: flex-end; font-family: Arial, sans-serif;">
+                <div style="width: 65%;">
+                    <h1 style="margin:0; font-size: 28px; text-transform: uppercase; font-weight: 900;">${meta.productionTitle || 'UNNAMED PROJECT'}</h1>
+                    <div style="font-size: 14px; font-weight: bold;">${meta.productionCompany || ''}</div>
+                </div>
+                <div style="width: 30%; text-align: right; font-size: 12px;">
+                    <div><strong>DATE:</strong> ${meta.shootDate || 'TBD'}</div>
+                    <div style="background: #000; color: #fff; padding: 4px 8px; display: inline-block; margin-top: 5px; font-size: 14px;"><strong>CREW CALL:</strong> ${meta.crewCallTime || '00:00'}</div>
+                </div>
+            </div>`,
+        table: (title, headers, rows) => `
+            <div style="margin-bottom: 15px; font-family: Arial, sans-serif;">
+                <div style="background: #333; color: white; padding: 4px 8px; font-size: 11px; font-weight: 900; text-transform: uppercase;">${title}</div>
+                <table style="width: 100%; border-collapse: collapse; font-size: 11px; border: 1px solid black;">
+                    <thead><tr style="background: #eee; border-bottom: 1px solid black;">${headers.map(h => `<th style="text-align: left; padding: 6px; border-right: 1px solid #ccc;">${h}</th>`).join('')}</tr></thead>
+                    <tbody>${rows.map(row => `<tr style="border-bottom: 1px solid #eee;">${Object.values(row).filter(v => typeof v !== 'object').map(val => `<td style="padding: 4px 6px; border-right: 1px solid #eee;">${val || ''}</td>`).join('')}</tr>`).join('')}</tbody>
+                </table>
+            </div>`,
+        note: (title, content) => `
+            <div style="border: 2px solid black; margin-bottom: 15px; font-family: Arial, sans-serif;">
+                <div style="background: #eee; padding: 4px 8px; font-size: 11px; font-weight: 900; border-bottom: 1px solid black; text-transform: uppercase;">${title}</div>
+                <div style="padding: 10px; font-size: 12px; white-space: pre-wrap;">${content || 'N/A'}</div>
+            </div>`
+    },
+
+    // 2. Generation & Conversion Engine
+  async generateFastPreview(mode, data, callback) {
+    const docId = mBTDB.state.currentDocId;
+    const doc = budget.documents.find(d => d.id === docId);
+    if (!doc) return alert("Document not found for preview.");
+
+    if (mode === 'graphic') {
+        const element = document.getElementById('mBTDB_Workspace');
+        const canvas = await html2canvas(element, this.defaultPdfOptions.html2canvas);
+        callback(canvas.toDataURL('image/jpeg', 0.9));
+        return;
+    }
+
+    // INDUSTRY STANDARD ASSEMBLY (Full-Length)
+    // We sort by 'y' to ensure the preview matches the builder's vertical order
+    const sortedWidgets = [...doc.content.widgets].sort((a, b) => a.y - b.y);
+    
+    let html = `<div id="standard-render-box" style="width: 760px; background: white; color: black; padding: 40px; margin: 0 auto; font-family: Arial, sans-serif; display: block; overflow: visible;">`;
+    
+    // Always start with Meta Header (Priority 1)
+    html += this.fragments.header(data.meta);
+
+    sortedWidgets.forEach(w => {
+        const type = w.type;
+        const label = w.label || type.toUpperCase();
+
+        if (type === 'header') return; // Handled above
+
+        if (type === 'contacts') {
+            const c = data.contacts;
+            const cStr = `Director: ${c.director || ''}\nProducer: ${c.producer || ''}\n1st AD: ${c.ad || ''}`;
+            html += this.fragments.note(label, cStr);
+        } 
+        else if (type === 'logistics' || type === 'locations' || type === 'weather') {
+            const locStr = (data.locations || []).map(l => `[${l.name.toUpperCase()}]\n${l.address}\nWeather: ${l.weather}`).join('\n\n');
+            html += this.fragments.note(label, locStr || "No Location Data");
+        } 
+        else if (type === 'schedule') {
+            const rows = data.schedule || [];
+            if(rows.length) html += this.fragments.table(label, ["Time", "Scn", "Description", "Cast", "Loc"], rows);
+        } 
+        else if (type === 'cast') {
+            const rows = data.cast || [];
+            if(rows.length) html += this.fragments.table(label, ["Role", "Actor", "Stat", "Pick", "Call"], rows);
+        } 
+        else if (type === 'crew') {
+            const rows = data.crew || [];
+            if(rows.length) html += this.fragments.table(label, ["Dept", "Pos", "Name", "Call"], rows);
+        } 
+        // CATCH-ALL: For Notes, RichText, and anything else containing text
+        else {
+            const noteContent = data.additional?.[w.id] || data[w.id] || data[type] || "";
+            if (noteContent || label) {
+                html += this.fragments.note(label, noteContent || "...");
+            }
+        }
+    });
+
+    html += `</div>`;
+    this.htmlToJPEG(html, callback);
+},
+
+    htmlToJPEG(htmlString, callback) {
+    const iframe = document.createElement('iframe');
+    iframe.style.visibility = 'hidden'; 
+    iframe.style.position = 'absolute'; 
+    iframe.style.width = '850px';
+    iframe.style.height = '5000px'; // Over-large initial height to prevent cropping
+    document.body.appendChild(iframe);
+    
+    const doc = iframe.contentWindow.document;
+    doc.open();
+    doc.write(`<html><body style="margin:0; padding:0;">${htmlString}</body></html>`);
+    doc.close();
+
+    // Small delay to let fonts/tables settle
+    setTimeout(async () => {
+        const target = doc.getElementById('standard-render-box');
+        
+        // Use html2canvas to capture the EXACT height of the rendered box
+        html2canvas(target, {
+            scale: 2,
+            useCORS: true,
+            logging: false,
+            backgroundColor: '#ffffff',
+            windowHeight: target.scrollHeight, // Force capture of full content
+            height: target.scrollHeight        // Force capture of full content
+        }).then(canvas => {
+            const imgData = canvas.toDataURL('image/jpeg', 0.9);
+            document.body.removeChild(iframe);
+            callback(imgData);
+        });
+    }, 600);
+},
+
+    convertToPDFBlob(jpegURL) {
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        pdf.addImage(jpegURL, 'JPEG', 0, 0, pdfWidth, 0); 
+        return pdf.output('blob');
+    },
+
+    downloadJPEG(url, filename) {
+        this.forceDownload(url, `${filename.replace(/[^a-z0-9]/gi, '_')}.jpg`);
     },
 
     // --- Core Export Methods ---
@@ -4007,6 +4478,48 @@ const mBTPublisher = {
         }
     },
 
+// --- 1. Industry Standard Fragments (New) ---
+  fragments: {
+    header: (meta) => `
+        <div style="border-bottom: 2px solid black; padding-bottom: 8px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: flex-end; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;">
+            <div style="width: 70%;">
+                <h1 style="margin:0; font-size: 22px; text-transform: uppercase; font-weight: 900; letter-spacing: -0.5px;">${meta.productionTitle || 'UNNAMED PROJECT'}</h1>
+                <div style="font-size: 11px; font-weight: bold; color: #333; text-transform: uppercase;">${meta.productionCompany || ''}</div>
+            </div>
+            <div style="width: 28%; text-align: right; font-size: 10px; line-height: 1.2;">
+                <div><strong>DATE:</strong> ${meta.shootDate || 'TBD'}</div>
+                <div style="background: #000; color: #fff; padding: 3px 6px; display: inline-block; margin-top: 4px; font-size: 12px; font-weight: 900;"><strong>CREW CALL:</strong> ${meta.crewCallTime || '00:00'}</div>
+            </div>
+        </div>`,
+
+    table: (title, headers, rows) => `
+        <div style="margin-bottom: 10px; font-family: Arial, sans-serif;">
+            <div style="background: #000; color: white; padding: 2px 6px; font-size: 9px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.5px;">${title}</div>
+            <table style="width: 100%; border-collapse: collapse; font-size: 9px; border: 1px solid black;">
+                <thead>
+                    <tr style="background: #e5e5e5; border-bottom: 1px solid black;">
+                        ${headers.map(h => `<th style="text-align: left; padding: 3px 5px; border-right: 1px solid #999; text-transform: uppercase;">${h}</th>`).join('')}
+                    </tr>
+                </thead>
+                <tbody>
+                    ${rows.map(row => `
+                        <tr style="border-bottom: 1px solid #eee;">
+                            ${Object.values(row).filter(v => typeof v !== 'object').map(val => `
+                                <td style="padding: 2px 5px; border-right: 1px solid #eee; line-height: 1.1;">${val || ''}</td>
+                            `).join('')}
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        </div>`,
+
+    note: (title, content) => `
+        <div style="border: 1px solid black; margin-bottom: 10px; font-family: Arial, sans-serif; page-break-inside: avoid;">
+            <div style="background: #e5e5e5; padding: 2px 6px; font-size: 9px; font-weight: 900; border-bottom: 1px solid black; text-transform: uppercase;">${title}</div>
+            <div style="padding: 6px; font-size: 10px; white-space: pre-wrap; line-height: 1.3;">${content || '...'}</div>
+        </div>`
+},
+
     async exportToPDF(elementOrId, filename, mode) { return this.toPDF(elementOrId, filename); },
 
     toXLSX(data, sheetName = 'Sheet1', filename = 'Budget') {
@@ -4022,6 +4535,27 @@ const mBTPublisher = {
         const dataStr = JSON.stringify(budget, null, 2);
         const blob = new Blob([dataStr], { type: 'application/json' });
         this.forceDownload(blob, `${(budget.projectName || 'untitled').replace(/[^a-z0-9]/gi, '_').toLowerCase()}.moo`);
+    },
+
+// --- 2. Call Sheet Specific Generation (New) ---
+    async generateFastPreview(mode, data, callback) {
+        if (mode === 'graphic') {
+            // Use your existing html2canvas logic to snapshot the editor
+            const element = document.getElementById('mBTDB_Workspace');
+            const canvas = await html2canvas(element, this.defaultPdfOptions.html2canvas);
+            callback(canvas.toDataURL('image/jpeg', 0.9));
+            return;
+        }
+
+        // Standard Industry Assembly
+        let html = `<div id="standard-render-box" style="width: 760px; background: white; color: black; padding: 40px; margin: 0 auto;">`;
+        html += this.fragments.header(data.meta);
+        if (data.locations?.length) html += this.fragments.note("LOCATIONS & WEATHER", data.locations.map(l => `${l.name.toUpperCase()}: ${l.address}\nWeather: ${l.weather}`).join('\n\n'));
+        if (data.schedule?.length) html += this.fragments.table("SHOOTING SCHEDULE", ["Time", "Scn", "Description", "Cast", "Loc"], data.schedule);
+        if (data.cast?.length) html += this.fragments.table("CAST & TALENT", ["Role", "Actor", "Status", "Pickup", "Call"], data.cast);
+        html += `</div>`;
+
+        this.htmlToJPEG(html, callback);
     },
 
     // --- Template Engine (The "What") ---
@@ -4207,7 +4741,180 @@ const mBTPublisher = {
     shareEmail(email, subject, body) { window.location.href = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`; }
 };
 
+/* --- v19.54 Crew & Vendors Hub --- */
+window.openCrewVendorsHub = function() {
+    // Extract assigned crew from budget
+        const assignedCrew = [];
+    Object.entries(budget.sections).forEach(([sectionName, section]) => {
+        section.items.forEach(item => {
+            if (item.crew && item.crew.name) {
+                assignedCrew.push({
+                    name: item.crew.name,
+                    role: item.description,
+                    section: sectionName,
+                    phone: item.crew.phone || '',
+                    email: item.crew.email || ''
+                });
+            }
+        });
+    });
+
+    // Personal contacts from Open Gate
+    const personalContacts = (typeof getGlobalContacts === 'function' ? getGlobalContacts() : (mBTOG && mBTOG.contacts) || []);
+
+    const content = `
+        <div class="flex flex-col h-[80vh] max-h-[600px]">
+            <!-- Tabs -->
+            <div class="flex border-b bg-gray-50">
+                <button id="tabAssigned" class="flex-1 px-4 py-3 text-sm font-bold text-gray-700 border-b-2 border-blue-500">Assigned in Budget (${assignedCrew.length})</button>
+                <button id="tabPersonal" class="flex-1 px-4 py-3 text-sm font-bold text-gray-600 hover:text-gray-800">Personal Contacts (${personalContacts.length})</button>
+                <button id="tabAutoAssign" class="flex-1 px-4 py-3 text-sm font-bold text-gray-600 hover:text-gray-800">Auto-Assign</button>
+            </div>
+            
+            <!-- Tab Content -->
+            <div class="flex-grow overflow-hidden">
+                <!-- Assigned in Budget Tab -->
+                <div id="contentAssigned" class="h-full flex flex-col">
+                    <input type="text" id="searchAssigned" placeholder="Search assigned crew..." class="m-4 p-3 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <div id="assignedList" class="flex-grow overflow-y-auto px-4 pb-4">
+                        ${assignedCrew.length > 0 ? assignedCrew.map(c => `
+                            <div class="flex items-center justify-between p-3 bg-white border rounded-lg mb-2">
+                                <div>
+                                    <div class="font-bold text-gray-800">${c.name}</div>
+                                    <div class="text-xs text-gray-500">${c.role} • ${c.section}</div>
+                                </div>
+                                <div class="flex gap-2">
+                                    ${c.phone ? `<a href="tel:${c.phone}" class="text-green-600"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg></a>` : ''}
+                                    ${c.email ? `<a href="mailto:${c.email}" class="text-blue-600"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg></a>` : ''}
+                                </div>
+                            </div>
+                        `).join('') : '<div class="p-8 text-center text-gray-400">No crew assigned yet</div>'}
+                    </div>
+                </div>
+                
+                <!-- Personal Contacts Tab -->
+                <div id="contentPersonal" class="h-full hidden flex flex-col">
+                    <input type="text" id="searchPersonal" placeholder="Search personal contacts..." class="m-4 p-3 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <div id="personalList" class="flex-grow overflow-y-auto px-4 pb-4">
+                        ${personalContacts.length > 0 ? personalContacts.map(c => `
+                            <div class="flex items-center justify-between p-3 bg-white border rounded-lg mb-2">
+                                <div>
+                                    <div class="font-bold text-gray-800">${c.name || 'Unnamed'}</div>
+                                    <div class="text-xs text-gray-500">${c.role || ''} • ${c.contact || 'No contact'}</div>
+                                </div>
+                                <button onclick="window.switchSettingsTab('contacts')" class="text-blue-600 hover:underline text-xs">Edit →</button>
+                            </div>
+                        `).join('') : '<div class="p-8 text-center text-gray-400">No personal contacts. Add in Settings → Contacts</div>'}
+                    </div>
+                </div>
+                
+                <!-- Auto-Assign Tab -->
+                <div id="contentAutoAssign" class="h-full hidden p-6">
+                    <div class="space-y-4">
+                        <button id="autoAssignPersonalBtn" class="w-full p-4 bg-teal-50 hover:bg-teal-100 rounded-xl border-2 border-teal-200 transition-all flex items-center justify-center gap-3">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="9" cy="7" r="4"></circle>
+                                <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+                                <path d="M15 3.13a4 4 0 0 1 0 7.75"></path>
+                            </svg>
+                            <div class="text-left">
+                                <div class="font-bold text-teal-800">Auto-Assign from Personal Contacts</div>
+                                <div class="text-xs text-teal-600">${personalContacts.length} contacts available</div>
+                            </div>
+                        </button>
+                        
+                        <button disabled class="w-full p-4 bg-gray-50 rounded-xl border-2 border-dashed border-gray-300 opacity-60 cursor-not-allowed flex items-center justify-center gap-3">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <path d="M8 14s1.5 2 4 2 4-2 4-2"></path>
+                                <line x1="9" y1="9" x2="9.01" y2="9"></line>
+                                <line x1="15" y1="9" x2="15.01" y2="9"></line>
+                            </svg>
+                            <div class="text-left">
+                                <div class="font-bold text-gray-600">Auto-Assign from AoD Database</div>
+                                <div class="text-xs text-gray-500">Coming soon – location & availability matching</div>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    mBTME.open('crewVendorsHub', 'Crew & Vendors', content, 'max-w-2xl', {
+        onOpen: () => {
+            // Tab switching
+            const tabs = {
+                assigned: document.getElementById('tabAssigned'),
+                personal: document.getElementById('tabPersonal'),
+                autoAssign: document.getElementById('tabAutoAssign')
+            };
+            const contents = {
+                assigned: document.getElementById('contentAssigned'),
+                personal: document.getElementById('contentPersonal'),
+                autoAssign: document.getElementById('contentAutoAssign')
+            };
+            const showTab = (tab) => {
+                Object.values(tabs).forEach(t => t.classList.remove('border-blue-500', 'text-blue-600'));
+                Object.values(contents).forEach(c => c.classList.add('hidden'));
+                tabs[tab].classList.add('border-blue-500', 'text-blue-600');
+                contents[tab].classList.remove('hidden');
+            };
+            tabs.assigned.onclick = () => showTab('assigned');
+            tabs.personal.onclick = () => showTab('personal');
+            tabs.autoAssign.onclick = () => showTab('autoAssign');
+
+            // Search assigned
+            document.getElementById('searchAssigned').addEventListener('input', (e) => {
+                const term = e.target.value.toLowerCase();
+                document.querySelectorAll('#assignedList > div').forEach(div => {
+                    const text = div.textContent.toLowerCase();
+                    div.style.display = text.includes(term) ? '' : 'none';
+                });
+            });
+
+            // Auto-Assign button
+            document.getElementById('autoAssignPersonalBtn')?.addEventListener('click', () => {
+                mBTME.close('crewVendorsHub');
+                const result = mBTAssign.assignFromContacts();
+                alert(result.message + (result.skipped > 0 ? `\n${result.skipped} already assigned` : ''));
+            });
+        }
+    });
+};
+
 /* --- v19.54 [Documents] - Hub & UI Logic (Views) --- */
+
+function handleDocRestore(index) {
+    const trash = budget.documentTrash || [];
+    if (index < 0 || index >= trash.length) return;
+    const doc = trash.splice(index, 1)[0];
+    delete doc.deletedTimestamp;
+    budget.documents.push(doc);
+    saveBudget();
+    mBTME.close('binModal');
+    showDocumentsModal();
+}
+
+function handleDocPermanentDelete(index) {
+    if (!confirm('Permanently delete this document? This cannot be undone.')) return;
+    const trash = budget.documentTrash || [];
+    if (index < 0 || index >= trash.length) return;
+    trash.splice(index, 1);
+    saveBudget();
+    mBTME.close('binModal');
+    showBinModal(); // Refresh bin view
+}
+
+function handleEmptyBin() {
+    if (!confirm('Empty entire bin? All documents will be permanently deleted.')) return;
+    budget.documentTrash = [];
+    saveBudget();
+    mBTME.close('binModal');
+    alert('Bin emptied');
+}
+
 window.docHubState = { mode: 'normal', selected: new Set(), activeTab: 'All', searchTerm: '' };
 
 function showDocumentsModal(tab = null) {
@@ -4236,10 +4943,13 @@ function showDocumentsModal(tab = null) {
                 <div class="flex justify-between items-center gap-2">
                     <div class="flex items-center gap-3">
                         <h2 class="text-lg font-bold text-gray-800 flex items-center gap-2"><span>📂</span> Documents</h2>
-                        <button onclick="showBinModal()" class="relative p-1.5 text-gray-400 hover:text-red-500 transition-colors" title="Recycle Bin">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                            ${(budget.documentTrash || []).length > 0 ? '<span class="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>' : ''}
-                        </button>
+                        <button onclick="event.stopPropagation(); showBinModal()" class="relative p-1.5 text-gray-400 hover:text-red-500 transition-colors flex-shrink-0" title="Recycle Bin">
+    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="3 6 5 6 21 6"></polyline>
+        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+    </svg>
+    ${((budget.documentTrash || []).length > 0) ? '<span class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white animate-pulse"></span>' : ''}
+</button>
                     </div>
                     <div class="flex items-center gap-2">${headerButtons}</div>
                 </div>
@@ -4261,290 +4971,1140 @@ function showDocumentsModal(tab = null) {
         window.docHubState.searchTerm = e.target.value.toLowerCase();
         document.querySelectorAll('.doc-card').forEach(card => card.classList.toggle('hidden', !card.dataset.label.includes(window.docHubState.searchTerm)));
     });
+
+/* --- v19.54 Document Share Selector --- */
+window.openDocumentShareSelector = function(docId) {
+    const doc = budget.documents.find(d => d.id === docId);
+    if (!doc) return;
+
+    // Assigned crew from budget
+    const assignedCrew = [];
+    Object.entries(budget.sections).forEach(([sectionName, section]) => {
+        section.items.forEach(item => {
+            if (item.crew && item.crew.name) {
+                assignedCrew.push({
+                    name: item.crew.name,
+                    role: item.description,
+                    phone: item.crew.phone || '',
+                    email: item.crew.email || '',
+                    source: 'budget'
+                });
+            }
+        });
+    });
+
+    // Personal contacts
+    const personalContacts = (typeof getGlobalContacts === 'function' ? getGlobalContacts() : (mBTOG && mBTOG.contacts) || []);
+
+    // WhatsApp helper – normalize & device-aware
+    function getWhatsAppLink(phone) {
+        if (!phone) return '';
+        let clean = phone.replace(/\D/g, '');
+        // Normalize Jamaican 876 → +1
+        if (clean.length === 10 && clean.startsWith('876')) clean = '1' + clean;
+        if (clean.length < 10) return '';
+        const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+        const base = isMobile ? 'https://wa.me/' : 'https://web.whatsapp.com/send?phone=';
+        return `${base}${clean}`;
+    }
+
+    let selectedContacts = new Set();
+    let selectedFormats = ['pdf']; // Default PDF
+
+    const content = `
+        <div class="flex flex-col h-[80vh] max-h-[600px]">
+            <!-- Top Bar: Multi-select + Formats -->
+            <div class="p-4 bg-gray-50 border-b flex items-center justify-between flex-wrap gap-3">
+                <div class="flex items-center gap-4">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" id="multiSelectToggle" class="w-5 h-5 rounded">
+                        <span class="text-sm font-bold text-gray-700">Multi-Select</span>
+                    </label>
+                    <span id="selectedCount" class="text-sm text-gray-600 hidden">0 selected</span>
+                </div>
+                <div class="flex items-center gap-4">
+                    <label class="flex items-center gap-2">
+                        <input type="checkbox" value="pdf" checked class="formatCheckbox w-4 h-4 rounded">
+                        <span class="text-sm">PDF</span>
+                    </label>
+                    <label class="flex items-center gap-2">
+                        <input type="checkbox" value="jpg" class="formatCheckbox w-4 h-4 rounded">
+                        <span class="text-sm">JPG</span>
+                    </label>
+                    <button id="batchShareBtn" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-bold hidden">Share Selected</button>
+                </div>
+            </div>
+            
+            <!-- Tabs -->
+            <div class="flex border-b bg-white">
+                <button id="tabBudget" class="flex-1 px-4 py-3 text-sm font-bold text-gray-700 border-b-2 border-blue-500">From Budget (${assignedCrew.length})</button>
+                <button id="tabPersonal" class="flex-1 px-4 py-3 text-sm font-bold text-gray-600 hover:text-gray-800">Personal (${personalContacts.length})</button>
+                <button id="tabAoD" class="flex-1 px-4 py-3 text-sm font-bold text-gray-600 hover:text-gray-800 opacity-60">AoD</button>
+            </div>
+            
+            <!-- Content -->
+            <div class="flex-grow overflow-hidden flex flex-col">
+                <!-- Budget Tab -->
+                <div id="contentBudget" class="h-full flex flex-col">
+                    <input type="text" id="searchBudget" placeholder="Search assigned crew..." class="m-4 p-3 border rounded-lg text-sm">
+                    <div id="budgetList" class="flex-grow overflow-y-auto px-4 pb-4">
+                        ${assignedCrew.map((c, i) => `
+                            <div class="contactRow flex items-center justify-between p-3 bg-white border rounded-lg mb-2" data-index="${i}" data-source="budget">
+                                <label class="flex items-center gap-3 flex-grow cursor-pointer">
+                                    <input type="checkbox" class="contactCheckbox hidden w-5 h-5 rounded">
+                                    <div>
+                                        <div class="font-bold text-gray-800">${RenderEngine.esc(c.name)}</div>
+                                        <div class="text-xs text-gray-500">${RenderEngine.esc(c.role)}</div>
+                                    </div>
+                                </label>
+                                <div class="flex gap-2 opacity-100 directActions">
+                                    ${c.phone ? `<a href="${getWhatsAppLink(c.phone)}" target="_blank" rel="noopener" class="text-green-600"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg></a>` : ''}
+                                    ${c.email ? `<a href="mailto:${RenderEngine.esc(c.email)}" class="text-blue-600"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg></a>` : ''}
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+                
+                <!-- Personal Tab -->
+                <div id="contentPersonal" class="h-full hidden flex flex-col">
+                    <div class="flex items-center justify-between m-4">
+                        <input type="text" id="searchPersonal" placeholder="Search personal contacts..." class="flex-grow p-3 border rounded-lg text-sm">
+                        <button onclick="addNewContactToPersonal('${docId}')" class="ml-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-bold">+</button>
+                    </div>
+                    <div id="personalList" class="flex-grow overflow-y-auto px-4 pb-4">
+                        ${personalContacts.map((c, i) => `
+                            <div class="contactRow flex items-center justify-between p-3 bg-white border rounded-lg mb-2" data-index="${i}" data-source="personal">
+                                <label class="flex items-center gap-3 flex-grow cursor-pointer">
+                                    <input type="checkbox" class="contactCheckbox hidden w-5 h-5 rounded">
+                                    <div>
+                                        <div class="font-bold text-gray-800">${RenderEngine.esc(c.name || 'Unnamed')}</div>
+                                        <div class="text-xs text-gray-500">${RenderEngine.esc(c.role || '')} • ${RenderEngine.esc(c.contact || 'No contact')}</div>
+                                    </div>
+                                </label>
+                                <div class="flex gap-2 opacity-100 directActions">
+                                    ${c.contact && !c.contact.includes('@') ? `<a href="${getWhatsAppLink(c.contact)}" target="_blank" rel="noopener" class="text-green-600"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg></a>` : ''}
+                                    ${c.contact && c.contact.includes('@') ? `<a href="mailto:${RenderEngine.esc(c.contact)}" class="text-blue-600"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg></a>` : ''}
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+                
+                <!-- AoD Placeholder -->
+                <div id="contentAoD" class="h-full hidden p-8 text-center text-gray-400">
+                    <div class="text-4xl mb-4">🌍</div>
+                    <p>AoD Database coming soon</p>
+                </div>
+            </div>
+        </div>
+    `;
+ mBTME.open('docShareContacts', `Send ${doc.label}`, content, 'max-w-md', {
+        onOpen: () => {
+            const multiToggle = document.getElementById('multiSelectToggle');
+            const checkboxes = document.querySelectorAll('.contactCheckbox');
+            const directActions = document.querySelectorAll('.directActions');
+            const selectedCount = document.getElementById('selectedCount');
+            const batchBtn = document.getElementById('batchShareBtn');
+            const formatCheckboxes = document.querySelectorAll('.formatCheckbox');
+
+            // Multi-select mode
+            multiToggle.addEventListener('change', () => {
+                const enabled = multiToggle.checked;
+                checkboxes.forEach(cb => cb.classList.toggle('hidden', !enabled));
+                directActions.forEach(da => da.classList.toggle('opacity-100', !enabled));
+                selectedCount.classList.toggle('hidden', !enabled);
+                batchBtn.classList.toggle('hidden', !enabled);
+                if (!enabled) selectedContacts.clear();
+                updateSelectedCount();
+            });
+
+            // Checkbox handling
+            checkboxes.forEach(cb => {
+                cb.addEventListener('change', () => {
+                    const row = cb.closest('.contactRow');
+                    const source = row.dataset.source;
+                    const index = parseInt(row.dataset.index);
+                    const key = `${source}-${index}`;
+                    if (cb.checked) selectedContacts.add(key);
+                    else selectedContacts.delete(key);
+                    updateSelectedCount();
+                });
+            });
+
+            // Format selection
+            formatCheckboxes.forEach(cb => {
+                cb.addEventListener('change', () => {
+                    selectedFormats = Array.from(formatCheckboxes)
+                        .filter(c => c.checked)
+                        .map(c => c.value);
+                    if (selectedFormats.length === 0) selectedFormats = ['pdf'];
+                });
+            });
+
+            function updateSelectedCount() {
+                selectedCount.textContent = `${selectedContacts.size} selected`;
+            }
+
+            // Batch share
+            batchBtn.addEventListener('click', () => batchShare(docId));
+
+            // Direct share (single contact)
+            directActions.forEach(actions => {
+                actions.querySelectorAll('a').forEach(link => {
+                    link.addEventListener('click', (e) => {
+                        if (multiToggle.checked) return;
+                        const row = link.closest('.contactRow');
+                        const source = row.dataset.source;
+                        const index = parseInt(row.dataset.index);
+                        shareDocumentToContact(docId, source, index);
+                    });
+                });
+            });
+
+            // Tab switching
+            const tabs = { budget: 'contentBudget', personal: 'contentPersonal', aod: 'contentAoD' };
+            Object.keys(tabs).forEach(tab => {
+                document.getElementById(`tab${tab.charAt(0).toUpperCase() + tab.slice(1)}`).onclick = () => {
+                    Object.values(tabs).forEach(id => document.getElementById(id).classList.add('hidden'));
+                    document.getElementById(tabs[tab]).classList.remove('hidden');
+                };
+            });
+
+            // Search
+            document.getElementById('searchBudget').addEventListener('input', e => filterList('budgetList', e.target.value));
+            document.getElementById('searchPersonal').addEventListener('input', e => filterList('personalList', e.target.value));
+        }
+    });
+
+    async function batchShare(docId) {
+        if (selectedContacts.size === 0) return alert('No contacts selected');
+        const formats = selectedFormats.length > 1 ? selectedFormats : selectedFormats[0];
+
+        const files = await mBTPublisher.toFileFromHTML('', `${budget.projectName || 'Document'}_${doc.label}`, formats, doc);
+
+        const recipients = [];
+        selectedContacts.forEach(key => {
+            const [source, idx] = key.split('-');
+            const list = source === 'budget' ? assignedCrew : personalContacts;
+            const contact = list[parseInt(idx)];
+            if (contact) recipients.push(contact.name || 'Contact');
+        });
+
+        const shared = await mBTPublisher.share(Array.isArray(files) ? files : [files], `${budget.projectName} - ${doc.label}`);
+        alert(shared ? `Sent to ${recipients.length} contacts!` : `Files downloaded for ${recipients.length} contacts`);
+        mBTME.close('docShareContacts');
+        showDocumentsModal();
+    }
+};
+
+function filterList(listId, term) {
+    term = term.toLowerCase();
+    document.querySelectorAll(`#${listId} > .contactRow`).forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(term) ? '' : 'none';
+    });
 }
 
-/* ==========================================================================
-   mBT Call Sheet Builder (React -> Vanilla Port) v19.55
-   ========================================================================== */
-window.CallSheetBuilder = {
-    // --- 1. Initial State ---
-    defaultState: {
-        meta: {
-            productionTitle: "Untitled Production", productionCompany: "",
-            shootDate: new Date().toISOString().split('T')[0], shootDay: "1 of 1",
-            crewCallTime: "08:00", sunriseSunset: "06:00 / 18:00"
-        },
-        labels: {
-            director: "Director", producer: "Producer", ad: "1st AD",
-            weather: "Weather", sun: "Sun", hospital: "Hospital",
-            sec_contacts: "Key Contacts", sec_weather: "Weather & Logistics",
-            sec_schedule: "Shooting Schedule", sec_cast: "Cast List",
-            sec_crew: "Crew List", sec_locations: "Locations", sec_notes: "Notes"
-        },
-        // Layout Config
-        sectionOrder: ['contacts', 'weather', 'locations', 'schedule', 'cast', 'crew', 'notes'],
-        sectionWidths: { contacts: 12, weather: 12, schedule: 12, cast: 12, crew: 12, locations: 12, notes: 12 },
-        // Content Data
-        data: {
-            contacts: { director: "", producer: "", ad: "" },
-            schedule: [],
-            cast: [],
-            crew: [],
-            locations: [{ id: 'loc_1', name: "Base Camp", address: "", timeOnLocation: "07:00", parking: "", mapLink: "", weather: "", hospital: "" }],
-            additional: { notes: "", extras: "", walkies: "CH 1: General", transport: "", advance: "" }
-        }
-    },
+function addNewContactToPersonal(docId) {
+    const name = prompt('Contact Name:');
+    if (!name) return;
+    const role = prompt('Role (optional):') || '';
+    const contact = prompt('Phone or Email:') || '';
 
-    // --- 2. Auto-Generator (Budget -> Call Sheet) ---
-    autoFillFromBudget: function(docId) {
-        const doc = budget.documents.find(d => d.id === docId);
-        if(!doc) return;
-        
-        // Ensure structure exists
-        if(!doc.content.data || !doc.content.data.meta) {
-            doc.content.data = JSON.parse(JSON.stringify(this.defaultState));
-        }
-        const state = doc.content.data;
+    const contacts = (typeof getGlobalContacts === 'function' ? getGlobalContacts() : (mBTOG && mBTOG.contacts) || []);
+    contacts.push({ name, role, contact });
+    if (typeof saveGlobalContacts === 'function') saveGlobalContacts(contacts);
+    else if (mBTOG) { mBTOG.contacts = contacts; mBTOG.saveContacts?.(); }
 
-        // A. Meta Data
-        state.meta.productionTitle = budget.projectName || "Untitled Project";
-        state.meta.productionCompany = budget.company || "";
+    mBTME.close('docShareContacts');
+    openDocumentShareSelector(docId);
+}
 
-        // B. Contacts (Smart Search)
-        const findRole = (query) => {
-            for(const sec of Object.values(budget.sections)) {
-                const item = sec.items.find(i => i.description.toLowerCase().includes(query) && i.crew && i.crew.name);
-                if(item) return `${item.crew.name} ${item.crew.phone ? '('+item.crew.phone+')' : ''}`;
+window.shareDocumentToContact = async function(docId, source, index) {
+    const doc = budget.documents.find(d => d.id === docId);
+    if (!doc) return;
+
+    let contact;
+    if (source === 'budget') {
+        let i = 0;
+        for (const [sectionName, section] of Object.entries(budget.sections)) {
+            for (const item of section.items) {
+                if (item.crew && item.crew.name && i === index) {
+                    contact = { name: item.crew.name, contact: item.crew.phone || item.crew.email || '' };
+                    break;
+                }
+                if (item.crew && item.crew.name) i++;
             }
-            return "";
-        };
-        state.data.contacts.director = findRole('director');
-        state.data.contacts.producer = findRole('producer');
-        state.data.contacts.ad = findRole('1st ad') || findRole('assistant director');
+            if (contact) break;
+        }
+    } else if (source === 'personal') {
+        const contacts = (typeof getGlobalContacts === 'function' ? getGlobalContacts() : (mBTOG && mBTOG.contacts) || []);
+        contact = contacts[index];
+    }
 
-        // C. Crew List (Map all assigned crew)
-        state.data.crew = [];
-        Object.entries(budget.sections).forEach(([secName, sec]) => {
-            sec.items.forEach(item => {
-                if(item.crew && item.crew.name) {
-                    state.data.crew.push({
-                        id: `cr_${Math.random().toString(36).substr(2,9)}`,
-                        department: secName,
-                        position: item.description,
-                        name: item.crew.name,
-                        callTime: state.meta.crewCallTime,
-                        contact: item.crew.phone || ""
-                    });
+    if (!contact || !contact.name) return;
+
+    mBTME.close('docShareContacts');
+
+    const fileNameBase = `${budget.projectName || 'Document'}_${doc.label}`;
+    
+    try {
+        const files = await mBTPublisher.toFileFromHTML('', fileNameBase, ['pdf', 'jpg'], doc);
+        
+        if (!doc.exportHistory) doc.exportHistory = [];
+        doc.exportHistory.push({
+            timestamp: new Date().toISOString(),
+            format: 'PDF + JPG',
+            method: 'Contact Share',
+            recipient: contact.name
+        });
+        doc.lastExport = new Date().toISOString();
+        doc.status = 'Exported';
+        saveBudget();
+
+        const shared = await mBTPublisher.share(files, `${budget.projectName} - ${doc.label}`);
+        
+        if (shared) {
+            alert(`Sent to ${contact.name}!`);
+        } else {
+            alert(`Files downloaded — send manually to ${contact.name}`);
+        }
+        
+        showDocumentsModal();
+    } catch (err) {
+        console.error("Share failed:", err);
+        alert("Export failed — check console");
+    }
+};
+
+/* --- v19.54 mBTAssign Engine --- */
+const mBTAssign = {
+    // Core reusable auto-assign from personal contacts
+    assignFromContacts(constraints = {}) {
+        const defaults = {
+            source: 'personal',          // 'personal' or 'aod' (future)
+            skipAssigned: true,          // Skip items already with crew
+            matchStrength: 'contains'    // 'exact' or 'contains'
+        };
+        const opts = { ...defaults, ...constraints };
+
+        const contacts = opts.source === 'personal' 
+            ? (typeof getGlobalContacts === 'function' ? getGlobalContacts() : (mBTOG && mBTOG.contacts) || [])
+            : []; // AoD placeholder
+
+        if (contacts.length === 0) {
+            return { assigned: 0, skipped: 0, message: 'No contacts available' };
+        }
+
+        let assigned = 0;
+        let skipped = 0;
+
+        Object.values(budget.sections).forEach(section => {
+            section.items.forEach(item => {
+                if (opts.skipAssigned && item.crew && item.crew.name) {
+                    skipped++;
+                    return;
+                }
+
+                const roleLower = item.description.toLowerCase();
+                const match = contacts.find(c => {
+                    if (!c.role) return false;
+                    const contactRoleLower = c.role.toLowerCase();
+                    return opts.matchStrength === 'exact' 
+                        ? roleLower === contactRoleLower 
+                        : roleLower.includes(contactRoleLower);
+                });
+
+                if (match) {
+                    item.crew = {
+                        name: match.name,
+                        phone: match.contact && !match.contact.includes('@') ? match.contact : '',
+                        email: match.contact && match.contact.includes('@') ? match.contact : ''
+                    };
+                    assigned++;
                 }
             });
         });
 
-        saveBudget();
-        this.render(docId);
-        alert("✅ Call Sheet populated from Budget.");
-    },
-
-    // --- 3. Rendering Helpers ---
-    renderField: function(docId, path, val, label, isArea = false) {
-        // Uses onchange to prevent focus loss during typing
-        return `
-            <div class="mb-2 flex-1 min-w-[150px]">
-                <div class="mb-1 text-[10px] font-bold text-gray-500 uppercase tracking-wider">${label}</div>
-                ${isArea 
-                    ? `<textarea onchange="CallSheetBuilder.update('${docId}', '${path}', this.value)" class="w-full bg-gray-50 border border-gray-200 rounded px-2 py-1 text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none resize-y" rows="2">${val || ''}</textarea>`
-                    : `<input type="text" value="${val || ''}" onchange="CallSheetBuilder.update('${docId}', '${path}', this.value)" class="w-full bg-gray-50 border border-gray-200 rounded px-2 py-1 text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none">`
-                }
-            </div>
-        `;
-    },
-
-    renderSectionContent: function(docId, type, state) {
-        const d = state.data;
-        if(type === 'contacts') {
-            return `<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                ${this.renderField(docId, 'data.contacts.director', d.contacts.director, state.labels.director)}
-                ${this.renderField(docId, 'data.contacts.producer', d.contacts.producer, state.labels.producer)}
-                ${this.renderField(docId, 'data.contacts.ad', d.contacts.ad, state.labels.ad)}
-            </div>`;
+        if (assigned > 0) {
+            saveBudget();
+            render();
         }
-        if(type === 'weather') {
-            return `<div class="space-y-4">
-                <div class="flex gap-4">
-                    ${this.renderField(docId, 'meta.sunriseSunset', state.meta.sunriseSunset, state.labels.sun)}
+
+        return { 
+            assigned, 
+            skipped, 
+            total: assigned + skipped,
+            message: assigned > 0 ? `${assigned} crew assigned` : 'No matches found'
+        };
+    },
+
+    // Future AoD integration placeholder
+    assignFromAoD(filters = {}) {
+        alert('AoD auto-assign coming soon – location & availability matching');
+        return { assigned: 0, skipped: 0 };
+    }
+
+};
+
+}
+
+/* --- P4 --- */
+/* ==========================================================================
+   mBTDB v9.0 - Stability & Standard Print
+   ========================================================================== */
+window.mBTDB = {
+    state: { currentDocId: null, isEditing: false, grid: null, history: [], historyPointer: -1 },
+    
+    icons: {
+        trash: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`,
+        plus: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>`,
+        user: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>`,
+        cloud: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path></svg>`,
+        save: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path></svg>`,
+        undo: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>`,
+        redo: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13"/></svg>`,
+        copy: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`,
+        print: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>`,
+        close: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`,
+        wand: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 4V2"/><path d="M15 16v-2"/><path d="M8 9h2"/><path d="M20 9h2"/><path d="M17.8 11.8 19 13"/><path d="M15 9h0"/><path d="M17.8 6.2 19 5"/><path d="M3 21l9-9"/><path d="M12.2 6.2 11 5"/></svg>`,
+        grid: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>`,
+        list: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>`
+    },
+
+    templates: {
+        'default': { label: "Blank Document", widgets: [{ id: 'meta_header', x: 0, y: 0, w: 12, h: 2, type: 'header' }] },
+        'callSheet': {
+            label: "Daily Call Sheet",
+            widgets: [
+                { id: 'contacts', x: 0, y: 0, w: 12, h: 4, type: 'contacts', label: "Key Contacts" }, 
+                { id: 'logistics', x: 0, y: 4, w: 12, h: 6, type: 'logistics', label: "Logistics" },
+                { id: 'schedule', x: 0, y: 10, w: 12, h: 8, type: 'schedule', label: "Schedule" },
+                { id: 'cast', x: 0, y: 18, w: 6, h: 8, type: 'cast', label: "Cast List" },
+                { id: 'crew', x: 6, y: 18, w: 6, h: 8, type: 'crew', label: "Crew List" },
+                { id: 'notes', x: 0, y: 26, w: 12, h: 4, type: 'richText', label: "General Notes" }
+            ]
+        }
+    },
+
+    // --- 1. Core Logic ---
+    open: function(docId) {
+        this.state.currentDocId = docId;
+        const doc = budget.documents.find(d => d.id === docId);
+        if (!doc) return;
+
+        if (!doc.content) doc.content = { data: {}, widgets: [] };
+        // Initial Template Load
+        if (!doc.content.widgets || doc.content.widgets.length === 0) {
+            const tKey = this.templates[doc.type] ? doc.type : 'default';
+            doc.content.widgets = JSON.parse(JSON.stringify(this.templates[tKey].widgets));
+            if(!doc.content.data.meta) doc.content.data = this._generateDefaultData();
+        }
+
+        mBTME.open('documentViewerModal', 'Document Viewer', '<div id="mBTDB_Container"></div>', 'w-full h-full max-w-full', { noPadding: true, hideHeader: true });
+        this.renderFrame();
+    },
+
+    close: function() {
+        mBTME.close('documentViewerModal');
+        // Hard Close Fallback
+        const el = document.getElementById('documentViewerModal');
+        if(el) el.style.display = 'none';
+        // Cleanup Print Mode
+        document.body.classList.remove('print-mode');
+    },
+
+    toggleEditMode: function() {
+        // 1. If we are currently editing, SAVE the layout before closing
+        if (this.state.isEditing && this.state.grid) {
+            this._saveLayoutState(); 
+        }
+
+        this.state.isEditing = !this.state.isEditing;
+        const container = document.getElementById('mBTDB_Workspace');
+        const grid = this.state.grid;
+
+        if (this.state.isEditing) {
+            container.classList.add('editing-mode');
+            grid.setStatic(false);
+            grid.enable();
+        } else {
+            container.classList.remove('editing-mode');
+            grid.setStatic(true);
+            grid.disable();
+        }
+        this._updateHeaderButtons();
+        // We do NOT call renderFrame() here to avoid visual jumping. 
+        // We just toggle the CSS class and Gridstack state.
+    },
+
+    // NEW HELPER: Force save of all widget positions
+    _saveLayoutState: function() {
+        if (!this.state.grid) return;
+        const doc = budget.documents.find(d => d.id === this.state.currentDocId);
+        
+        this.state.grid.engine.nodes.forEach(node => {
+            const widget = doc.content.widgets.find(w => w.id === node.id);
+            if (widget) {
+                widget.x = node.x;
+                widget.y = node.y;
+                widget.w = node.w;
+                widget.h = node.h;
+            }
+        });
+        
+        this._triggerSave();
+    },
+/* --- BUNDLE 2: BUILDER ROUTING --- */
+    previewDoc: function(mode) {
+        const doc = budget.documents.find(d => d.id === this.state.currentDocId);
+        if (!doc) return;
+        if(window.mBTME && mBTME.showLoader) mBTME.showLoader("Generating Industry Preview...");
+
+        mBTPublisher.generateFastPreview(mode, doc.content.data, (jpegURL) => {
+            if(window.mBTME && mBTME.hideLoader) mBTME.hideLoader();
+            mBTME.open('previewModal', `Preview - ${mode.toUpperCase()}`, 
+                `<div class="flex flex-col items-center bg-slate-900 h-full p-6 overflow-auto">
+                    <img src="${jpegURL}" id="finalPreviewImage" class="shadow-2xl border border-black max-w-full h-auto mb-20 bg-white">
+                </div>`, 'w-full h-full'
+            );
+
+            const footer = `
+                <div class="fixed bottom-10 left-1/2 -translate-x-1/2 flex gap-4 z-[10001]">
+                    <button onclick="mBTPublisher.downloadJPEG('${jpegURL}', '${doc.label}')" class="flex items-center gap-2 bg-blue-600 text-white px-8 py-3 rounded-full font-bold shadow-xl hover:bg-blue-500 transition-all active:scale-95">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                        Download JPEG
+                    </button>
+                    <button onclick="mBTDB.sendToDistribution('${jpegURL}')" class="flex items-center gap-2 bg-green-600 text-white px-8 py-3 rounded-full font-bold shadow-xl hover:bg-green-500 transition-all active:scale-95">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                        Send to Crew (PDF)
+                    </button>
+                    <button onclick="mBTME.close('previewModal')" class="flex items-center gap-2 bg-white text-slate-900 px-8 py-3 rounded-full font-bold shadow-xl hover:bg-slate-100 transition-all">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                        Close
+                    </button>
+                </div>`;
+            document.getElementById('previewModal').insertAdjacentHTML('beforeend', footer);
+        });
+    },
+
+    sendToDistribution: function(jpegURL) {
+        const doc = budget.documents.find(d => d.id === this.state.currentDocId);
+        const pdfBlob = mBTPublisher.convertToPDFBlob(jpegURL);
+        this.close(); 
+        if(window.openDocumentShareSelector) openDocumentShareSelector(doc.id); 
+    },
+/* --- END BUNDLE 2 --- */
+    // --- 2. Smart Features ---
+
+    autoFillWidget: function(type, docId) {
+        if(!confirm(`Auto-fill ${type}? This appends data.`)) return;
+        if(type === 'contacts') {
+            const roles = ['director', 'producer', '1st ad'];
+            roles.forEach(r => {
+                const c = mBTOG.contacts.find(x => x.role && x.role.toLowerCase().includes(r));
+                if(c) this.updateData(docId, `contacts.${r === '1st ad' ? 'ad' : r}`, `${c.name} ${c.contact||''}`);
+            });
+        }
+        else if(type === 'crew') {
+            Object.values(budget.sections).forEach(sec => sec.items.forEach(i => {
+                if(i.crew && i.crew.name) this.addRow(docId, 'crew', 'person', { department: i.description, name: i.crew.name, contact: i.crew.phone });
+            }));
+        }
+        this.renderFrame();
+    },
+
+    autoFillWeather: async function(docId, index, name) {
+        const btn = document.getElementById(`w-btn-${index}`);
+        if(btn) btn.innerHTML = "⏳";
+        try {
+            const geoRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(name)}&count=1&language=en&format=json`);
+            const geo = await geoRes.json();
+            if(!geo.results) throw new Error("Loc not found");
+            const { latitude, longitude } = geo.results[0];
+            const wRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,wind_speed_10m_max,precipitation_probability_max&timezone=auto`);
+            const wData = await wRes.json();
+            const today = wData.daily;
+            
+            const code = today.weather_code[0];
+            let icon = "☀️"; if(code > 3) icon = "☁️"; if(code > 50) icon = "🌧️"; if(code > 90) icon = "⛈️";
+            const str = `${icon} ${today.temperature_2m_max[0]}°C / ${today.temperature_2m_min[0]}°C\n💨 ${today.wind_speed_10m_max[0]}km/h  💧 ${today.precipitation_probability_max[0]}%\nSun: ${today.sunrise[0].split('T')[1]} / ${today.sunset[0].split('T')[1]}`;
+            
+            this.updateRow(docId, 'locations', index, 'weather', str);
+            this.renderFrame();
+        } catch(e) { alert("Weather Failed"); if(btn) btn.innerHTML = "☁️"; }
+    },
+
+    // --- 3. Rendering ---
+
+    renderFrame: function() {
+        const doc = budget.documents.find(d => d.id === this.state.currentDocId);
+        const container = document.getElementById('mBTDB_Container');
+        
+        const toolbarHTML = `
+            <div id="mBTDB_Header" class="bg-slate-800 text-white p-2 flex justify-between items-center sticky top-0 z-50 shadow-md print:hidden">
+                <div class="flex items-center gap-2">
+                    <h2 class="font-black text-sm tracking-tight text-slate-200">📄 ${RenderEngine.esc(doc.label)}</h2>
+                    <div class="flex bg-slate-700 rounded overflow-hidden border border-slate-600">
+                        <button onclick="mBTDB.syncFromBudget()" class="text-[10px] px-2 py-1 text-slate-200 hover:bg-slate-600 border-r border-slate-600" title="Pull Budget Data">Sync Budget</button>
+                        <button onclick="mBTDB.syncFromPrevious()" class="text-[10px] px-2 py-1 text-slate-200 hover:bg-slate-600" title="Pull Previous Call Sheet">Sync Prev</button>
+                    </div>
                 </div>
-                ${d.locations.map((l, i) => `
-                    <div class="border-l-2 border-blue-500 pl-3 py-1 mb-2 bg-blue-50/50 rounded-r">
-                        <div class="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">${l.name} Details</div>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                            ${this.renderField(docId, `data.locations.${i}.weather`, l.weather, 'Weather', true)}
-                            ${this.renderField(docId, `data.locations.${i}.hospital`, l.hospital, 'Nearest Hospital', true)}
+                <div class="flex gap-2 items-center" id="mBTDB_Buttons"></div>
+            </div>`;
+
+        const workspaceHTML = `
+            <div id="mBTDB_Workspace" class="bg-slate-200 min-h-screen p-4 overflow-y-auto ${this.state.isEditing ? 'editing-mode' : ''}">
+                <div id="mBTDB_MetaArea" class="mb-4 bg-white p-4 shadow-sm rounded border border-slate-300"></div>
+                <div class="grid-stack"></div>
+            </div>`;
+
+        container.innerHTML = toolbarHTML + workspaceHTML;
+        this._renderMetaHeader(doc);
+
+        setTimeout(() => {
+            this.state.grid = GridStack.init({
+                column: 12, cellHeight: 60, minRow: 1, margin: 4, animate: true, float: true,
+                disableOneColumnMode: false, staticGrid: !this.state.isEditing 
+            }, container.querySelector('.grid-stack'));
+            
+            this._loadWidgetsToGrid(doc);
+            this._updateHeaderButtons();
+            
+            this.state.grid.on('change', (e, items) => { this._triggerSave(); });
+        }, 50);
+    },
+
+    _loadWidgetsToGrid: function(doc) {
+        const grid = this.state.grid;
+        grid.removeAll();
+        grid.batchUpdate();
+        doc.content.widgets.forEach(w => {
+            if(w.type === 'header') return; 
+            const html = this._generateWidgetHTML(w, doc);
+            grid.addWidget({ x: w.x, y: w.y, w: w.w, h: w.h, content: html, id: w.id });
+        });
+        grid.commit();
+    },
+
+    _generateWidgetHTML: function(widget, doc) {
+        const data = doc.content.data;
+        // Clean Title Fallback
+        const cleanTitle = widget.label || (widget.type.charAt(0).toUpperCase() + widget.type.slice(1));
+        
+        // Header Controls
+        let tools = '';
+        if(widget.type === 'contacts') tools += `<button onclick="mBTDB.toggleVertical('${widget.id}')" class="icon-btn" title="Layout">${widget.vertical ? this.icons.grid : this.icons.list}</button>`;
+        tools += `<button onclick="mBTDB.autoFillWidget('${widget.type}', '${doc.id}')" class="icon-btn text-purple-500" title="Auto Fill">${this.icons.wand}</button>`;
+        
+        const controls = `
+            <div class="widget-header">
+                <input value="${cleanTitle}" onchange="mBTDB.updateWidgetLabel('${doc.id}', '${widget.id}', this.value)" class="bg-transparent border-none font-black text-xs uppercase text-slate-600 w-32 outline-none">
+                <div class="flex items-center gap-1">
+                    ${tools}
+                    <button onclick="mBTDB.deleteWidget('${widget.id}')" class="icon-btn hover:text-red-600">${this.icons.trash}</button>
+                </div>
+            </div>`;
+        
+        let content = '';
+        if (widget.type === 'contacts') content = this._renderContacts(doc.id, data, widget);
+        else if (widget.type === 'logistics' || widget.type === 'weather' || widget.type === 'locations') content = this._renderLogistics(doc.id, data);
+        else if (widget.type === 'schedule') content = this._renderSchedule(doc.id, data);
+        else if (widget.type === 'crew') content = this._renderCrew(doc.id, data);
+        else if (widget.type === 'cast') content = this._renderTalent(doc.id, data);
+        else if (widget.type === 'richText') content = this._renderRichText(doc.id, widget.id, data);
+
+        return `
+            <div class="grid-stack-item-content">
+                ${controls}
+                <div class="widget-body flex-grow overflow-y-auto relative text-slate-800 h-full">${content}</div>
+            </div>`;
+    },
+
+    // --- 4. Renderers ---
+
+    _renderMetaHeader: function(doc) {
+        const d = doc.content.data;
+        const html = `
+             <div class="flex flex-wrap gap-4 items-end justify-between">
+                <div class="w-full sm:w-auto flex-grow">
+                    <input value="${d.meta.productionTitle || ''}" onchange="mBTDB.updateData('${doc.id}', 'meta.productionTitle', this.value)" class="text-3xl font-black uppercase w-full outline-none text-slate-900 bg-transparent mb-1" placeholder="PRODUCTION TITLE">
+                    <div class="flex gap-4">
+                        <div class="flex items-center gap-1"><span class="text-[9px] font-black text-slate-400 uppercase">Date</span><input type="date" value="${d.meta.shootDate}" onchange="mBTDB.updateData('${doc.id}', 'meta.shootDate', this.value); mBTDB.renderFrame();" class="mbt-input w-auto font-bold"></div>
+                        <div class="flex items-center gap-1"><span class="text-[9px] font-black text-slate-400 uppercase">Call</span><input type="text" value="${d.meta.crewCallTime}" onchange="mBTDB.updateData('${doc.id}', 'meta.crewCallTime', this.value)" onblur="mBTDB.formatTime(this)" class="mbt-input w-16 bg-yellow-300 font-bold border-yellow-400 text-center" placeholder="00:00"></div>
+                        <div class="flex items-center gap-1 bg-slate-50 border border-slate-200 px-2 rounded"><span class="text-[9px] font-black text-slate-400 uppercase">Day</span><span class="text-xs font-black text-slate-800">${this.calcShootDay(d.meta.shootDate)}</span></div>
+                    </div>
+                </div>
+                <div class="w-48 text-right"><input value="${d.meta.productionCompany || ''}" onchange="mBTDB.updateData('${doc.id}', 'meta.productionCompany', this.value)" class="mbt-input text-right font-bold" placeholder="Company Name"></div>
+            </div>`;
+        document.getElementById('mBTDB_MetaArea').innerHTML = html;
+    },
+
+    _renderContacts: function(docId, d, widget) {
+        const gridClass = widget.vertical ? "grid-cols-1" : "grid-cols-1 sm:grid-cols-3";
+        const renderField = (path, val, label, role) => `
+            <div class="relative">
+                <div class="flex justify-between items-center mb-0.5"><div class="text-[9px] font-bold text-slate-500 uppercase">${label}</div><div class="icon-btn" onclick="mBTDB.pullFromOpenGate('${docId}', '${path}', '${role}')">${this.icons.user}</div></div>
+                <input value="${val||''}" onchange="mBTDB.updateData('${docId}', '${path}', this.value)" class="mbt-input font-bold">
+            </div>`;
+        return `<div class="grid ${gridClass} gap-2 p-2 h-full overflow-y-auto">
+            ${renderField('contacts.director', d.contacts.director, 'Director', 'director')}
+            ${renderField('contacts.producer', d.contacts.producer, 'Producer', 'producer')}
+            ${renderField('contacts.ad', d.contacts.ad, '1st AD', 'ad')}
+        </div>`;
+    },
+
+    _renderLogistics: function(docId, d) {
+        return `<div class="flex flex-col h-full">
+            <div class="p-2 border-b border-slate-100 bg-slate-50 flex gap-2 items-center">
+                <span class="text-[9px] font-bold text-slate-400 uppercase">Sun:</span>
+                <input value="${d.meta.sunriseSunset||''}" onchange="mBTDB.updateData('${docId}','meta.sunriseSunset',this.value)" class="mbt-input w-32" placeholder="06:00 / 18:00">
+            </div>
+            <div class="flex-grow overflow-y-auto p-2 space-y-2">
+                ${(d.locations||[]).map((l,i) => `
+                    <div class="flex flex-wrap gap-2 items-start border-b border-slate-100 pb-2 mb-2">
+                        <div class="w-full sm:w-1/3 space-y-1">
+                            <input value="${l.name}" onchange="mBTDB.updateRow('${docId}','locations',${i},'name',this.value)" class="mbt-input font-black uppercase" placeholder="LOC NAME">
+                            <input type="text" value="${l.timeOnLocation||''}" onchange="mBTDB.updateRow('${docId}','locations',${i},'timeOnLocation',this.value)" class="mbt-input" placeholder="Time @ Loc">
+                        </div>
+                        <div class="w-full sm:w-1/3 space-y-1">
+                            <textarea onchange="mBTDB.updateRow('${docId}','locations',${i},'address',this.value)" class="mbt-input h-16 resize-none" placeholder="Address...">${l.address}</textarea>
+                        </div>
+                        <div class="w-full sm:w-1/4 space-y-1 flex-grow">
+                            <div class="flex gap-1">
+                                <textarea onchange="mBTDB.updateRow('${docId}','locations',${i},'weather',this.value)" class="mbt-input h-16 resize-none" placeholder="Weather...">${l.weather}</textarea>
+                                <button id="w-btn-${i}" onclick="mBTDB.autoFillWeather('${docId}', ${i}, '${l.name}')" class="bg-blue-50 text-blue-600 w-6 flex items-center justify-center rounded border border-blue-200">${this.icons.cloud}</button>
+                            </div>
                         </div>
                     </div>
                 `).join('')}
-            </div>`;
-        }
-        if(type === 'schedule') {
-            return `<div class="overflow-x-auto">
-                <table class="w-full text-xs border-collapse table-fixed min-w-[700px]">
-                    <thead class="bg-gray-100 text-gray-600 uppercase"><tr>
-                        <th class="border p-2 w-16">Time</th><th class="border p-2 w-12">Scn</th><th class="border p-2 w-64">Description</th><th class="border p-2 w-24">Cast</th><th class="border p-2 w-12">I/E</th><th class="border p-2">Location</th><th class="border p-2 w-8"></th>
-                    </tr></thead>
-                    <tbody class="bg-white">
-                        ${d.schedule.map((row, i) => `
-                            <tr class="${row.type === 'meal' ? 'bg-amber-50 font-bold border-b border-amber-100' : 'hover:bg-gray-50 border-b border-gray-100'}">
-                                <td class="p-0"><input value="${row.time}" onchange="CallSheetBuilder.updateRow('${docId}','schedule',${i},'time',this.value)" class="w-full p-2 bg-transparent text-center outline-none"></td>
-                                <td class="p-0"><input value="${row.scene}" onchange="CallSheetBuilder.updateRow('${docId}','schedule',${i},'scene',this.value)" class="w-full p-2 bg-transparent text-center font-bold outline-none"></td>
-                                <td class="p-0" colspan="${row.type==='meal'?3:1}"><input value="${row.description}" onchange="CallSheetBuilder.updateRow('${docId}','schedule',${i},'description',this.value)" class="w-full p-2 bg-transparent outline-none ${row.type==='meal'?'text-center text-amber-800 uppercase tracking-widest':''}"></td>
-                                ${row.type!=='meal' ? `
-                                    <td class="p-0"><input value="${row.cast}" onchange="CallSheetBuilder.updateRow('${docId}','schedule',${i},'cast',this.value)" class="w-full p-2 bg-transparent text-center outline-none"></td>
-                                    <td class="p-0"><input value="${row.ie_dn}" onchange="CallSheetBuilder.updateRow('${docId}','schedule',${i},'ie_dn',this.value)" class="w-full p-2 bg-transparent text-center uppercase outline-none"></td>
-                                    <td class="p-0"><input value="${row.location}" onchange="CallSheetBuilder.updateRow('${docId}','schedule',${i},'location',this.value)" class="w-full p-2 bg-transparent outline-none"></td>
-                                ` : `<td class="p-0" colspan="2"><input value="${row.location}" class="w-full p-2 bg-transparent text-center italic outline-none"></td>`}
-                                <td class="p-0 text-center"><button onclick="CallSheetBuilder.deleteRow('${docId}','schedule',${i})" class="text-gray-300 hover:text-red-500 font-bold px-2">×</button></td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
-                <div class="mt-3 flex gap-2 no-print">
-                    <button onclick="CallSheetBuilder.addRow('${docId}','schedule','shot')" class="bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold px-3 py-1 rounded shadow-sm transition-colors">+ Shot</button>
-                    <button onclick="CallSheetBuilder.addRow('${docId}','schedule','meal')" class="bg-amber-600 hover:bg-amber-700 text-white text-[10px] font-bold px-3 py-1 rounded shadow-sm transition-colors">+ Meal</button>
-                </div>
-            </div>`;
-        }
-        if(type === 'crew') {
-            return `<div class="overflow-x-auto">
-                <table class="w-full text-xs border-collapse">
-                    <thead class="bg-gray-100 text-gray-600 uppercase"><tr><th class="border p-2">Dept</th><th class="border p-2">Pos</th><th class="border p-2">Name</th><th class="border p-2">Call</th><th class="border w-8"></th></tr></thead>
-                    <tbody class="bg-white divide-y divide-gray-100">
-                        ${d.crew.map((c, i) => `
-                            <tr>
-                                <td class="p-0"><input value="${c.department}" onchange="CallSheetBuilder.updateRow('${docId}','crew',${i},'department',this.value)" class="w-full p-2 font-bold text-gray-500 uppercase text-[10px] outline-none"></td>
-                                <td class="p-0"><input value="${c.position}" onchange="CallSheetBuilder.updateRow('${docId}','crew',${i},'position',this.value)" class="w-full p-2 bg-transparent outline-none"></td>
-                                <td class="p-0"><input value="${c.name}" onchange="CallSheetBuilder.updateRow('${docId}','crew',${i},'name',this.value)" class="w-full p-2 bg-transparent font-medium outline-none"></td>
-                                <td class="p-0"><input type="time" value="${c.callTime}" onchange="CallSheetBuilder.updateRow('${docId}','crew',${i},'callTime',this.value)" class="w-full p-2 bg-transparent text-center font-bold outline-none"></td>
-                                <td class="p-0 text-center"><button onclick="CallSheetBuilder.deleteRow('${docId}','crew',${i})" class="text-gray-300 hover:text-red-500 font-bold px-2">×</button></td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
-                <button onclick="CallSheetBuilder.addRow('${docId}','crew')" class="mt-3 text-[10px] bg-gray-800 hover:bg-black text-white font-bold px-3 py-1 rounded shadow-sm transition-colors">+ Add Crew</button>
-            </div>`;
-        }
-        return `<div class="text-gray-400 italic text-xs p-4 text-center">Section content unavailable...</div>`;
-    },
-
-    // --- 4. Main Render ---
-    render: function(docId) {
-        const doc = budget.documents.find(d => d.id === docId);
-        if(!doc) return;
-        const state = doc.content.data;
-        const container = document.getElementById('docViewerContent');
-        if(!container) return;
-
-        let html = `
-            <div class="max-w-5xl mx-auto bg-white shadow-2xl min-h-[1100px] my-8 p-8 sm:p-12 text-gray-800 font-sans border-t-8 border-gray-900">
-                <div class="border-b border-gray-200 pb-6 mb-8 flex justify-between items-end">
-                    <div class="w-2/3">
-                        <input value="${state.meta.productionTitle}" onchange="CallSheetBuilder.update('${docId}', 'meta.productionTitle', this.value)" class="text-3xl sm:text-4xl font-black uppercase w-full outline-none placeholder-gray-300 bg-transparent" placeholder="TITLE">
-                        <input value="${state.meta.productionCompany}" onchange="CallSheetBuilder.update('${docId}', 'meta.productionCompany', this.value)" class="text-sm font-bold text-gray-500 uppercase w-full outline-none tracking-widest bg-transparent" placeholder="PRODUCTION COMPANY">
-                    </div>
-                    <div class="text-right">
-                        <div class="flex items-center gap-2 justify-end mb-1"><span class="text-[10px] font-black uppercase text-gray-400">Date</span><input type="date" value="${state.meta.shootDate}" onchange="CallSheetBuilder.update('${docId}', 'meta.shootDate', this.value)" class="font-bold text-right outline-none bg-transparent text-sm"></div>
-                        <div class="flex items-center gap-2 justify-end"><span class="text-[10px] font-black uppercase text-gray-400">Call</span><input type="time" value="${state.meta.crewCallTime}" onchange="CallSheetBuilder.update('${docId}', 'meta.crewCallTime', this.value)" class="bg-yellow-400 px-2 py-0.5 rounded font-black text-lg w-24 text-center shadow-sm"></div>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-12 gap-6" id="csGrid_${docId}">
-                    ${state.sectionOrder.map(secKey => `
-                        <div class="col-span-${state.sectionWidths[secKey] || 12} bg-white border border-gray-200 shadow-sm rounded-lg flex flex-col group relative transition-all hover:shadow-md" 
-                             draggable="true" 
-                             ondragstart="CallSheetBuilder.dragStart(event, '${secKey}')" 
-                             ondragover="event.preventDefault()" 
-                             ondrop="CallSheetBuilder.drop(event, '${docId}', '${secKey}')">
-                            
-                            <div class="flex justify-between items-center px-4 py-2 bg-gray-50 border-b border-gray-100 rounded-t-lg cursor-move">
-                                <span class="text-[10px] font-black uppercase tracking-widest text-gray-500 flex items-center gap-2">
-                                    <span class="opacity-0 group-hover:opacity-50">⋮⋮</span> ${state.labels[`sec_${secKey}`] || secKey}
-                                </span>
-                                <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity no-print">
-                                    <button onclick="CallSheetBuilder.resize('${docId}', '${secKey}', -1)" class="p-1 hover:bg-white rounded text-gray-400 hover:text-blue-600" title="Shrink">➖</button>
-                                    <button onclick="CallSheetBuilder.resize('${docId}', '${secKey}', 1)" class="p-1 hover:bg-white rounded text-gray-400 hover:text-blue-600" title="Expand">➕</button>
-                                </div>
-                            </div>
-                            
-                            <div class="p-4 flex-grow">
-                                ${this.renderSectionContent(docId, secKey, state)}
-                            </div>
-                        </div>
-                    `).join('')}
-                </div>
-                
-                <div class="mt-12 pt-6 border-t border-gray-100 text-center text-[10px] font-bold text-gray-300 uppercase tracking-[0.2em]">
-                    Internal Use Only • Generated by mooBudgetTool
-                </div>
+                <button onclick="mBTDB.addRow('${docId}','locations','loc')" class="w-full py-1 bg-slate-50 text-[9px] font-bold text-slate-500 hover:bg-slate-100 rounded border border-slate-200">${this.icons.plus} Add Location</button>
             </div>
-        `;
-        container.innerHTML = html;
+        </div>`;
     },
 
-    // --- 5. Actions (Global) ---
-    update: function(docId, path, value) {
+    _renderSchedule: function(docId, d) {
+        return `<div class="h-full flex flex-col">
+            <div class="flex-grow overflow-auto">
+                <table class="w-full text-xs mbt-table border-collapse min-w-[600px]">
+                    <thead><tr><th class="w-12">Time</th><th class="w-12">Scn</th><th>Description</th><th class="w-24">Cast</th><th class="w-8">I/E</th><th class="w-24">Loc</th><th class="w-24">Note</th><th class="w-6"></th></tr></thead>
+                    <tbody>
+                        ${d.schedule.map((row, i) => `
+                            <tr class="${row.type==='meal'?'bg-amber-50':''}">
+                                <td><input value="${row.time}" onchange="mBTDB.updateRow('${docId}','schedule',${i},'time',this.value)" onblur="mBTDB.formatTime(this)" class="mbt-input text-center font-bold bg-transparent border-0"></td>
+                                ${row.type==='meal' 
+                                ? `<td colspan="4"><input value="${row.description}" onchange="mBTDB.updateRow('${docId}','schedule',${i},'description',this.value)" class="mbt-input text-center font-black uppercase text-amber-900 bg-transparent border-0 tracking-widest"></td>`
+                                : `<td><input value="${row.scene}" onchange="mBTDB.updateRow('${docId}','schedule',${i},'scene',this.value)" class="mbt-input text-center font-bold bg-transparent border-0"></td>
+                                   <td><input value="${row.description}" onchange="mBTDB.updateRow('${docId}','schedule',${i},'description',this.value)" class="mbt-input bg-transparent border-0"></td>
+                                   <td><input value="${row.cast}" onchange="mBTDB.updateRow('${docId}','schedule',${i},'cast',this.value)" class="mbt-input text-center bg-transparent border-0"></td>
+                                   <td><input value="${row.ie}" onchange="mBTDB.updateRow('${docId}','schedule',${i},'ie',this.value)" class="mbt-input text-center text-[9px] uppercase bg-transparent border-0"></td>`
+                                }
+                                <td><input value="${row.loc}" onchange="mBTDB.updateRow('${docId}','schedule',${i},'loc',this.value)" class="mbt-input bg-transparent border-0"></td>
+                                <td><input value="${row.note}" onchange="mBTDB.updateRow('${docId}','schedule',${i},'note',this.value)" class="mbt-input italic text-slate-500 bg-transparent border-0"></td>
+                                <td class="text-center widget-controls"><button onclick="mBTDB.deleteRow('${docId}','schedule',${i}, 'schedule')" class="text-slate-300 hover:text-red-500">${this.icons.trash}</button></td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+            <div class="flex gap-2 p-1 bg-slate-50 border-t border-slate-200 widget-controls">
+                <button onclick="mBTDB.addRow('${docId}','schedule','shot')" class="flex-1 bg-white border border-emerald-300 text-emerald-700 text-[9px] font-bold py-1 rounded hover:bg-emerald-50">+ Shot</button>
+                <button onclick="mBTDB.addRow('${docId}','schedule','meal')" class="flex-1 bg-white border border-amber-300 text-amber-700 text-[9px] font-bold py-1 rounded hover:bg-amber-50">+ Meal</button>
+            </div>
+        </div>`;
+    },
+
+    _renderCrew: function(docId, d) {
+        return `<div class="h-full flex flex-col">
+            <div class="flex-grow overflow-auto">
+                <table class="w-full mbt-table border-collapse">
+                    <thead><tr><th>Dept</th><th>Pos</th><th>Name</th><th>Contact</th><th class="w-12">Call</th><th class="w-6"></th></tr></thead>
+                    <tbody>
+                        ${(d.crew||[]).map((c,i) => `
+                            <tr>
+                                <td><input value="${c.department||''}" onchange="mBTDB.updateRow('${docId}','crew',${i},'department',this.value)" class="mbt-input font-bold uppercase text-[9px] text-slate-500 border-0 bg-transparent"></td>
+                                <td><input value="${c.position||''}" onchange="mBTDB.updateRow('${docId}','crew',${i},'position',this.value)" class="mbt-input font-bold border-0 bg-transparent"></td>
+                                <td><div class="relative"><input value="${c.name||''}" onchange="mBTDB.updateRow('${docId}','crew',${i},'name',this.value)" class="mbt-input border-0 bg-transparent"><div class="input-action-btn" onclick="mBTDB.pullFromOpenGate('${docId}','crew.${i}.name','${c.position||'crew'}')">${this.icons.user}</div></div></td>
+                                <td><input value="${c.contact||''}" onchange="mBTDB.updateRow('${docId}','crew',${i},'contact',this.value)" class="mbt-input text-[9px] border-0 bg-transparent"></td>
+                                <td><input type="text" value="${c.callTime||''}" onchange="mBTDB.updateRow('${docId}','crew',${i},'callTime',this.value)" onblur="mBTDB.formatTime(this)" class="mbt-input text-center border-0 bg-transparent"></td>
+                                <td class="text-center widget-controls"><button onclick="mBTDB.deleteRow('${docId}','crew',${i}, 'crew')" class="text-slate-300 hover:text-red-500">${this.icons.trash}</button></td>
+                            </tr>`).join('')}
+                    </tbody>
+                </table>
+            </div>
+             <div class="p-1 border-t border-slate-200 widget-controls">
+                <button onclick="mBTDB.addRow('${docId}','crew','person')" class="w-full bg-slate-50 text-slate-600 text-[9px] font-bold py-1 rounded border border-slate-200">+ Add Crew</button>
+            </div>
+        </div>`;
+    },
+
+    _renderTalent: function(docId, d) {
+        return `<div class="h-full flex flex-col">
+            <div class="flex-grow overflow-auto">
+                <table class="w-full mbt-table border-collapse min-w-[500px]">
+                    <thead><tr><th>Role</th><th>Actor</th><th>Contact</th><th class="w-8">Stat</th><th class="w-12">Pick</th><th class="w-12">HMU</th><th class="w-12">Call</th><th class="w-6"></th></tr></thead>
+                    <tbody>
+                        ${(d.cast||[]).map((c,i) => `
+                            <tr>
+                                <td><input value="${c.character||''}" onchange="mBTDB.updateRow('${docId}','cast',${i},'character',this.value)" class="mbt-input font-bold text-slate-600 border-0 bg-transparent"></td>
+                                <td><div class="relative"><input value="${c.actor||''}" onchange="mBTDB.updateRow('${docId}','cast',${i},'actor',this.value)" class="mbt-input font-black border-0 bg-transparent"><div class="input-action-btn" onclick="mBTDB.pullFromOpenGate('${docId}','cast.${i}.actor','actor')">${this.icons.user}</div></div></td>
+                                <td><input value="${c.contact||''}" onchange="mBTDB.updateRow('${docId}','cast',${i},'contact',this.value)" class="mbt-input text-[9px] border-0 bg-transparent"></td>
+                                <td><input value="${c.status||''}" onchange="mBTDB.updateRow('${docId}','cast',${i},'status',this.value)" class="mbt-input text-center uppercase border-0 bg-transparent"></td>
+                                <td><input type="text" value="${c.pickup||''}" onchange="mBTDB.updateRow('${docId}','cast',${i},'pickup',this.value)" onblur="mBTDB.formatTime(this)" class="mbt-input text-center border-0 bg-transparent"></td>
+                                <td><input type="text" value="${c.hmu||''}" onchange="mBTDB.updateRow('${docId}','cast',${i},'hmu',this.value)" onblur="mBTDB.formatTime(this)" class="mbt-input text-center border-0 bg-transparent"></td>
+                                <td><input type="text" value="${c.setCall||''}" onchange="mBTDB.updateRow('${docId}','cast',${i},'setCall',this.value)" onblur="mBTDB.formatTime(this)" class="mbt-input text-center font-bold bg-yellow-50 border-0"></td>
+                                <td class="text-center widget-controls"><button onclick="mBTDB.deleteRow('${docId}','cast',${i}, 'cast')" class="text-slate-300 hover:text-red-500">${this.icons.trash}</button></td>
+                            </tr>`).join('')}
+                    </tbody>
+                </table>
+            </div>
+             <div class="p-1 border-t border-slate-200 widget-controls">
+                <button onclick="mBTDB.addRow('${docId}','cast','talent')" class="w-full bg-slate-100 text-slate-600 text-[9px] font-bold py-1 rounded border border-slate-200">+ Add Talent</button>
+            </div>
+        </div>`;
+    },
+
+    _renderRichText: function(docId, widgetId, data) {
+        const val = data.additional ? data.additional[widgetId] : (data[widgetId] || "");
+        return `<div class="h-full flex flex-col">
+            <div class="flex-grow relative">
+                <textarea onchange="mBTDB.updateData('${docId}', 'additional.${widgetId}', this.value)" class="w-full h-full p-2 text-xs text-slate-800 bg-transparent border-0 outline-none resize-none" placeholder="Type notes here...">${val||''}</textarea>
+            </div>
+        </div>`;
+    },
+
+    // --- 5. Helpers ---
+    toggleVertical: function(wid) {
+        const doc = budget.documents.find(d => d.id === this.state.currentDocId);
+        const w = doc.content.widgets.find(x => x.id === wid);
+        if(w) { w.vertical = !w.vertical; this.renderFrame(); }
+    },
+    updateWidgetLabel: function(docId, widgetId, newLabel) {
+        const doc = budget.documents.find(d => d.id === docId);
+        const w = doc.content.widgets.find(x => x.id === widgetId);
+        if(w) { w.label = newLabel; this._triggerSave(); }
+    },
+    updateData: function(docId, path, value) {
         const doc = budget.documents.find(d => d.id === docId);
         const parts = path.split('.');
-        let target = doc.content;
-        for(let i=0; i<parts.length-1; i++) target = target[parts[i]];
+        let target = doc.content.data;
+        for(let i=0; i<parts.length-1; i++) { if(!target[parts[i]]) target[parts[i]]={}; target = target[parts[i]]; }
         target[parts[parts.length-1]] = value;
-        saveBudget();
+        this._triggerSave();
     },
     updateRow: function(docId, section, index, key, value) {
         const doc = budget.documents.find(d => d.id === docId);
-        doc.content.data[section][index][key] = value;
-        saveBudget();
+        if(doc.content.data[section][index]) { 
+            doc.content.data[section][index][key] = value; 
+            this._triggerSave(); 
+            
+            // Auto-snap height when data changes
+            // We map section names back to widget types to find the ID
+            const type = (section === 'locations') ? 'logistics' : section;
+            const widget = doc.content.widgets.find(w => w.type === type);
+            if(widget) this._autoResizeWidget(widget.id);
+        }
     },
-    addRow: function(docId, section, type='shot') {
+    addRow: function(docId, section, type, presetData) {
         const doc = budget.documents.find(d => d.id === docId);
-        const newRow = section === 'schedule' 
-            ? { id: Date.now(), type, time: "00:00", scene: "", description: type==='meal'?"LUNCH":"New Scene", cast: "", ie_dn: "INT/D", location: "", notes: "" }
-            : { id: Date.now(), department: "Dept", position: "Pos", name: "", callTime: "00:00" };
+        if(!doc.content.data[section]) doc.content.data[section] = [];
+        let newRow = presetData || { id: Date.now() };
+        if(!presetData) {
+            if(section==='schedule') newRow = { ...newRow, type, time:"", scene:"", description: type==='meal'?"LUNCH":"New Shot", cast:"", ie:"", loc:"", note:"" };
+            else if(section==='cast') newRow = { ...newRow, character:"", actor:"", status:"W", pickup:"", hmu:"", setCall:"", contact:"" };
+            else if(section==='crew') newRow = { ...newRow, department:"", position:"", name:"", contact:"", callTime:"" };
+            else if(section==='locations') newRow = { ...newRow, name:"", address:"", weather:"", hospital:"", mapLink:"", timeOnLocation:"" };
+        }
         doc.content.data[section].push(newRow);
-        saveBudget();
-        this.render(docId);
+        this._triggerSave();
+        this.renderFrame();
+        
+        const widget = doc.content.widgets.find(w => w.type === (section === 'locations' ? 'logistics' : section));
+        if(widget) this._autoResizeWidget(widget.id);
     },
-    deleteRow: function(docId, section, index) {
+    deleteRow: function(docId, section, index, widgetType) {
         const doc = budget.documents.find(d => d.id === docId);
         doc.content.data[section].splice(index, 1);
-        saveBudget();
-        this.render(docId);
+        this._triggerSave();
+        this.renderFrame();
+        
+        const widget = doc.content.widgets.find(w => w.type === (widgetType || section));
+        if(widget) this._autoResizeWidget(widget.id);
     },
-    resize: function(docId, secKey, delta) {
-        const doc = budget.documents.find(d => d.id === docId);
-        const current = doc.content.data.sectionWidths[secKey] || 12;
-        // Snap to reasonable grid sizes (3, 6, 9, 12)
-        let next = current + (delta * 3);
-        next = Math.max(3, Math.min(12, next));
-        doc.content.data.sectionWidths[secKey] = next;
-        saveBudget();
-        this.render(docId);
+    deleteWidget: function(id) {
+        if(!confirm("Delete widget?")) return;
+        const doc = budget.documents.find(d => d.id === this.state.currentDocId);
+        const el = document.querySelector(`.grid-stack-item[gs-id="${id}"]`);
+        if(el) this.state.grid.removeWidget(el);
+        doc.content.widgets = doc.content.widgets.filter(w => w.id !== id);
+        this._triggerSave();
     },
-    draggedItem: null,
-    dragStart: function(e, id) { this.draggedItem = id; e.dataTransfer.effectAllowed = 'move'; },
-    drop: function(e, docId, targetId) {
-        e.preventDefault();
-        if (this.draggedItem === targetId) return;
-        const doc = budget.documents.find(d => d.id === docId);
-        const order = doc.content.data.sectionOrder;
-        const fromIdx = order.indexOf(this.draggedItem);
-        const toIdx = order.indexOf(targetId);
-        order.splice(fromIdx, 1);
-        order.splice(toIdx, 0, this.draggedItem);
+    addWidget: function() {
+        const type = document.getElementById('mBTDB_WidgetSelect').value;
+        const doc = budget.documents.find(d => d.id === this.state.currentDocId);
+        
+        // CHANGE: Default w changed from 12 (Full) to 6 (Half)
+        // This allows it to slot into empty spaces to the left/right.
+        const w = { 
+            id: type+'_'+Date.now(), 
+            type, 
+            w: 6, 
+            h: 4, 
+            autoPosition: true, 
+            label: type.toUpperCase() 
+        };
+
+        const html = this._generateWidgetHTML(w, doc);
+        
+        // GridStack will now hunt for the first available 6x4 gap
+        const node = this.state.grid.addWidget({ 
+            w: 6, 
+            h: 4, 
+            content: html, 
+            id: w.id, 
+            autoPosition: true 
+        });
+
+        w.x = node.gridstackNode.x; 
+        w.y = node.gridstackNode.y;
+        doc.content.widgets.push(w);
+        this._triggerSave();
+    },
+    _autoResizeWidget: function(widgetId) {
+        const el = document.querySelector(`.grid-stack-item[gs-id="${widgetId}"]`);
+        if(!el) return;
+        
+        const body = el.querySelector('.widget-body');
+        if(!body) return;
+        
+        // Calculate exact pixel height of the content (inputs + rows)
+        // We temporarily set height to 'auto' to get the true natural height
+        const currentHeight = body.style.height;
+        body.style.height = 'auto';
+        const contentHeight = body.scrollHeight + 45; // +45px for header/padding
+        body.style.height = currentHeight; // Restore for smooth animation
+
+        // Convert pixels to Grid Units (approx 60px-70px per row depending on your CSS)
+        // We use Math.ceil to ensure we don't cut off text
+        let newH = Math.ceil(contentHeight / 60); 
+        if(newH < 3) newH = 3; // Minimum height to prevent crushing
+
+        const doc = budget.documents.find(d => d.id === this.state.currentDocId);
+        const w = doc.content.widgets.find(x => x.id === widgetId);
+        
+        // Only update if the size actually changed
+        if(w && w.h !== newH) { 
+            w.h = newH;
+            // Force Gridstack to resize exactly to this height
+            this.state.grid.update(el, { h: newH }); 
+            this._triggerSave();
+        }
+    },
+    formatTime: function(el) {
+        let val = el.value.replace(/[^0-9]/g, '');
+        if(val.length === 4) {
+            el.value = val.substring(0,2) + ':' + val.substring(2,4);
+            el.dispatchEvent(new Event('change'));
+        }
+    },
+    saveTemplate: function() {
+        const doc = budget.documents.find(d => d.id === this.state.currentDocId);
+        const name = prompt("Name this template:", doc.label + " Template");
+        if(!name) return;
+        const tmpl = { id: 'tmpl_' + Date.now(), label: name, widgets: JSON.parse(JSON.stringify(doc.content.widgets)) };
+        if(!budget.templates) budget.templates = [];
+        budget.templates.push(tmpl);
         saveBudget();
-        this.render(docId);
+        alert(`Template "${name}" saved!`);
+    },
+    calcShootDay: function(dateStr) {
+        if(!budget.startDate) return "1 of 1";
+        const start = new Date(budget.startDate);
+        const current = new Date(dateStr);
+        if(isNaN(start) || isNaN(current)) return "1 of 1";
+        const diffTime = current - start;
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+        return `Day ${diffDays}`;
+    },
+    syncFromBudget: function() {
+        if(!confirm("Overwrite empty fields with data from your Budget?")) return;
+        const doc = budget.documents.find(d => d.id === this.state.currentDocId);
+        const defaults = this._generateDefaultData();
+        if(!doc.content.data.crew || doc.content.data.crew.length === 0) doc.content.data.crew = defaults.crew;
+        if(!doc.content.data.contacts.director) doc.content.data.contacts = defaults.contacts;
+        this._triggerSave();
+        this.renderFrame();
+    },
+    syncFromPrevious: function() {
+        const others = budget.documents.filter(d => d.type === 'callSheet' && d.id !== this.state.currentDocId);
+        if(others.length === 0) return alert("No previous Call Sheets found.");
+        others.sort((a,b) => new Date(b.created) - new Date(a.created));
+        const prev = others[0];
+        if(!confirm(`Pull data from "${prev.label}"?`)) return;
+        
+        const doc = budget.documents.find(d => d.id === this.state.currentDocId);
+        const currentMeta = JSON.parse(JSON.stringify(doc.content.data.meta));
+        doc.content.data = JSON.parse(JSON.stringify(prev.content.data));
+        doc.content.data.meta = currentMeta; 
+        
+        this._triggerSave();
+        this.renderFrame();
+    },
+    _triggerSave: function() {
+        const doc = budget.documents.find(d => d.id === this.state.currentDocId);
+        saveBudget();
+        this._pushHistory(doc);
+    },
+    _pushHistory: function(doc) {
+        if (this.state.historyPointer < this.state.history.length - 1) this.state.history = this.state.history.slice(0, this.state.historyPointer + 1);
+        this.state.history.push(JSON.stringify(doc.content));
+        this.state.historyPointer++;
+        if(this.state.history.length > 50) { this.state.history.shift(); this.state.historyPointer--; }
+        this._updateHeaderButtons();
+    },
+    undo: function() { if(this.state.historyPointer > 0) { this.state.historyPointer--; this._restoreHistory(); } },
+    redo: function() { if(this.state.historyPointer < this.state.history.length - 1) { this.state.historyPointer++; this._restoreHistory(); } },
+    _restoreHistory: function() { 
+        const doc = budget.documents.find(d => d.id === this.state.currentDocId);
+        doc.content = JSON.parse(this.state.history[this.state.historyPointer]);
+        saveBudget(); this.renderFrame(); 
+    },
+    snapshotDoc: function() {
+        const doc = budget.documents.find(d => d.id === this.state.currentDocId);
+        if(!confirm(`Copy "${doc.label}"?`)) return;
+        const newDoc = JSON.parse(JSON.stringify(doc));
+        newDoc.id = 'doc_' + Date.now();
+        newDoc.label = doc.label + " (Copy)";
+        budget.documents.push(newDoc);
+        saveBudget();
+        if(document.getElementById('documentsHubModal')) showDocumentsModal(window.docHubState ? window.docHubState.activeTab : null);
+        mBTDB.open(newDoc.id);
+    },
+    pullFromOpenGate: function(docId, path, roleQuery) {
+        if (typeof mBTOG === 'undefined' || !mBTOG.contacts) return alert("Open Gate Database not loaded.");
+        const matches = mBTOG.contacts.filter(c => c.role && c.role.toLowerCase().includes(roleQuery.toLowerCase()));
+        if (matches.length === 0) return alert(`No contacts found for "${roleQuery}".`);
+        const apply = (c) => {
+            const parts = path.split('.');
+            if(parts.length === 3 && (parts[0] === 'crew' || parts[0] === 'cast')) {
+                this.updateRow(docId, parts[0], parseInt(parts[1]), parts[2], c.name);
+                if(c.contact) this.updateRow(docId, parts[0], parseInt(parts[1]), 'contact', c.contact);
+            } else {
+                this.updateData(docId, path, `${c.name} ${c.contact ? '('+c.contact+')' : ''}`);
+            }
+            this.renderFrame(); 
+        };
+        if (matches.length === 1) apply(matches[0]);
+        else {
+            const choice = prompt(`Found ${matches.length} matches:\n${matches.map((c,i)=>`${i+1}. ${c.name}`).join('\n')}\nEnter #`);
+            const idx = parseInt(choice)-1;
+            if(matches[idx]) apply(matches[idx]);
+        }
+    },
+    // --- 3. Printing (mBTPublisher Integration) ---
+
+    printToPDF: function(mode) {
+        // 1. Verify Publisher exists
+        if (typeof mBTPublisher === 'undefined' || !mBTPublisher.exportToPDF) {
+            return alert("mBTPublisher engine not found.");
+        }
+
+        // 2. Clone the workspace to avoid messing up the live view
+        const original = document.getElementById('mBTDB_Workspace');
+        const clone = original.cloneNode(true);
+        
+        // 3. Configure the Clone
+        clone.id = "mBTDB_Print_Container";
+        clone.classList.remove('editing-mode');
+        clone.classList.add('print-container'); // Base reset
+        clone.classList.add(mode === 'standard' ? 'print-standard' : 'print-graphic'); // Apply Mode
+        
+        // Force inputs to have their values (cloning doesn't always carry input values)
+        const originalInputs = original.querySelectorAll('input, textarea');
+        const cloneInputs = clone.querySelectorAll('input, textarea');
+        originalInputs.forEach((input, i) => {
+            if(cloneInputs[i]) cloneInputs[i].value = input.value;
+        });
+
+        // 4. Mount, Print, Destroy
+        document.body.appendChild(clone);
+        
+        // Use the Publisher
+        const filename = `${budget.projectName}_CallSheet_${mode}`;
+        mBTPublisher.exportToPDF('mBTDB_Print_Container', filename);
+
+        // Cleanup after delay to allow capture
+        setTimeout(() => { document.body.removeChild(clone); }, 2000);
+    },
+
+    // --- Header Update ---
+
+_updateHeaderButtons: function() {
+    const btnContainer = document.getElementById('mBTDB_Buttons');
+    if(!btnContainer) return;
+    const isEd = this.state.isEditing;
+
+    // 1. Define the Preview Menu (SVG Version - No Emojis)
+const previewMenu = `
+    <div class="relative inline-block">
+        <button onclick="const m = this.nextElementSibling; m.classList.toggle('hidden');" 
+            class="bg-slate-700 text-white px-3 py-1 rounded text-xs font-bold hover:bg-slate-600 flex items-center gap-1 transition-all outline-none">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+            Preview
+        </button>
+        <div class="hidden absolute right-0 mt-2 w-44 bg-white rounded shadow-2xl border border-slate-200 z-[9999] overflow-hidden">
+            <button onclick="mBTDB.previewDoc('standard'); this.parentElement.classList.add('hidden')" 
+                class="flex items-center gap-2 w-full text-left px-4 py-3 text-[11px] text-slate-700 hover:bg-blue-50 hover:text-blue-700 font-bold border-b border-slate-100 transition-colors">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+                Industry Standard
+            </button>
+            <button onclick="mBTDB.previewDoc('graphic'); this.parentElement.classList.add('hidden')" 
+                class="flex items-center gap-2 w-full text-left px-4 py-3 text-[11px] text-slate-700 hover:bg-blue-50 hover:text-blue-700 font-medium transition-colors">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                Graphic View
+            </button>
+        </div>
+    </div>`;
+
+    // 2. Inject into the DOM (Crucial: Using the new previewMenu variable here)
+    btnContainer.innerHTML = `
+        <div class="flex gap-1 mr-2 border-r border-slate-600 pr-2">
+            <button onclick="mBTDB.undo()" class="p-1 hover:bg-slate-700 rounded text-slate-300" title="Undo">${this.icons.undo}</button>
+            <button onclick="mBTDB.redo()" class="p-1 hover:bg-slate-700 rounded text-slate-300" title="Redo">${this.icons.redo}</button>
+            <button onclick="mBTDB.snapshotDoc()" class="p-1 hover:bg-blue-900 rounded text-blue-300" title="Clone">${this.icons.copy}</button>
+            <button onclick="mBTDB.saveTemplate()" class="p-1 hover:bg-blue-900 rounded text-green-300" title="Save Template">${this.icons.save}</button>
+        </div>
+        ${isEd ? `<select id="mBTDB_WidgetSelect" class="bg-slate-700 text-xs text-white h-6 rounded mr-1"><option value="richText">Note</option><option value="schedule">Schedule</option><option value="cast">Cast</option><option value="crew">Crew</option><option value="logistics">Logistics</option><option value="contacts">Contacts</option></select><button onclick="mBTDB.addWidget()" class="text-green-400 font-bold mr-2">${this.icons.plus}</button>` : ''}
+        <button onclick="mBTDB.toggleEditMode()" class="${isEd ? 'bg-green-600' : 'bg-blue-600'} text-white px-3 py-1 rounded text-xs font-bold shadow">${isEd ? 'Done' : 'Edit'}</button>
+        ${previewMenu} 
+        <button onclick="mBTDB.close()" class="bg-red-900 text-red-200 px-2 py-1 rounded hover:text-white">${this.icons.close}</button>
+    `;
+},
+    aiCleanup: async function(docId, path, text) {
+        if(!text) return;
+        if(!localStorage.getItem('mBT_API_KEY') && !window.API_KEY) return alert("AI functionality requires an API Key.");
+        const btn = document.activeElement;
+        const originalText = btn.innerHTML;
+        btn.innerHTML = "✨...";
+        try {
+            alert("AI Feature: In a full build, this sends prompt to API. (Simulated)");
+            btn.innerHTML = originalText;
+        } catch(e) { alert("AI Error"); btn.innerHTML = originalText; }
+    },
+    _generateDefaultData: function() {
+        return {
+            meta: { productionTitle: budget.projectName||"", productionCompany: budget.company||"", shootDate: new Date().toISOString().split('T')[0], crewCallTime: "08:00" },
+            contacts: { director: "", producer: "", ad: "" },
+            schedule: [], crew: [], cast: [],
+            locations: [{name:"Base Camp", address:"", weather:"", hospital:"", mapLink:""}],
+            additional: {}
+        };
     }
 };
+window.CallSheetBuilder = { render: function(docId) { mBTDB.open(docId); } };
 
-//--------------------------------------------------------------------------//
 // ------------------------ DOCUMENTS ------------------------- //
-//--------------------------------------------------------------------------//
 /* --- v19.55 [Documents] - Viewer Integration (Builder Support) --- */
 
 function openDocumentViewer(docId) {
@@ -4969,37 +6529,6 @@ function handleCustomDoc(e) {
     }
 }
 
-function showBinModal() { 
-    const trash = budget.documentTrash || [];
-    const content = trash.length === 0 ? '<p class="text-center text-gray-400 p-4">Bin is empty.</p>' : 
-        `<div class="space-y-2 p-2">${trash.map((d, i) => `
-            <div class="flex justify-between items-center p-2 bg-red-50 border border-red-100 rounded">
-                <span class="text-sm font-bold text-gray-700">${d.label}</span>
-                <div class="flex gap-2">
-                    <button onclick="restoreDoc(${i})" class="text-xs bg-white border border-gray-300 px-2 py-1 rounded">Restore</button>
-                    <button onclick="permDeleteDoc(${i})" class="text-xs bg-red-600 text-white px-2 py-1 rounded">Delete</button>
-                </div>
-            </div>`).join('')}</div>`;
-    createModal('docBin', 'Recycle Bin', content, 'max-w-sm');
-}
-
-window.restoreDoc = (idx) => {
-    const doc = budget.documentTrash.splice(idx, 1)[0];
-    delete doc.deletedAt;
-    budget.documents.push(doc);
-    saveBudget();
-    closeModal('docBinModal');
-    showDocumentsModal();
-};
-
-window.permDeleteDoc = (idx) => {
-    if(confirm("Delete forever?")) {
-        budget.documentTrash.splice(idx, 1);
-        saveBudget();
-        showBinModal();
-    }
-};
-
 /* --- v19.54 [.mtemp Import] --- */
 function importMtempFile(docId) {
     const input = document.createElement('input');
@@ -5095,9 +6624,6 @@ window.applyTemplate = function(docId, templateId, isCustom) {
     closeModal('templatePickerModal');
     setTimeout(() => openDocumentViewer(docId), 200);
 };
-
-
-/* --- P4--- */
 
 // ------------ STAGES ------------------------------------------------------ //
 
@@ -5687,6 +7213,7 @@ function showStagesModal() {
                     </div>
             </div>`;
 
+/* --- P5 --- */
 // Analytics Hub
 window.openAnalyticsHub = function() {
     // 1. Data Crunching
@@ -6222,6 +7749,37 @@ function syncStageToMain(item) {
     item.isMixedRate = (uniqueRates.size > 1);
 }
 
+/* --- v19.54 Document Builder Entry Point --- */
+window.initializeDocumentBuilder = function(docId) {
+    const doc = budget.documents.find(d => d.id === docId);
+    if (!doc) return;
+
+    // Mark as builder type
+    if (!doc.content) doc.content = {};
+    doc.content.isBuilder = true;
+    doc.content.isDynamic = true;
+
+    // Route to specific builder based on templateId or label
+    if (doc.templateId === 'callSheet' || doc.label.toLowerCase().includes('call sheet')) {
+        initializeCallSheetBuilder(docId);
+        return;
+    }
+
+    // Future builders go here
+    if (doc.templateId === 'crewList' || doc.label.toLowerCase().includes('crew list')) {
+        // initializeCrewListBuilder(docId); // Coming soon
+        alert("Crew List builder coming soon!");
+        return;
+    }
+
+    // Default: Generic template form (fallback)
+    doc.content.type = 'template';
+    doc.content.data = {};
+    doc.status = 'In Progress';
+    saveBudget();
+    openDocumentViewer(docId);
+};
+
 /* --- v19.55 [Documents] - Viewer Integration & Builder Launch --- */
 
 // 1. New Helper: Initialize Builder from Empty State
@@ -6320,30 +7878,33 @@ function openDocumentViewer(docId) {
         return;
     }
 
-    // --- D. EMPTY STATE (The Choice) ---
+        // --- D. EMPTY STATE – Template-Aware Builder Button ---
+    const docLabel = doc.label || 'Document';
+    const builderLabel = docLabel.includes('Call Sheet') ? 'Build Call Sheet' : `Build ${docLabel}`;
+
     const viewerContent = `
         <div class="flex flex-col h-full items-center justify-center bg-gray-50 p-8 text-center">
             <div class="bg-white p-10 rounded-2xl shadow-xl border border-gray-100 max-w-lg w-full">
                 <div class="text-6xl mb-6 opacity-20">📄</div>
-                <h3 class="text-2xl font-bold text-gray-800 mb-2">Empty Document</h3>
+                <h3 class="text-2xl font-bold text-gray-800 mb-2">Empty ${docLabel}</h3>
                 <p class="text-gray-500 mb-8 text-sm">Choose how to initialize this document:</p>
-                
+               
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <button onclick="document.getElementById('viewerUpload_${docId}').click()" class="group p-4 border-2 border-dashed border-gray-200 rounded-xl hover:border-blue-500 hover:bg-blue-50 transition-all flex flex-col items-center gap-2">
                         <span class="text-2xl group-hover:scale-110 transition-transform">📤</span>
                         <span class="font-bold text-gray-700 text-sm group-hover:text-blue-700">Upload File</span>
                     </button>
-                    
-                    <button onclick="initializeCallSheetBuilder('${docId}')" class="group p-4 border-2 border-dashed border-green-200 rounded-xl hover:border-green-500 hover:bg-green-50 transition-all flex flex-col items-center gap-2">
+                   
+                    <button onclick="initializeDocumentBuilder('${docId}')" class="group p-4 border-2 border-dashed border-green-200 rounded-xl hover:border-green-500 hover:bg-green-50 transition-all flex flex-col items-center gap-2">
                         <span class="text-2xl group-hover:scale-110 transition-transform">🏗️</span>
-                        <span class="font-bold text-gray-700 text-sm group-hover:text-green-700">Build Call Sheet</span>
+                        <span class="font-bold text-gray-700 text-sm group-hover:text-green-700">${builderLabel}</span>
                     </button>
                 </div>
-                
+               
                 <div class="mt-4 pt-4 border-t">
                     <button onclick="startWithTemplate('${docId}')" class="text-xs text-gray-400 hover:text-gray-600 font-bold uppercase tracking-wider">Browse Other Templates</button>
                 </div>
-                
+               
                 <input type="file" id="viewerUpload_${docId}" class="hidden" onchange="handleDocUploadTrigger(this, '${docId}')">
             </div>
         </div>`;
@@ -6352,6 +7913,216 @@ function openDocumentViewer(docId) {
 }
 
 document.addEventListener('DOMContentLoaded', init);
+
+/* ==========================================================================
+   MASTER FIX V2: Global Trash Engine (Safe Arrays & Auto-Refresh)
+   ========================================================================== */
+
+window.mBTTrash = {
+    state: { activeTab: 'documents' }, 
+
+    // --- 1. Open & Render ---
+    open: function(defaultTab = 'documents') {
+        this.state.activeTab = defaultTab;
+        this.render();
+    },
+
+    render: function() {
+        const type = this.state.activeTab;
+        
+        // SAFEGUARD: Ensure Trash Arrays Exist
+        const projectTrash = this._getProjectTrash();
+        if (!Array.isArray(budget.documentTrash)) budget.documentTrash = [];
+        const docTrash = budget.documentTrash;
+
+        let items = [];
+        
+        if (type === 'projects') {
+            items = projectTrash.map(p => ({
+                label: p.projectName,
+                date: p.deletedTimestamp,
+                icon: '📁',
+                original: p
+            }));
+        } else {
+            items = docTrash.map(d => ({
+                label: d.label,
+                date: d.deletedTimestamp || d.deletedAt,
+                icon: d.icon || '📄',
+                original: d
+            }));
+        }
+
+        const isEmpty = items.length === 0;
+
+        const content = `
+            <div class="flex flex-col h-[500px]">
+                <div class="flex border-b border-gray-200 bg-gray-50 flex-shrink-0">
+                    <button onclick="window.mBTTrash.open('documents')" class="flex-1 py-3 text-sm font-bold ${type === 'documents' ? 'text-blue-600 border-b-2 border-blue-600 bg-white' : 'text-gray-500 hover:text-gray-700'}">
+                        Documents (${docTrash.length})
+                    </button>
+                    <button onclick="window.mBTTrash.open('projects')" class="flex-1 py-3 text-sm font-bold ${type === 'projects' ? 'text-blue-600 border-b-2 border-blue-600 bg-white' : 'text-gray-500 hover:text-gray-700'}">
+                        Projects (${projectTrash.length})
+                    </button>
+                </div>
+
+                <div class="flex-grow overflow-y-auto p-4 bg-gray-100">
+                    ${isEmpty ? 
+                        `<div class="h-full flex flex-col items-center justify-center text-gray-400 opacity-50">
+                            <div class="text-6xl mb-2">🗑️</div>
+                            <div class="text-sm font-bold">Bin is Empty</div>
+                        </div>` 
+                        : 
+                        `<div class="space-y-2">
+                            ${items.map((item, i) => `
+                                <div class="bg-white p-3 rounded-lg border border-gray-200 shadow-sm flex justify-between items-center group">
+                                    <div class="flex items-center gap-3 overflow-hidden">
+                                        <div class="w-10 h-10 rounded bg-gray-50 flex items-center justify-center text-lg">${item.icon}</div>
+                                        <div class="min-w-0">
+                                            <div class="font-bold text-gray-800 text-sm truncate">${item.label}</div>
+                                            <div class="text-xs text-gray-400">Deleted: ${item.date ? new Date(item.date).toLocaleDateString() : 'Unknown'}</div>
+                                        </div>
+                                    </div>
+                                    <div class="flex gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                                        <button onclick="window.mBTTrash.restore(${i})" class="px-3 py-1.5 bg-green-50 text-green-700 border border-green-200 rounded text-xs font-bold hover:bg-green-100">Restore</button>
+                                        <button onclick="window.mBTTrash.deleteForever(${i})" class="px-3 py-1.5 bg-red-50 text-red-600 border border-red-200 rounded text-xs font-bold hover:bg-red-100">Delete</button>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>`
+                    }
+                </div>
+
+                <div class="p-4 bg-white border-t border-gray-200 flex justify-between items-center flex-shrink-0">
+                    <button onclick="mBTME.close('trashModal')" class="text-gray-500 font-bold text-xs hover:text-gray-800">Close</button>
+                    ${!isEmpty ? `<button onclick="window.mBTTrash.emptyBin()" class="text-red-500 font-bold text-xs hover:text-red-700 hover:underline">Empty ${type === 'projects' ? 'Projects' : 'Documents'} Bin</button>` : ''}
+                </div>
+            </div>
+        `;
+
+        if (typeof mBTME !== 'undefined') {
+            mBTME.open('trash', 'Recycle Bin', content, 'max-w-lg', { noPadding: true, hideHeader: true });
+        } else {
+            console.error("mBTME Modal Engine not loaded.");
+        }
+    },
+
+    // --- 2. Action Logic ---
+
+    // Move Active Document to Trash (Called by Card Icon)
+    trashDocument: function(docId) {
+        if (!confirm('Move to Recycle Bin?')) return;
+
+        // Ensure Trash Array
+        if (!Array.isArray(budget.documentTrash)) budget.documentTrash = [];
+
+        const index = budget.documents.findIndex(d => d.id === docId);
+        if (index === -1) return alert('Document not found');
+        
+        const doc = budget.documents[index];
+        doc.deletedTimestamp = new Date().toISOString();
+        
+        // Move
+        budget.documentTrash.push(doc);
+        budget.documents.splice(index, 1);
+        saveBudget();
+        
+        // Refresh Hub if open
+        if (document.getElementById('documentsHubModal')) {
+            showDocumentsModal(window.docHubState ? window.docHubState.activeTab : null);
+        }
+    },
+
+    restore: function(index) {
+        const type = this.state.activeTab;
+        
+        if (type === 'projects') {
+            const trash = this._getProjectTrash();
+            const project = trash.splice(index, 1)[0];
+            if (project) {
+                delete project.deletedTimestamp;
+                localStorage.setItem(storageKeyPrefix + project.projectName, JSON.stringify(project));
+                this._saveProjectTrash(trash);
+                // Reload logic
+                loadBudget(project.projectName);
+                if(typeof render === 'function') render();
+                alert(`Restored project: ${project.projectName}`);
+            }
+        } else {
+            // Documents
+            if (!Array.isArray(budget.documentTrash)) return;
+            const doc = budget.documentTrash.splice(index, 1)[0];
+            if (doc) {
+                delete doc.deletedTimestamp;
+                if (!budget.documents) budget.documents = [];
+                budget.documents.push(doc);
+                saveBudget();
+                
+                // Instant Refresh of Background Hub
+                if (document.getElementById('documentsHubModal')) {
+                    showDocumentsModal(window.docHubState ? window.docHubState.activeTab : null);
+                }
+            }
+        }
+        this.render(); // Re-render self (Trash Bin)
+    },
+
+    deleteForever: function(index) {
+        if (!confirm("Delete forever? This cannot be undone.")) return;
+        
+        const type = this.state.activeTab;
+        if (type === 'projects') {
+            const trash = this._getProjectTrash();
+            trash.splice(index, 1);
+            this._saveProjectTrash(trash);
+        } else {
+            if (Array.isArray(budget.documentTrash)) {
+                budget.documentTrash.splice(index, 1);
+                saveBudget();
+            }
+        }
+        this.render();
+    },
+
+    emptyBin: function() {
+        const type = this.state.activeTab;
+        if (!confirm(`Permanently delete ALL ${type}?`)) return;
+
+        if (type === 'projects') {
+            localStorage.removeItem(trashKey);
+        } else {
+            budget.documentTrash = [];
+            saveBudget();
+        }
+        this.render();
+    },
+
+    // Internal Helpers
+    _getProjectTrash: () => {
+        try {
+            const t = JSON.parse(localStorage.getItem(trashKey) || '[]');
+            return Array.isArray(t) ? t : [];
+        } catch(e) { return []; }
+    },
+    _saveProjectTrash: (data) => localStorage.setItem(trashKey, JSON.stringify(data)),
+};
+
+/* --- 3. OVERWRITE EVENT HANDLERS (The Glue) --- */
+
+// Fix File Menu "Recover" option
+window.showRecoveryModal = function() {
+    window.mBTTrash.open('projects');
+};
+
+// Fix Documents Hub Red Bin Icon
+window.showBinModal = function() {
+    window.mBTTrash.open('documents');
+};
+
+// Fix Document Card "Trash" Button
+window.handleDocTrash = function(docId) {
+    window.mBTTrash.trashDocument(docId);
+};
 
     </script>
 </body>
