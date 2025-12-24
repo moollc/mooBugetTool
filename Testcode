@@ -16,44 +16,44 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
         
-        /* --- Core Layout & Scrollbar --- */
+/* --- Core Layout & Scrollbar --- */
         body { font-family: 'Inter', sans-serif; padding-bottom: 50px; background-color: #f3f4f6; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-        /* --- 1. Interaction Protocols (Drag and drop behavior) --- */
+/* --- 1. Interaction Protocols (Drag and drop behavior) --- */
         .draggable-row { cursor: grab; transition: all 0.2s ease-in-out; }
         .draggable-row:active { cursor: grabbing; }
         .draggable-row.dragging { opacity: 0.5; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); transform: translateY(2px) scale(1.02); z-index: 1000; }
         .drag-over { background-color: #f3f4f6; border-top: 2px solid #3b82f6; border-bottom: 2px solid #3b82f6; transition: all 0.2s ease-in-out; }
 
-        /* --- 2. Atomic UI Components --- */
+/* --- 2. Atomic UI Components --- */
         .alert-badge { position: absolute; top: -4px; right: -4px; background: #ef4444; color: white; border-radius: 50%; width: 20px; height: 20px; font-size: 0.75rem; display: flex; align-items: center; justify-content: center; }
         .status-indicator { transition: opacity 0.5s ease-in-out; }
         .status-online { border-color: #22c55e; color: #15803d; background-color: #f0fdf4; }
         .status-offline { border-color: #ef4444; color: #b91c1c; background-color: #fef2f2; cursor: not-allowed; }
 
-        /* --- 3. Roadmap Visualization --- */
+/* --- 3. Roadmap Visualization --- */
         .roadmap-past { color: #9ca3af; }
         .roadmap-current { color: #2563eb; font-weight: 700; }
         .roadmap-future { color: #1f2937; }
 
-        /* --- 4. Intelligence Suite Visuals --- */
+/* --- 4. Intelligence Suite Visuals --- */
         .ai-message { padding: 10px; border-radius: 8px; margin-bottom: 8px; font-size: 0.9rem; line-height: 1.5; }
         .ai-message.user { background-color: #eff6ff; border: 1px solid #dbeafe; color: #1e3a8a; text-align: right; margin-left: 20%; }
         .ai-message.assistant { background-color: #f0fdf4; border: 1px solid #dcfce7; color: #14532d; margin-right: 10%; }
         .ai-message.assistant strong { color: #166534; font-weight: 700; }
         .ai-message.assistant ul { list-style-type: disc; margin-left: 20px; margin-top: 5px; }
 
-        /* --- 5. Support Interface --- */
+/* --- 5. Support Interface --- */
         .bmc-btn { background-color: #FFDD00; color: #000000; font-family: 'Inter', sans-serif; font-weight: 600; border-radius: 8px; padding: 6px 12px; font-size: 12px; display: inline-flex; align-items: center; text-decoration: none; transition: transform 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.1); cursor: pointer;}
         .bmc-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
 
-        /* --- 6. Print Media Protocols --- */
+/* --- 6. Print Media Protocols --- */
         @media print { #footnote, #loginBtn, footer, #settingsBtn, #openAiToolsBtn { display: none !important; } }
         #bmac-btn-container, #bmc-wbtn { display: none !important; }
 
-        /* --- 7. Production Stage Visuals --- */
+/* --- 7. Production Stage Visuals --- */
         #stagesCarousel { scrollbar-width: none; -ms-overflow-style: none; }
         #stagesCarousel::-webkit-scrollbar { display: none; }
         .stage-card { transition: transform 0.2s; }
@@ -61,20 +61,124 @@
         .stage-draggable { transition: all 0.2s; touch-action: none; }
         .stage-draggable:hover { transform: translateY(-2px); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
 
-        /* --- 8. Mobile Platform Support --- */
+/* --- 8. Mobile Platform Support --- */
         @media (max-width: 768px) {
             .mobile-desc-truncate { text-overflow: ellipsis; white-space: nowrap; overflow: hidden; width: 100%; display: block; }
             .mobile-desc-truncate:focus { white-space: normal; overflow: visible; position: relative; z-index: 50; background: white; shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); border-radius: 4px; padding: 8px; height: auto; }
         }
 
-        /* --- 9. Navigation Elements --- */
+/* --- 9. Navigation Elements --- */
         .sticky-section-header { position: sticky; top: 0; z-index: 30; background-color: #f9fafb; border-bottom: 1px solid #e5e7eb; }
         .sticky-th { position: sticky; top: 43px; z-index: 20; background-color: #ffffff; }
 
-        /* --- 10. Document Studio Canvas --- */
+/* --- 10. Document Studio Canvas --- */
         .grid-stack { background-color: #f3f4f6; min-height: 80vh; padding: 10px !important; }
         .grid-stack-item-content { background-color: white; border-radius: 0.75rem; border: 1px solid #e5e7eb; overflow: hidden !important; display: flex; flex-direction: column; cursor: grab; }
-    </style>
+   
+/* --- 11. Form Utilities (Spinner Removal) --- */
+        .no-spinner::-webkit-inner-spin-button, 
+        .no-spinner::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        .no-spinner { -moz-appearance: textfield; appearance: none; }
+
+/* --- 12. Crew Contact Popups (Adapted Legacy Logic) --- */
+        .crew-wrapper { 
+            position: relative; 
+            z-index: 20; 
+            display: inline-block;
+        }
+        
+        /* Main Avatar Button */
+        .crew-avatar {
+            /* Adapted size: 28px -> 32px for better touch, shrinks to 28px on tiny screens via HTML classes */
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            position: relative;
+            transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1); /* Legacy "Pop" effect */
+            user-select: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            z-index: 20; /* Always above the pill */
+        }
+        .crew-avatar:hover { transform: scale(1.15); }
+        .crew-avatar:active { transform: scale(0.95); }
+
+        /* The Floating Pill (Hidden State) */
+        .crew-popup {
+            position: absolute;
+            left: 50%; /* Start centered behind avatar */
+            top: 50%;
+            transform: translate(-50%, -50%) scale(0.5); /* Start small and centered */
+            background: white;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            border-radius: 9999px;
+            padding: 4px 6px 4px 28px; /* Left padding creates the visual gap for the avatar */
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            pointer-events: none;
+            z-index: 10; /* Behind avatar */
+            white-space: nowrap;
+        }
+
+        /* The "Hit Buffer" (Invisible bridge so mouse doesn't lose focus) */
+        .crew-popup::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 30px; /* Covers the gap between avatar and buttons */
+            background: transparent;
+            z-index: -1;
+        }
+
+        /* Active State (Hover OR Mobile Class) */
+        @media (hover: hover) {
+            .crew-wrapper:hover .crew-popup {
+                opacity: 1;
+                visibility: visible;
+                pointer-events: auto;
+                transform: translate(20px, -50%) scale(1); /* Slide out to the right */
+            }
+        }
+        
+        /* Mobile Toggle State */
+        .crew-wrapper.mobile-active .crew-popup {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+            transform: translate(20px, -50%) scale(1);
+        }
+
+        /* Action Buttons inside the Pill */
+        .contact-action-btn {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            transition: transform 0.2s ease;
+            flex-shrink: 0;
+            text-decoration: none;
+        }
+        .contact-action-btn:hover { transform: scale(1.2); }
+        .contact-action-btn svg { width: 14px; height: 14px; }
+
+        /* Legacy Colors adapted for Tailwind Palette */
+        .action-call { background-color: #10b981; } /* Emerald-500 */
+        .action-wa { background-color: #25D366; }   /* WhatsApp Brand Color */
+        .action-email { background-color: #3b82f6; } /* Blue-500 */
+        .action-profile { background-color: #64748b; } /* Slate-500 */
+
+</style>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gridstack.js/10.1.2/gridstack-all.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -164,6 +268,8 @@
 
 /* --- 3. Master Asset Registry (Consolidated SVG Library) --- */
     const mBTAssets = {
+appLogo: `<svg viewBox="0 0 502.17 507.14" fill="none"><circle cx="251.1" cy="253.6" r="251" fill="#fdba35"/><ellipse cx="251.08" cy="254.6" rx="219.09" ry="222.65" fill="#e68b2e"/><rect x="203.17" y="63.34" width="39.87" height="58.38" rx="12" ry="12" fill="#fdba35"/><rect x="287.89" y="63.34" width="39.87" height="58.38" rx="12" ry="12" fill="#fdba35"/><path fill="#ffffff" d="M435.26 218.85c-9.37 8.14-49.07 32.97-49.8 15.81 11.55-127.5-229.22-149.43-231.01-24.74 6.07 54.05 43.35 54.26 87.82 52.06 146.67-19.16 207.1 157.09 46.91 189.89-58.04 11.48-128.93-19.18-142.75-80.18 46.88 38.84 113.67 68.1 171.96 37.26 26.86-13.77 47.21-49.89 26.52-76.85-38.48-58.02-113.62-26.74-169.36-43.4-33.76-8.68-39.32-44.89-49.26-40.21-40.71 11.77-74.81-18.1-93.73-51.57-11.64-17.99 23.01-37.67 23.01-37.67 78.34-46.2 83.04-2.52 100.98-30.11 13.01-12.52 28.91-19.88 45.88-25.26 14.39-.81-2.14-26.45 12.52-30.74 8.55-3.29 22.55-1.35 21.53 10.41v7.96q0 5.96 6.03 5.19c15.31-1.13 30.59-.73 45.84 1.04 4.51 1.52 6.39.14 5.88-4.8.18-6.63-2.41-16.54 5.48-19.48 39.51-10.45 11.06 33.02 28.69 33.36 24.13 8.69 46.04 20.74 62.06 41.52 1.37 1.77 2.67 1.3 4.34.83 21.56-6.19 44.45 3.51 61.99 15.88 16.53 11.27-10.05 43.62-21.53 53.81Zm-303.07-60.53c-15.13-3.64-31.31 1.65-45.48 7.89-10.48 5.14-25.95 13.17-31.69 19.68-7.43 4.29 10.4 20.59 13.85 25.15 12.7 13.47 31.71 23.14 50.39 17.73 2.48-.4 3.49-1.51 3.13-3.82-2.68-22.93-.15-45.14 9.8-66.63m311.98 17.39c-2.49-5.29-32.19-13.69-45.6-11.24 3.21 8.51 7.77 19.74 8.85 29.37 2.12 18.88 1.07 24.71.92 25.13 14.31-5.74 40.59-33.14 35.83-43.26m-244.14 12.41c-8.45-1.05-18.22 1.95-18.24 12 .78 10.17-4.5 33.22 12 33.15 8.45 1.05 18.22-1.95 18.24-12-.78-10.17 4.5-33.22-12-33.14Zm-6.08 168.77c-1.38-2.31-16.01-18.07-16.01-18.07-3.59-3.64-6.21-13.1-14.02-8.77-3.6 2.84-5.79 3.83-.54 12.88 7.81 11.59 24.83 28.14 30.57 13.96m-87.43-126.66c.73.03 1.47.03 2.21.02-.74.01-1.48 0-2.21-.02m-37.65-19.19c.27.27.53.54.8.81-.27-.27-.53-.54-.8-.81m258.53-22.92c-8.45-1.05-18.22 1.95-18.24 12 .78 10.17-4.5 33.22 12 33.15 8.45 1.05 18.22-1.95 18.24-12-.78-10.17 4.5-33.22-12-33.14Z"/></svg>`,
+
        // --- Core UI & Actions ---
     plus: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`,
     trash: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>`,
@@ -863,8 +969,8 @@ function getAbbreviatedName(name, maxLen = 25) {
         },
 
         // --- Data Row Blueprint: Itemized line generation ---
-        // Logic Resolution: Maps budget records to interactive table rows with real-time math reconciliation.
-        lineItem(item, sectionName) {
+// Logic Resolution: Mobile-optimized widths, font-scaling, and "touch-friendly" inputs.
+lineItem(item, sectionName) {
             const safeId = this.esc(item.id); 
             const safeSection = this.esc(sectionName);
             const isMobile = window.innerWidth < 768;
@@ -872,52 +978,82 @@ function getAbbreviatedName(name, maxLen = 25) {
             const crew = item.crew || {};
             const isLocked = item.rateType === 'fixed';
             const initials = crew.name ? crew.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : '?';
+            
+            // Logic: Clean phone for links
+            const cleanPhone = crew.phone ? crew.phone.replace(/\D/g, '') : '';
+            const waLink = `https://wa.me/${(cleanPhone.length === 10 && (cleanPhone.startsWith('876') || cleanPhone.startsWith('658'))) ? '1'+cleanPhone : cleanPhone}`;
 
             return `
                 <tr class="group border-b border-slate-50 hover:bg-blue-50/30 transition-all draggable-row" data-item-id="${safeId}" data-section="${safeSection}">
-                    <td class="p-2 text-center relative">
+                    <td class="p-2 text-center relative w-[40px] md:w-12 overflow-visible">
                         <div class="crew-wrapper inline-block">
-                            <button onclick="toggleCrewPopup(this, event)" class="crew-avatar w-8 h-8 rounded-full border-2 border-dashed border-slate-200 flex items-center justify-center text-slate-300 hover:border-blue-400 hover:text-blue-500 transition-all ${crew.name ? 'assigned' : 'unassigned'}">
-                                ${crew.name ? '<span class="text-[10px] font-black text-blue-600">' + initials + '</span>' : mBTAssets.user}
+                            <button onclick="toggleCrewPopup(this, event)" class="crew-avatar w-7 h-7 md:w-8 md:h-8 rounded-full border-2 border-dashed border-slate-200 flex items-center justify-center text-slate-300 hover:border-blue-400 hover:text-blue-500 transition-all ${crew.name ? 'bg-blue-50 border-blue-200 text-blue-600' : 'bg-white'} relative z-20">
+                                <span class="text-[8px] md:text-[10px] font-black">${initials}</span>
                             </button>
+
+                            <div class="crew-popup">
+                                ${crew.name ? `
+                                    ${cleanPhone.length > 6 ? `
+                                        <a href="tel:${cleanPhone}" class="contact-action-btn action-call" title="Call">${mBTAssets.phone}</a>
+                                        <a href="${waLink}" target="_blank" class="contact-action-btn action-wa" title="WhatsApp">${mBTAssets.wa}</a>
+                                    ` : ''}
+                                    ${crew.email && crew.email.includes('@') ? `
+                                        <a href="mailto:${crew.email}" class="contact-action-btn action-email" title="Email">${mBTAssets.mail}</a>
+                                    ` : ''}
+                                    <button onclick="openCrewProfile(this, event, '${safeId}', '${safeSection}')" class="contact-action-btn action-profile" title="Profile">${mBTAssets.user}</button>
+                                ` : `
+                                    <button onclick="openCrewProfile(this, event, '${safeId}', '${safeSection}')" class="flex items-center gap-1 text-[9px] font-black uppercase text-slate-400 hover:text-white transition-colors">
+                                        <span>Assign</span> ${mBTAssets.plus}
+                                    </button>
+                                `}
+                            </div>
                         </div>
                     </td>
-                    <td class="p-2 drag-handle text-slate-200 hover:text-slate-400 cursor-grab active:cursor-grabbing">${mBTAssets.drag}</td>
-                    <td class="p-2">
+                    
+                    <td class="p-2 w-[30px] md:w-8 drag-handle text-slate-200 hover:text-slate-400 cursor-grab active:cursor-grabbing text-center">${mBTAssets.drag}</td>
+                    
+                    <td class="p-2 text-left">
                         <input type="text" data-id="${safeId}" data-section="${safeSection}" data-field="description" value="${this.esc(item.description)}" 
-                               class="w-full bg-transparent border-none font-bold text-slate-700 focus:ring-0 truncate mobile-desc-truncate" placeholder="Line Item Description">
+                               class="w-full bg-transparent border-none font-bold text-xs md:text-sm text-slate-700 focus:ring-0 truncate mobile-desc-truncate" placeholder="Item...">
                     </td>
-                    <td class="p-2">
+                    
+                    <td class="p-1 md:p-2 w-[35px] md:w-16">
                         <input type="number" data-id="${safeId}" data-section="${safeSection}" data-field="quantity" value="${item.quantity}" 
-                               class="w-full bg-transparent border-none text-center font-black text-blue-600 focus:ring-0 no-spinner">
+                               class="w-full bg-transparent border-none text-center font-black text-[10px] md:text-xs text-blue-600 focus:ring-0 no-spinner p-0">
                     </td>
-                    <td class="p-2">
+                    
+                    <td class="p-1 md:p-2 w-[40px] md:w-20">
                         <select data-id="${safeId}" data-section="${safeSection}" data-field="unit" 
-                                class="w-full bg-transparent border-none text-[10px] font-black uppercase tracking-tighter text-slate-400 focus:ring-0 cursor-pointer">
-                            ${['Day','Week','Flat','Policy','Hour'].map(u => `<option value="${u}" ${item.unit === u ? 'selected' : ''}>${u}</option>`).join('')}
+                                class="w-full bg-transparent border-none text-[8px] md:text-[10px] font-black uppercase tracking-tighter text-slate-400 focus:ring-0 cursor-pointer p-0 text-center">
+                            ${['Day','Week','Flat','Policy','Hour'].map(u => `<option value="${u}" ${item.unit === u ? 'selected' : ''}>${u.substring(0,3)}</option>`).join('')}
                         </select>
                     </td>
-                    <td class="p-2">
-                        <div class="flex items-center gap-1">
-                            <button onclick="toggleRateType('${safeId}', '${safeSection}')" class="w-7 h-7 rounded-lg transition-all flex-shrink-0 flex items-center justify-center ${isLocked ? 'text-rose-500 bg-rose-50' : 'text-emerald-600 bg-emerald-50'}">
-                                ${isLocked ? mBTAssets.lock : mBTAssets.zap}
+                    
+                    <td class="p-1 md:p-2 w-[50px] md:w-32">
+                        <div class="flex items-center gap-1 justify-end md:justify-start">
+                            <button onclick="toggleRateType('${safeId}', '${safeSection}')" class="hidden md:flex w-6 h-6 rounded-lg transition-all flex-shrink-0 items-center justify-center ${isLocked ? 'text-rose-500 bg-rose-50' : 'text-emerald-600 bg-emerald-50'}">
+                                <span class="scale-75">${isLocked ? mBTAssets.lock : mBTAssets.zap}</span>
                             </button>
                             <input type="number" step="0.01" data-id="${safeId}" data-section="${safeSection}" data-field="rate" value="${toDisp(item.rate).toFixed(2)}" 
-                                   class="w-full bg-transparent border-none font-mono font-bold text-slate-500 focus:ring-0 no-spinner">
+                                   class="w-full bg-transparent border-none font-mono font-bold text-[10px] md:text-xs text-slate-500 focus:ring-0 no-spinner text-right md:text-left p-0">
                         </div>
                     </td>
-                    <td class="p-2 font-mono font-bold text-slate-800" data-estimated-id="${safeId}">
+                    
+                    <td class="p-1 md:p-2 w-[55px] md:w-28 font-mono font-bold text-[10px] md:text-xs text-slate-800 text-right" data-estimated-id="${safeId}">
                         ${isMobile ? formatAbbreviated(estimated, displayCurrency) : mBTLE.format.currency(estimated)}
                     </td>
-                    <td class="p-2">
+                    
+                    <td class="p-1 md:p-2 w-[55px] md:w-28">
                         <input type="number" step="0.01" data-id="${safeId}" data-section="${safeSection}" data-field="actual" value="${toDisp(item.actual || 0).toFixed(2)}" 
-                               class="w-full bg-blue-50/50 rounded-lg border-none font-mono font-bold text-emerald-600 focus:ring-0 no-spinner" placeholder="0.00">
+                               class="w-full bg-blue-50/50 rounded-md border-none font-mono font-bold text-[10px] md:text-xs text-emerald-600 focus:ring-0 no-spinner text-right p-1" placeholder="0">
                     </td>
-                    <td class="p-2 text-right font-mono font-black" data-variance-id="${safeId}">
+                    
+                    <td class="p-1 md:p-2 w-[50px] md:w-28 text-right font-mono font-black text-[10px] md:text-xs" data-variance-id="${safeId}">
                         ${isMobile ? formatAbbreviated(variance, displayCurrency) : mBTLE.format.currency(variance)}
                     </td>
-                    <td class="p-2 text-center">
-                        <button onclick="handleRemoveItem('${safeSection}', '${safeId}')" class="text-slate-200 hover:text-rose-500 transition-colors">
+                    
+                    <td class="p-1 md:p-2 text-center w-[30px] md:w-10">
+                        <button onclick="handleRemoveItem('${safeSection}', '${safeId}')" class="text-slate-200 hover:text-rose-500 transition-colors scale-75 md:scale-100">
                             ${mBTAssets.trash}
                         </button>
                     </td>
@@ -959,25 +1095,27 @@ function getAbbreviatedName(name, maxLen = 25) {
         }
     };
 
-    /* --- 4. Render Orchestration: Global UI drawing logic --- */
+/* --- 4. Render Orchestration: Global UI drawing logic --- */
     function renderBudgetSections() {
         if (!budget || !budget.sections) return '';
         return Object.entries(budget.sections).map(([name, section]) => {
+            // Logic Resolution: Responsive Table Headers
+            // Note the dual width classes (e.g., w-[50px] md:w-28) to handle the mobile shift
             const bodyContent = `
                 <div class="table-container overflow-x-auto no-scrollbar">
-                    <table class="w-full text-xs border-collapse min-w-[800px]">
-                        <thead class="sticky-th bg-white text-slate-400 font-black uppercase tracking-tighter border-b border-slate-100">
+                    <table class="w-full border-collapse min-w-full table-fixed md:table-auto">
+                        <thead class="sticky-th bg-white text-slate-400 font-black uppercase tracking-tighter border-b border-slate-100 text-[8px] md:text-[10px]">
                             <tr>
-                                <th class="p-3 text-center w-12">Crew</th>
-                                <th class="p-3 w-8"></th> 
-                                <th class="p-3 text-left">Description</th>
-                                <th class="p-3 text-center w-16">Qty</th>
-                                <th class="p-3 text-center w-20">Unit</th>
-                                <th class="p-3 text-left w-32">Rate</th>
-                                <th class="p-3 text-left w-28 font-black">Estimated</th>
-                                <th class="p-3 text-left w-28">Actual</th>
-                                <th class="p-3 text-right w-28">Variance</th>
-                                <th class="p-3 w-10"></th>
+                                <th class="p-2 text-center w-[40px] md:w-12">Crew</th>
+                                <th class="p-2 w-[30px] md:w-8"></th> 
+                                <th class="p-2 text-left">Description</th>
+                                <th class="p-2 text-center w-[35px] md:w-16">Qty</th>
+                                <th class="p-2 text-center w-[40px] md:w-20">Unit</th>
+                                <th class="p-2 text-right md:text-left w-[50px] md:w-32">Rate</th>
+                                <th class="p-2 text-right md:text-left w-[55px] md:w-28 font-black">Est</th>
+                                <th class="p-2 text-right md:text-left w-[55px] md:w-28">Act</th>
+                                <th class="p-2 text-right w-[50px] md:w-28">Var</th>
+                                <th class="p-2 w-[30px] md:w-10"></th>
                             </tr>
                         </thead>
                         <tbody data-section-body="${name}">
@@ -1942,23 +2080,23 @@ function getSettingsTabContent(tabName) {
                 ${!hasPhone && !hasEmail ? '<span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest italic text-center p-4 bg-slate-50 rounded-xl w-full border border-dashed border-slate-200">Pending Personnel Resolution</span>' : ''}
             </div>`;
 
-        const content = `
+			const content = `
             <form id="crewProfileForm" class="space-y-6">
                 <div class="text-center relative">
                     <div class="w-24 h-24 mx-auto rounded-[32px] bg-slate-900 flex items-center justify-center text-white font-black text-4xl shadow-2xl border-4 border-white rotate-3">
                         ${crew.name ? RenderEngine.esc(crew.name.substring(0,1).toUpperCase()) : '?'}
                     </div>
-                    <h3 class="text-xl font-black text-slate-900 mt-4 uppercase tracking-tighter">${RenderEngine.esc(crew.name || 'Anonymous Personnel')}</h3>
+                    <h3 class="text-xl font-black text-slate-900 mt-4 uppercase tracking-tighter">${RenderEngine.esc(crew.name || 'Unknown')}</h3>
                     <p class="text-[10px] text-blue-600 font-black uppercase tracking-widest bg-blue-50 inline-block px-3 py-1 rounded-full mt-1">${RenderEngine.esc(item.description)}</p>
                 </div>
                 ${actionsBar}
                 <div class="bg-slate-50 p-5 rounded-3xl border border-slate-100 space-y-4">
                     <div class="flex justify-between items-center mb-2">
-                        <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Digital Profile</h4>
-                        <button type="button" id="importContactBtn" class="text-[10px] font-black uppercase tracking-widest text-blue-600 hover:text-blue-800 transition-colors flex items-center gap-2">${mBTAssets.plus} Native Import</button>
+                        <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Profile</h4>
+                        <button type="button" id="importContactBtn" class="text-[10px] font-black uppercase tracking-widest text-blue-600 hover:text-blue-800 transition-colors flex items-center gap-2">${mBTAssets.plus} Import</button>
                     </div>
                     <div class="space-y-3">
-                        <input type="text" id="crewName" value="${RenderEngine.esc(crew.name || '')}" placeholder="LEGAL FULL NAME" class="w-full p-3 bg-white border-none rounded-xl shadow-sm text-xs font-black uppercase tracking-tighter outline-none focus:ring-4 focus:ring-blue-50 transition-all">
+                        <input type="text" id="crewName" value="${RenderEngine.esc(crew.name || '')}" placeholder="FULL NAME" class="w-full p-3 bg-white border-none rounded-xl shadow-sm text-xs font-black uppercase tracking-tighter outline-none focus:ring-4 focus:ring-blue-50 transition-all">
                         <div class="grid grid-cols-2 gap-3">
                             <input type="tel" id="crewPhone" value="${RenderEngine.esc(crew.phone || '')}" placeholder="PHONE" class="w-full p-3 bg-white border-none rounded-xl shadow-sm text-xs font-mono font-bold outline-none focus:ring-4 focus:ring-blue-50 transition-all">
                             <input type="email" id="crewEmail" value="${RenderEngine.esc(crew.email || '')}" placeholder="EMAIL" class="w-full p-3 bg-white border-none rounded-xl shadow-sm text-xs font-mono font-bold outline-none focus:ring-4 focus:ring-blue-50 transition-all">
@@ -1966,12 +2104,12 @@ function getSettingsTabContent(tabName) {
                     </div>
                 </div>
                 <div class="pt-4 flex justify-between items-center gap-4">
-                    <button type="button" class="text-rose-500 text-[10px] font-black uppercase tracking-widest hover:bg-rose-50 px-4 py-3 rounded-2xl transition-all" onclick="window.clearCrewAssignment('${itemId}', '${sectionName}')">Remove Member</button>
-                    <button type="submit" class="flex-grow py-4 bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest rounded-2xl shadow-xl hover:bg-black transition-all active:scale-95">Verify & Synchronize</button>
+                    <button type="button" class="text-rose-500 text-[10px] font-black uppercase tracking-widest hover:bg-rose-50 px-4 py-3 rounded-2xl transition-all" onclick="window.clearCrewAssignment('${itemId}', '${sectionName}')">Remove</button>
+                    <button type="submit" class="flex-grow py-4 bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest rounded-2xl shadow-xl hover:bg-black transition-all active:scale-95">Save</button>
                 </div>
             </form>`;
 
-        mBTME.open('crewProfile', 'Personnel Profile', content, 'max-w-sm');
+        mBTME.open('crewProfile', '', content, 'max-w-sm', { hideHeader: true });
 
         document.getElementById('importContactBtn')?.addEventListener('click', async () => {
             if ('contacts' in navigator && 'ContactsManager' in window) {
@@ -2355,22 +2493,22 @@ window.showSettingsModal = function(tab = 'general') {
     ];
 
     const tabNav = tabs.map(t => 
-        `<button onclick="showSettingsModal('${t.id}')" class="flex items-center gap-2 px-3 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${tab === t.id ? 'bg-slate-900 text-white shadow-md' : 'text-slate-400 hover:bg-slate-100'}">
-            <span class="scale-75">${t.icon}</span> ${t.label}
+        `<button onclick="showSettingsModal('${t.id}')" class="flex-1 flex items-center justify-center gap-2 h-9 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${tab === t.id ? 'bg-slate-900 text-white shadow-md' : 'text-slate-400 hover:bg-slate-100 hover:text-slate-600'}">
+            <span class="scale-75">${t.icon}</span> <span>${t.label}</span>
         </button>`
     ).join('');
 
-    const content = `
-        <div class="flex flex-col h-full bg-slate-50/50">
-            <div class="flex gap-2 p-3 border-b border-slate-100 bg-white overflow-x-auto no-scrollbar shrink-0 justify-center">
+   const content = `
+        <div class="flex flex-col h-[400px] bg-slate-50/50">
+            <div class="flex gap-2 p-3 border-b border-slate-100 bg-white shrink-0">
                 ${tabNav}
             </div>
-            <div class="flex-grow p-6 overflow-y-auto no-scrollbar">
+            <div class="flex-grow p-4 overflow-y-auto no-scrollbar">
                 ${getSettingsTabContent(tab)}
             </div>
         </div>`;
 
-    // Note: Renamed title to 'Settings'
+    // Window title: 'Settings'
     mBTME.open('settingsModal', 'Settings', content, 'max-w-xl');
     
     if(tab === 'database') mBTME.attachSearch('dbSearchInput', 'dbListBody', mBTOG.rates, (r) => `<tr><td class="p-2 font-bold text-slate-700 border-b border-slate-50">${r.description}</td><td class="p-2 text-right font-mono text-slate-500 border-b border-slate-50">${mBTLE.format.currency(r.rate)}</td></tr>`);
