@@ -761,7 +761,7 @@ paperPlane: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke=
                 { description: 'Composer', unit: 'Flat', rate: 200000 },
                 { description: 'Music Supervisor', unit: 'Flat', rate: 100000 }
             ];
-        }
+        },
     };
     mBTOG.init();
 
@@ -842,6 +842,41 @@ paperPlane: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke=
             return { assigned, message: `${assigned} personnel synchronized` };
         }
     };
+
+/* --- 3a. Template & Database Logic Manager --- */
+const mBTDBM = {
+    // --- Template Logic ---
+    getTemplates: function() {
+        const defaults = {
+            'Commercial': { items: [{ description: 'Director', rate: 1500, unit: 'Day' }, { description: 'DOP', rate: 1200, unit: 'Day' }] },
+            'Music Video': { items: [{ description: 'Director', rate: 800, unit: 'Day' }, { description: 'Editor', rate: 600, unit: 'Flat' }] }
+        };
+        const stored = JSON.parse(localStorage.getItem('mBT_templates') || '{}');
+        return { ...defaults, ...stored };
+    },
+    saveTemplate: function(name, items) {
+        const current = this.getTemplates();
+        // Remove from defaults if overriding, or just save to custom
+        const custom = JSON.parse(localStorage.getItem('mBT_templates') || '{}');
+        custom[name] = { items: items };
+        localStorage.setItem('mBT_templates', JSON.stringify(custom));
+    },
+    deleteTemplate: function(name) {
+        if(['Commercial', 'Music Video'].includes(name)) return alert('Cannot delete default templates.');
+        const custom = JSON.parse(localStorage.getItem('mBT_templates') || '{}');
+        delete custom[name];
+        localStorage.setItem('mBT_templates', JSON.stringify(custom));
+        return true;
+    },
+    // --- Helper for UI ---
+    renderTemplateOptions: function(selected) {
+        return Object.keys(this.getTemplates()).map(k => 
+            `<option value="${k}" ${k === selected ? 'selected' : ''}>${k}</option>`
+        ).join('');
+    }
+};
+
+
 /* ========= v19.55 CONNECTIVE TISSUE: Logic Resolution Utilities ========= */
 
     /* --- 1. Project Inventory Resolution --- */
@@ -930,6 +965,8 @@ function handleDuplicateProject() {
     render();
 }
 console.log("TIER 3 complete");
+
+
 
 
 /* ========= v19.54 TIER 4: Atomic Render Pipeline v19.55 ========= */
@@ -1282,26 +1319,74 @@ function handleRemoveItem(sectionName, itemId) {
     }
 }
 
-// Logic Resolution: Modal for adding new line items.
+// Logic Resolution: Modal for adding new line items from Open Gate.
 function showItemSelectorModal(sectionName) {
-    const presetName = prompt("Enter Item Description:");
-    if(!presetName) return;
-    const section = budget.sections[sectionName];
-    if(!section) return;
-    const newItem = {
-        id: 'item_' + Date.now(),
-        description: presetName,
-        quantity: 1,
-        unit: 'Day',
-        rate: 0,
-        multiplier: 1,
-        actual: 0,
-        crew: { name: '', phone: '', email: '' },
-        rateType: 'negotiable'
+    // Define the commit handler globally for HTML access
+    window._commitAddItem = (desc, rate, unit) => {
+        const section = budget.sections[sectionName];
+        if (!section) return;
+        const newItem = {
+            id: 'item_' + Date.now(),
+            description: desc || 'New Item',
+            quantity: 1,
+            unit: unit || 'Day',
+            rate: parseFloat(rate) || 0,
+            multiplier: 1,
+            actual: 0,
+            crew: { name: '', phone: '', email: '' },
+            rateType: 'negotiable'
+        };
+        section.items.push(newItem);
+        mBTME.close('itemSelectorModal');
+        mBTLE.reconcile();
+        render();
     };
-    section.items.push(newItem);
-    mBTLE.reconcile();
-    render();
+
+    const rates = mBTOG.rates || [];
+    
+    // Custom filter logic to preserve the 'Create Custom' button dynamically
+    window._filterItemSelector = (val) => {
+        const container = document.getElementById('ogItemList');
+        if(!container) return;
+        const term = val.toLowerCase();
+        const filtered = rates.filter(r => r.description.toLowerCase().includes(term));
+        
+        const customBtn = `
+            <button onclick="window._commitAddItem('${RenderEngine.esc(val)}', 0, 'Day')" class="w-full text-left p-3 rounded-lg border border-dashed border-indigo-200 text-indigo-600 hover:bg-indigo-50 transition-all mb-2 flex justify-between items-center group">
+                <span class="text-[10px] font-black uppercase tracking-widest">+ Create "${RenderEngine.esc(val) || 'New Item'}"</span>
+            </button>`;
+
+        const listHtml = filtered.map(r => `
+            <button onclick="window._commitAddItem('${RenderEngine.esc(r.description)}', ${r.rate}, '${r.unit}')" class="w-full text-left p-3 rounded-lg hover:bg-slate-50 border border-transparent hover:border-slate-100 transition-all flex justify-between items-center group border-b border-slate-50 last:border-0">
+                <span class="text-[10px] font-bold text-slate-700 uppercase">${r.description}</span>
+                <span class="text-[9px] font-mono text-slate-400 group-hover:text-blue-500 font-bold">${mBTLE.format.currency(r.rate)} / ${r.unit}</span>
+            </button>
+        `).join('');
+        
+        container.innerHTML = customBtn + listHtml;
+    };
+
+    const content = `
+        <div class="flex flex-col h-[500px]">
+            <div class="p-4 border-b border-slate-100 bg-slate-50">
+                <input type="text" oninput="window._filterItemSelector(this.value)" placeholder="SEARCH OPEN GATE..." class="w-full p-3 bg-white border border-slate-200 rounded-xl text-[10px] font-black uppercase tracking-widest outline-none focus:ring-2 focus:ring-indigo-500 transition-all" autofocus>
+            </div>
+            <div id="ogItemList" class="flex-grow overflow-y-auto p-2 bg-white no-scrollbar">
+                <button onclick="window._commitAddItem('New Item', 0, 'Day')" class="w-full text-left p-3 rounded-lg border border-dashed border-slate-200 text-slate-400 hover:text-indigo-600 hover:border-indigo-200 hover:bg-indigo-50 transition-all mb-2 flex justify-between items-center group">
+                    <span class="text-[10px] font-black uppercase tracking-widest">+ Create Custom</span>
+                </button>
+                ${rates.map(r => `
+                    <button onclick="window._commitAddItem('${RenderEngine.esc(r.description)}', ${r.rate}, '${r.unit}')" class="w-full text-left p-3 rounded-lg hover:bg-slate-50 border border-transparent hover:border-slate-100 transition-all flex justify-between items-center group border-b border-slate-50 last:border-0">
+                        <span class="text-[10px] font-bold text-slate-700 uppercase">${r.description}</span>
+                        <span class="text-[9px] font-mono text-slate-400 group-hover:text-blue-500 font-bold">${mBTLE.format.currency(r.rate)} / ${r.unit}</span>
+                    </button>
+                `).join('')}
+            </div>
+        </div>`;
+
+    mBTME.open('itemSelector', `Add to ${sectionName}`, content, 'max-w-md');
+    // Auto-focus logic for better UX
+    setTimeout(() => document.querySelector('#itemSelectorModal input')?.focus(), 50);
 }
 
 // Logic Resolution: Placeholders for event listeners handled by Tier 6.
@@ -1336,31 +1421,31 @@ console.log("TIER 4 render defined", typeof render);
 
 
 
-
 /* ================= TIER 5: MODULE CONTROLLERS & SMART FEATURES ================= */
-
     /* ========= v19.55 mBTME: MODAL ENGINE (Window orchestration) ========= */
     const mBTME = {
         containerId: 'global-modal-container',
         // --- Registry Resolution: Pointing to Tier 1 Asset Registry ---
         icons: { close: mBTAssets.close },
-        
+      
         // --- Portal Generation: Dynamic injection of overlay layers ---
-open: function(id, title, contentHtml, maxWidth = 'max-w-2xl', options = {}) {
+        open: function(id, title, contentHtml, maxWidth = 'max-w-2xl', options = {}) {
             const container = document.getElementById(this.containerId);
             if (!container) return;
-            const modalId = `${id}Modal`;
-            this.close(modalId, true); 
+            
+            // Logic Resolution: Prevent background scrolling while modal is active
+            document.body.style.overflow = 'hidden';
 
+            const modalId = `${id}Modal`;
+            this.close(modalId, true);
             // UPDATED HEADER: Uses grid to perfectly center the title while keeping the close button right-aligned
             const headerHtml = options.hideHeader ? '' : `
-                <div class="p-4 border-b border-slate-100 bg-white rounded-t-2xl relative grid grid-cols-[1fr_auto_1fr] items-center">
+                <div class="p-4 border-b border-slate-100 bg-white rounded-t-2xl relative grid grid-cols-[1fr_auto_1fr] items-center shrink-0">
                     <div></div> <h2 class="text-xs font-black uppercase tracking-widest text-slate-800 text-center">${title}</h2>
                     <div class="text-right">
                         <button onclick="mBTME.close('${modalId}')" class="text-slate-400 hover:text-red-500 transition-all p-1 rounded-md hover:bg-slate-50">${this.icons.close}</button>
                     </div>
                 </div>`;
-
             const fullHtml = `
                 <div id="${modalId}" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[999] transition-opacity duration-300 opacity-0 hidden" tabindex="-1">
                     <div id="${modalId}Content" class="bg-white rounded-2xl shadow-2xl w-full ${maxWidth} mx-auto max-h-[95vh] flex flex-col transition-all duration-300 transform scale-95 border border-white/20 overflow-hidden">
@@ -1368,24 +1453,26 @@ open: function(id, title, contentHtml, maxWidth = 'max-w-2xl', options = {}) {
                         <div class="flex-grow overflow-hidden ${options.noPadding ? 'p-0' : 'p-0'}" id="${modalId}Body">${contentHtml}</div>
                     </div>
                 </div>`;
-
             container.insertAdjacentHTML('beforeend', fullHtml);
             const modal = document.getElementById(modalId);
             modal.classList.remove('hidden');
-            setTimeout(() => { 
-                modal.classList.remove('opacity-0'); 
-                document.getElementById(`${modalId}Content`)?.classList.remove('scale-95'); 
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                document.getElementById(`${modalId}Content`)?.classList.remove('scale-95');
             }, 10);
-            
+          
             modal.addEventListener('click', (e) => { if (e.target === modal) this.close(modalId); });
             if (options.onOpen && typeof options.onOpen === 'function') setTimeout(options.onOpen, 50);
             return modal;
         },
-
         // --- Portal Dissolution: Synchronized removal of UI layers ---
         close: function(modalId, instant = false) {
             const modal = document.getElementById(modalId);
             if (!modal) return;
+            
+            // Logic Resolution: Release body scroll if no other modals are open
+            if(document.querySelectorAll('[id$="Modal"]').length <= 1) document.body.style.overflow = '';
+
             if (instant) { modal.remove(); } else {
                 modal.classList.add('opacity-0');
                 document.getElementById(`${modalId}Content`)?.classList.add('scale-95');
@@ -1393,7 +1480,6 @@ open: function(id, title, contentHtml, maxWidth = 'max-w-2xl', options = {}) {
                 setTimeout(() => { modal.remove(); if(typeof mBTLE !== 'undefined') mBTLE.reconcile(); }, 300);
             }
         },
-
         // --- Search Integration: Filtering logic for modal lists ---
         attachSearch: function(inputId, listContainerId, dataItems, renderRowFn) {
             const input = document.getElementById(inputId);
@@ -1406,46 +1492,42 @@ open: function(id, title, contentHtml, maxWidth = 'max-w-2xl', options = {}) {
             });
         }
     };
-
     /* ========= v19.54 mBTPublisher: DOCUMENT ENGINE ========= */
     const mBTPublisher = {
         defaultPdfOptions: { margin: 0.3, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' } },
-        
+      
         // --- Structural Blueprints: HTML fragments for document construction ---
         fragments: {
             header: (meta) => `<div style="border-bottom: 2px solid black; padding-bottom: 10px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: flex-end; font-family: Arial, sans-serif;"><div style="width: 65%;"><h1 style="margin:0; font-size: 24px; text-transform: uppercase; font-weight: 900;">${meta.productionTitle || 'PROJECT'}</h1><div style="font-size: 12px; font-weight: bold;">${meta.productionCompany || ''}</div></div><div style="width: 30%; text-align: right; font-size: 11px;"><div><strong>DATE:</strong> ${meta.shootDate || 'TBD'}</div><div style="background: #000; color: #fff; padding: 4px 8px; display: inline-block; margin-top: 5px; font-size: 12px;"><strong>CALL:</strong> ${meta.crewCallTime || '00:00'}</div></div></div>`,
             table: (title, headers, rows) => `<div style="margin-bottom: 15px; font-family: Arial, sans-serif; page-break-inside: avoid;"><div style="background: #333; color: white; padding: 4px 8px; font-size: 10px; font-weight: 900; text-transform: uppercase;">${title}</div><table style="width: 100%; border-collapse: collapse; font-size: 10px; border: 1px solid black;"><thead><tr style="background: #eee; border-bottom: 1px solid black;">${headers.map(h => `<th style="text-align: left; padding: 6px; border-right: 1px solid #ccc;">${h}</th>`).join('')}</tr></thead><tbody>${rows.map(row => `<tr style="border-bottom: 1px solid #eee;">${Object.values(row).filter(v => typeof v !== 'object').map(val => `<td style="padding: 4px 6px; border-right: 1px solid #eee;">${val || ''}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`,
             note: (title, content) => `<div style="border: 1px solid black; margin-bottom: 15px; font-family: Arial, sans-serif; page-break-inside: avoid;"><div style="background: #eee; padding: 4px 8px; font-size: 10px; font-weight: 900; border-bottom: 1px solid black; text-transform: uppercase;">${title}</div><div style="padding: 8px; font-size: 11px; white-space: pre-wrap;">${content || 'N/A'}</div></div>`
         },
-
         // --- Template UI: Rendering of interactive form fields ---
         renderEditor: function(doc) {
             if (!doc?.content?.data) return '<div class="p-8 text-center text-slate-400 font-bold uppercase text-xs tracking-widest">Initialization Resolution Required</div>';
             const data = doc.content.data;
             const docId = doc.id;
             const common = "w-full p-2.5 border border-slate-200 rounded-xl text-xs font-bold bg-slate-50 focus:bg-white focus:ring-4 focus:ring-blue-50 transition-all outline-none";
-            
+          
             const renderInput = (sec, key, spec) => `<div class="mb-4"><label class="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">${spec.label}</label>${spec.type === 'textarea' ? `<textarea class="${common}" rows="3" onchange="updateMtempField('${docId}', '${sec}', '${key}', this.value)">${data[sec]?.[key] || ''}</textarea>` : `<input type="${spec.type}" value="${data[sec]?.[key] || ''}" class="${common}" onchange="updateMtempField('${docId}', '${sec}', '${key}', this.value)">`}</div>`;
-            
+          
             const renderTable = (key, spec) => {
                 const rows = data.tables?.[key] || spec.rows || [];
                 let tbl = `<div class="mb-6 overflow-hidden border border-slate-100 rounded-2xl shadow-sm"><div class="bg-slate-50 p-3 border-b border-slate-100 flex justify-between items-center"><h4 class="font-black text-[10px] text-slate-500 uppercase tracking-widest">${spec.label}</h4></div><table class="w-full text-[11px]"><thead><tr class="bg-white text-slate-400 font-black uppercase tracking-tighter">${spec.columns.map(c => `<th class="p-2 text-left">${c}</th>`).join('')}<th class="w-8"></th></tr></thead><tbody>`;
-                rows.forEach((r, rIdx) => { 
-                    tbl += `<tr class="group border-t border-slate-50">${r.map((c, cIdx) => `<td class="p-0"><input value="${RenderEngine.esc(c)}" class="w-full p-2 bg-transparent border-none outline-none focus:bg-blue-50/50 transition-all" onchange="updateMtempTable('${docId}', '${key}', ${rIdx}, ${cIdx}, this.value)"></td>`).join('')}<td class="p-1 text-center"><button class="text-slate-200 hover:text-red-500 font-black text-lg" onclick="removeMtempRow('${docId}', '${key}', ${rIdx})">×</button></td></tr>`; 
+                rows.forEach((r, rIdx) => {
+                    tbl += `<tr class="group border-t border-slate-50">${r.map((c, cIdx) => `<td class="p-0"><input value="${RenderEngine.esc(c)}" class="w-full p-2 bg-transparent border-none outline-none focus:bg-blue-50/50 transition-all" onchange="updateMtempTable('${docId}', '${key}', ${rIdx}, ${cIdx}, this.value)"></td>`).join('')}<td class="p-1 text-center"><button class="text-slate-200 hover:text-red-500 font-black text-lg" onclick="removeMtempRow('${docId}', '${key}', ${rIdx})">×</button></td></tr>`;
                 });
                 return tbl + `</tbody></table><button onclick="addMtempRow('${docId}', '${key}')" class="w-full p-2 bg-slate-50 text-[9px] font-black uppercase text-blue-600 hover:bg-blue-50 transition-all">${mBTAssets.plus} Add Entry</button></div>`;
             };
-
             let left = "", right = "";
-            Object.keys(doc.content.fields || {}).forEach(sec => { 
-                if (sec !== 'tables') { 
-                    left += `<div class="bg-white p-5 rounded-2xl border border-slate-100 mb-6 shadow-sm"><h3 class="font-black text-slate-800 uppercase text-[10px] tracking-widest border-b border-slate-50 pb-3 mb-4">${sec.replace('_', ' ')}</h3>${Object.keys(doc.content.fields[sec]).map(f => renderInput(sec, f, doc.content.fields[sec][f])).join('')}</div>`; 
-                } 
+            Object.keys(doc.content.fields || {}).forEach(sec => {
+                if (sec !== 'tables') {
+                    left += `<div class="bg-white p-5 rounded-2xl border border-slate-100 mb-6 shadow-sm"><h3 class="font-black text-slate-800 uppercase text-[10px] tracking-widest border-b border-slate-50 pb-3 mb-4">${sec.replace('_', ' ')}</h3>${Object.keys(doc.content.fields[sec]).map(f => renderInput(sec, f, doc.content.fields[sec][f])).join('')}</div>`;
+                }
             });
             if (doc.content.fields?.tables) Object.keys(doc.content.fields.tables).forEach(t => right += renderTable(t, doc.content.fields.tables[t]));
             return `<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 p-6">${left}<div>${right}</div></div>`;
         },
-
         // --- Data Interpretation: Resolving template tags with live data ---
         interpret: function(doc) {
             const data = doc.content.data || {};
@@ -1460,7 +1542,6 @@ open: function(id, title, contentHtml, maxWidth = 'max-w-2xl', options = {}) {
                 return data[pts[0]]?.[pts[1]] || '';
             });
         },
-
         // --- Information Synchronization: Automated budget-to-doc mapping ---
         processAutofill: function(doc, budgetData) {
             const fields = doc.content.fields; const data = doc.content.data;
@@ -1486,10 +1567,9 @@ open: function(id, title, contentHtml, maxWidth = 'max-w-2xl', options = {}) {
                 data.tables.crew = rows;
             }
             // --- Brain Handshake: Sync math before finishing autofill ---
-            if(typeof mBTLE !== 'undefined') mBTLE.reconcile(); 
+            if(typeof mBTLE !== 'undefined') mBTLE.reconcile();
             return doc;
         },
-
         // --- Export Protocols: File generation sequences ---
         toXLSX: function(data, sheet, file) {
             const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(data), sheet);
@@ -1504,9 +1584,7 @@ open: function(id, title, contentHtml, maxWidth = 'max-w-2xl', options = {}) {
             document.body.appendChild(a); a.click(); document.body.removeChild(a);
         }
     };
-
 /* ========= v19.54 mBTDB: STUDIO BUILDER ENGINE ========= */
-
 window.mBTDB = {
     state: { currentDocId: null, isEditing: false, grid: null, history: [], historyPointer: -1 },
     // --- 1. Registry Resolution: Tier 1 Asset Map ---
@@ -1517,13 +1595,13 @@ window.mBTDB = {
         close: mBTAssets.close, wand: mBTAssets.wand, grid: mBTAssets.grid,
         list: mBTAssets.list
     },
-    
+  
     templates: {
         'default': { label: "Blank Document", widgets: [{ id: 'meta_header', x: 0, y: 0, w: 12, h: 2, type: 'header' }] },
         'callSheet': {
             label: "Daily Call Sheet",
             widgets: [
-                { id: 'contacts', x: 0, y: 0, w: 12, h: 4, type: 'contacts', label: "Key Contacts" }, 
+                { id: 'contacts', x: 0, y: 0, w: 12, h: 4, type: 'contacts', label: "Key Contacts" },
                 { id: 'logistics', x: 0, y: 4, w: 12, h: 6, type: 'logistics', label: "Logistics" },
                 { id: 'schedule', x: 0, y: 10, w: 12, h: 8, type: 'schedule', label: "Schedule" },
                 { id: 'cast', x: 0, y: 18, w: 6, h: 8, type: 'cast', label: "Cast List" },
@@ -1532,7 +1610,6 @@ window.mBTDB = {
             ]
         }
     },
-
     // --- 2. Portal Orchestration ---
     open: function(docId) {
         this.state.currentDocId = docId;
@@ -1549,38 +1626,35 @@ window.mBTDB = {
             this.renderFrame();
         }
     },
-
-    close: function() { 
+    close: function() {
         if (this.state.isEditing) {
             this._saveLayoutState();
             this.state.isEditing = false;
         }
-        if (typeof mBTME !== 'undefined') mBTME.close('documentViewerModal'); 
-        document.body.classList.remove('print-mode'); 
+        if (typeof mBTME !== 'undefined') mBTME.close('documentViewerModal');
+        document.body.classList.remove('print-mode');
         this.state.currentDocId = null;
         if (typeof mBTLE !== 'undefined') mBTLE.reconcile();
         if (typeof render === 'function') render();
     },
-
     toggleEditMode: function() {
-        if (this.state.isEditing && this.state.grid) this._saveLayoutState(); 
+        if (this.state.isEditing && this.state.grid) this._saveLayoutState();
         this.state.isEditing = !this.state.isEditing;
         const container = document.getElementById('mBTDB_Workspace');
         const grid = this.state.grid;
         if (container && grid) {
-            if (this.state.isEditing) { 
-                container.classList.add('editing-mode'); 
-                grid.setStatic(false); 
-                grid.enable(); 
-            } else { 
-                container.classList.remove('editing-mode'); 
-                grid.setStatic(true); 
-                grid.disable(); 
+            if (this.state.isEditing) {
+                container.classList.add('editing-mode');
+                grid.setStatic(false);
+                grid.enable();
+            } else {
+                container.classList.remove('editing-mode');
+                grid.setStatic(true);
+                grid.disable();
             }
             this._updateHeaderButtons();
         }
     },
-
     _saveLayoutState: function() {
         if (!this.state.grid) return;
         const doc = budget.documents.find(d => d.id === this.state.currentDocId);
@@ -1590,25 +1664,22 @@ window.mBTDB = {
         });
         this._triggerSave();
     },
-
     // --- 3. Publishing & Intelligence Hub ---
     previewDoc: function(mode) {
         const doc = budget.documents.find(d => d.id === this.state.currentDocId);
-        if (!doc || !typeof mBTPublisher !== 'undefined') return;
+        if (!doc || typeof mBTPublisher === 'undefined') return;
         if(mBTME.showLoader) mBTME.showLoader("Generating Professional Preview...");
         mBTPublisher.generateFastPreview(mode, doc.content.data, (jpegURL) => {
             if(mBTME.hideLoader) mBTME.hideLoader();
-            mBTME.open('previewModal', `Industry View: ${mode.toUpperCase()}`, 
+            mBTME.open('previewModal', `Industry View: ${mode.toUpperCase()}`,
                 `<div class="flex flex-col items-center bg-slate-900 h-full p-8 overflow-auto no-scrollbar"><img src="${jpegURL}" id="finalPreviewImage" class="shadow-2xl border border-black max-w-full h-auto mb-24 bg-white rounded-sm"><div class="fixed bottom-10 left-1/2 -translate-x-1/2 flex gap-4 z-[10001]"><button onclick="mBTPublisher.downloadJPEG('${jpegURL}', '${doc.label}')" class="flex items-center gap-3 bg-blue-600 text-white px-8 py-3 rounded-full font-black text-[10px] uppercase tracking-widest shadow-2xl hover:bg-blue-500 transition-all active:scale-95">Download JPEG</button><button onclick="mBTDB.sendToDistribution('${jpegURL}')" class="flex items-center gap-3 bg-emerald-600 text-white px-8 py-3 rounded-full font-black text-[10px] uppercase tracking-widest shadow-2xl hover:bg-emerald-500 transition-all active:scale-95">Send to Crew</button><button onclick="mBTME.close('previewModal')" class="bg-white text-slate-900 px-8 py-3 rounded-full font-black text-[10px] uppercase tracking-widest shadow-2xl hover:bg-slate-100 transition-all">Close</button></div></div>`, 'w-full h-full');
         });
     },
-
-    sendToDistribution: function(jpegURL) { 
-        const doc = budget.documents.find(d => d.id === this.state.currentDocId); 
-        this.close(); 
-        if(window.openDocumentShareSelector) openDocumentShareSelector(doc.id); 
+    sendToDistribution: function(jpegURL) {
+        const doc = budget.documents.find(d => d.id === this.state.currentDocId);
+        this.close();
+        if(window.openDocumentShareSelector) openDocumentShareSelector(doc.id);
     },
-
     autoFillWidget: function(type, docId) {
         if(!confirm(`Auto-fill ${type}? Current items will be preserved.`)) return;
         if(type === 'contacts') {
@@ -1624,7 +1695,6 @@ window.mBTDB = {
         }
         this.renderFrame();
     },
-
     autoFillWeather: async function(docId, index, name) {
         const btn = document.getElementById(`w-btn-${index}`);
         if(btn) btn.innerHTML = `<span class="animate-spin inline-block">...</span>`;
@@ -1643,7 +1713,6 @@ window.mBTDB = {
             this.renderFrame();
         } catch(e) { alert("Weather Synchronization Failure"); if(btn) btn.innerHTML = this.icons.cloud; }
     },
-
     // --- 4. Render Engine Handshake ---
     renderFrame: function() {
         const doc = budget.documents.find(d => d.id === this.state.currentDocId);
@@ -1661,20 +1730,17 @@ window.mBTDB = {
             this.state.grid.on('change', () => this._triggerSave());
         }, 50);
     },
-
     _loadWidgetsToGrid: function(doc) {
         const grid = this.state.grid; grid.removeAll(); grid.batchUpdate();
         doc.content.widgets.forEach(w => { if(w.type === 'header') return; grid.addWidget({ x: w.x, y: w.y, w: w.w, h: w.h, content: this._generateWidgetHTML(w, doc), id: w.id }); });
         grid.commit();
     },
-
     _generateWidgetHTML: function(widget, doc) {
         const data = doc.content.data; const cleanTitle = widget.label || (widget.type.charAt(0).toUpperCase() + widget.type.slice(1));
         let tools = ''; if(widget.type === 'contacts') tools += `<button onclick="mBTDB.toggleVertical('${widget.id}')" class="p-1.5 hover:bg-slate-100 rounded-md transition-colors">${widget.vertical ? this.icons.grid : this.icons.list}</button>`;
         tools += `<button onclick="mBTDB.autoFillWidget('${widget.type}', '${doc.id}')" class="p-1.5 text-purple-600 hover:bg-purple-50 rounded-md transition-all">${this.icons.wand}</button>`;
         return `<div class="grid-stack-item-content group"><div class="widget-header flex justify-between items-center p-2 bg-white border-b border-slate-50"><input value="${cleanTitle}" onchange="mBTDB.updateWidgetLabel('${doc.id}', '${widget.id}', this.value)" class="bg-transparent border-none font-black text-[10px] uppercase tracking-widest text-slate-500 w-32 outline-none focus:text-blue-600 transition-colors"><div class="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">${tools}<button onclick="mBTDB.deleteWidget('${widget.id}')" class="p-1.5 hover:text-red-600 transition-colors">${this.icons.trash}</button></div></div><div class="widget-body flex-grow overflow-y-auto no-scrollbar relative text-slate-800 h-full bg-white">${this._getContentForWidget(widget, doc)}</div></div>`;
     },
-
     _getContentForWidget: function(widget, doc) {
         const data = doc.content.data;
         if (widget.type === 'contacts') return this._renderContacts(doc.id, data, widget);
@@ -1685,40 +1751,32 @@ window.mBTDB = {
         if (widget.type === 'richText') return this._renderRichText(doc.id, widget.id, data);
         return '';
     },
-
     _renderMetaHeader: function(doc) {
         const d = doc.content.data;
         const html = `<div class="flex flex-wrap gap-4 items-end justify-between px-2"><div class="w-full sm:w-auto flex-grow"><input value="${d.meta.productionTitle || ''}" onchange="mBTDB.updateData('${doc.id}', 'meta.productionTitle', this.value)" class="text-3xl font-black uppercase w-full outline-none text-slate-900 bg-transparent mb-1 tracking-tighter" placeholder="PRODUCTION TITLE"><div class="flex gap-4"><div class="flex items-center gap-1.5"><span class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Date</span><input type="date" value="${d.meta.shootDate}" onchange="mBTDB.updateData('${doc.id}', 'meta.shootDate', this.value); mBTDB.renderFrame();" class="mbt-input w-auto font-bold border-none bg-slate-50 px-2 rounded-md"></div><div class="flex items-center gap-1.5"><span class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Call</span><input type="text" value="${d.meta.crewCallTime}" onchange="mBTDB.updateData('${doc.id}', 'meta.crewCallTime', this.value)" onblur="mBTDB.formatTime(this)" class="mbt-input w-16 bg-yellow-300 font-black border-none text-center rounded-md" placeholder="00:00"></div><div class="flex items-center gap-1.5 bg-slate-100 px-2.5 py-0.5 rounded-md"><span class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Day</span><span class="text-xs font-black text-slate-800">${this.calcShootDay(d.meta.shootDate)}</span></div></div></div><div class="w-48 text-right"><input value="${d.meta.productionCompany || ''}" onchange="mBTDB.updateData('${doc.id}', 'meta.productionCompany', this.value)" class="mbt-input text-right font-bold border-none text-slate-500 italic" placeholder="Production Company"></div></div>`;
         const container = document.getElementById('mBTDB_MetaArea'); if(container) container.innerHTML = html;
     },
-
     _renderContacts: function(docId, d, widget) {
         const gridClass = widget.vertical ? "grid-cols-1" : "grid-cols-1 sm:grid-cols-3";
         const renderField = (path, val, label, role) => `<div class="relative group"><div class="flex justify-between items-center mb-1"><div class="text-[9px] font-black text-slate-400 uppercase tracking-widest">${label}</div><div class="cursor-pointer text-slate-300 hover:text-blue-500 transition-colors" onclick="mBTDB.pullFromOpenGate('${docId}', '${path}', '${role}')">${this.icons.user}</div></div><input value="${val||''}" onchange="mBTDB.updateData('${docId}', '${path}', this.value)" class="mbt-input font-bold border-slate-100 hover:border-slate-300 focus:bg-white transition-all"></div>`;
         return `<div class="grid ${gridClass} gap-4 p-4 h-full overflow-y-auto no-scrollbar">${renderField('contacts.director', d.contacts.director, 'Director', 'director')}${renderField('contacts.producer', d.contacts.producer, 'Producer', 'producer')}${renderField('contacts.ad', d.contacts.ad, '1st AD', 'ad')}</div>`;
     },
-
     _renderLogistics: function(docId, d) {
         return `<div class="flex flex-col h-full"><div class="px-4 py-2 border-b border-slate-100 bg-slate-50/50 flex gap-2 items-center justify-between"><div class="flex items-center gap-2"><span class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Sun Cycles:</span><input value="${d.meta.sunriseSunset||''}" onchange="mBTDB.updateData('${docId}','meta.sunriseSunset',this.value)" class="bg-transparent text-[10px] font-bold w-32 outline-none" placeholder="06:00 / 18:00"></div></div><div class="flex-grow overflow-y-auto p-4 space-y-4 no-scrollbar">${(d.locations||[]).map((l,i) => `<div class="flex flex-wrap gap-4 items-start border-b border-slate-50 pb-4 mb-2"><div class="w-full sm:w-1/3 space-y-2"><input value="${l.name}" onchange="mBTDB.updateRow('${docId}','locations',${i},'name',this.value)" class="mbt-input font-black uppercase text-xs" placeholder="LOCATION NAME"><input type="text" value="${l.timeOnLocation||''}" onchange="mBTDB.updateRow('${docId}','locations',${i},'timeOnLocation',this.value)" class="mbt-input text-[10px]" placeholder="Time at Location"></div><div class="w-full sm:w-1/3"><textarea onchange="mBTDB.updateRow('${docId}','locations',${i},'address',this.value)" class="mbt-input h-20 resize-none text-[10px] leading-relaxed" placeholder="Full Address...">${l.address}</textarea></div><div class="w-full sm:w-1/4 flex-grow"><div class="relative"><textarea onchange="mBTDB.updateRow('${docId}','locations',${i},'weather',this.value)" class="mbt-input h-20 resize-none text-[10px] bg-blue-50/30 border-blue-100" placeholder="Weather Forecast...">${l.weather}</textarea><button id="w-btn-${i}" onclick="mBTDB.autoFillWeather('${docId}', ${i}, '${l.name}')" class="absolute bottom-2 right-2 bg-white text-blue-600 p-1.5 rounded-lg shadow-sm border border-blue-100 hover:bg-blue-600 hover:text-white transition-all">${this.icons.cloud}</button></div></div></div>`).join('')}<button onclick="mBTDB.addRow('${docId}','locations','loc')" class="w-full py-2 bg-white text-[9px] font-black uppercase tracking-widest text-slate-400 hover:text-blue-600 hover:border-blue-200 rounded-xl border border-dashed border-slate-200 transition-all flex items-center justify-center gap-2">${this.icons.plus} Add Location</button></div></div>`;
     },
-
     _renderSchedule: function(docId, d) {
         return `<div class="h-full flex flex-col"><div class="flex-grow overflow-auto no-scrollbar"><table class="w-full text-[10px] border-collapse min-w-[700px]"><thead><tr class="bg-slate-50 text-slate-400 font-black uppercase tracking-tighter"><th class="p-2 w-16 text-center">Time</th><th class="p-2 w-12 text-center">Scn</th><th class="p-2 text-left">Description / Scene Note</th><th class="p-2 w-32 text-left">Cast</th><th class="p-2 w-12 text-center">I/E</th><th class="p-2 w-32 text-left">Location</th><th class="p-2"></th></tr></thead><tbody class="divide-y divide-slate-50">${d.schedule.map((row, i) => `<tr class="${row.type==='meal'?'bg-amber-50/50':''}"><td><input value="${row.time}" onchange="mBTDB.updateRow('${docId}','schedule',${i},'time',this.value)" onblur="mBTDB.formatTime(this)" class="w-full text-center font-black text-slate-900 bg-transparent border-0 outline-none"></td>${row.type==='meal'? `<td colspan="4"><input value="${row.description}" onchange="mBTDB.updateRow('${docId}','schedule',${i},'description',this.value)" class="w-full text-center font-black uppercase text-amber-700 bg-transparent border-0 outline-none tracking-widest"></td>`: `<td><input value="${row.scene}" onchange="mBTDB.updateRow('${docId}','schedule',${i},'scene',this.value)" class="w-full text-center font-bold bg-transparent border-0 outline-none"></td><td><input value="${row.description}" onchange="mBTDB.updateRow('${docId}','schedule',${i},'description',this.value)" class="w-full bg-transparent border-0 outline-none font-medium px-2"></td><td><input value="${row.cast}" onchange="mBTDB.updateRow('${docId}','schedule',${i},'cast',this.value)" class="w-full bg-transparent border-0 outline-none italic"></td><td><input value="${row.ie}" onchange="mBTDB.updateRow('${docId}','schedule',${i},'ie',this.value)" class="w-full text-center text-[9px] font-black uppercase bg-transparent border-0 outline-none"></td>`}<td><input value="${row.loc}" onchange="mBTDB.updateRow('${docId}','schedule',${i},'loc',this.value)" class="w-full bg-transparent border-0 outline-none text-slate-500"></td><td class="text-center widget-controls"><button onclick="mBTDB.deleteRow('${docId}','schedule',${i}, 'schedule')" class="text-slate-200 hover:text-red-500 transition-colors">${this.icons.trash}</button></td></tr>`).join('')}</tbody></table></div><div class="flex gap-2 p-2 bg-slate-50/50 border-t border-slate-100 widget-controls"><button onclick="mBTDB.addRow('${docId}','schedule','shot')" class="flex-1 bg-white border border-slate-200 text-emerald-600 text-[9px] font-black uppercase tracking-widest py-2 rounded-xl hover:shadow-sm transition-all">+ Add Shot</button><button onclick="mBTDB.addRow('${docId}','schedule','meal')" class="flex-1 bg-white border border-slate-200 text-amber-600 text-[9px] font-black uppercase tracking-widest py-2 rounded-xl hover:shadow-sm transition-all">+ Add Meal</button></div></div>`;
     },
-
     _renderCrew: function(docId, d) {
         return `<div class="h-full flex flex-col"><div class="flex-grow overflow-auto no-scrollbar"><table class="w-full text-[10px] border-collapse"><thead><tr class="bg-slate-50 text-slate-400 font-black uppercase tracking-widest"><th class="p-2 text-left">Department</th><th class="p-2 text-left">Position</th><th class="p-2 text-left">Name</th><th class="p-2 text-left">Contact</th><th class="p-2 w-20 text-center">Call</th><th class="p-2"></th></tr></thead><tbody class="divide-y divide-slate-50">${(d.crew||[]).map((c,i) => `<tr class="hover:bg-slate-50/30 transition-colors"><td class="p-1"><input value="${c.department||''}" onchange="mBTDB.updateRow('${docId}','crew',${i},'department',this.value)" class="w-full font-black uppercase text-[9px] text-slate-400 bg-transparent border-0 outline-none"></td><td class="p-1"><input value="${c.position||''}" onchange="mBTDB.updateRow('${docId}','crew',${i},'position',this.value)" class="w-full font-bold text-slate-700 bg-transparent border-0 outline-none"></td><td class="p-1"><div class="relative flex items-center"><input value="${c.name||''}" onchange="mBTDB.updateRow('${docId}','crew',${i},'name',this.value)" class="w-full font-black text-slate-900 bg-transparent border-0 outline-none"><div class="cursor-pointer text-slate-200 hover:text-blue-500 ml-1" onclick="mBTDB.pullFromOpenGate('${docId}','crew.${i}.name','${c.position||'crew'}')">${this.icons.user}</div></div></td><td class="p-1"><input value="${c.contact||''}" onchange="mBTDB.updateRow('${docId}','crew',${i},'contact',this.value)" class="w-full text-[9px] text-slate-500 bg-transparent border-0 outline-none font-mono"></td><td class="p-1"><input type="text" value="${c.callTime||''}" onchange="mBTDB.updateRow('${docId}','crew',${i},'callTime',this.value)" onblur="mBTDB.formatTime(this)" class="w-full text-center font-black bg-transparent border-0 outline-none text-blue-600"></td><td class="p-1 text-center widget-controls"><button onclick="mBTDB.deleteRow('${docId}','crew',${i}, 'crew')" class="text-slate-200 hover:text-red-500">${this.icons.trash}</button></td></tr>`).join('')}</tbody></table></div><div class="p-2 border-t border-slate-100 widget-controls bg-slate-50/30"><button onclick="mBTDB.addRow('${docId}','crew','person')" class="w-full bg-white border border-slate-200 text-slate-500 text-[9px] font-black uppercase tracking-widest py-2 rounded-xl transition-all hover:text-blue-600">+ Add Crew Member</button></div></div>`;
     },
-
     _renderTalent: function(docId, d) {
         return `<div class="h-full flex flex-col"><div class="flex-grow overflow-auto no-scrollbar"><table class="w-full text-[10px] border-collapse min-w-[500px]"><thead><tr class="bg-slate-50 text-slate-400 font-black uppercase tracking-widest"><th class="p-2 text-left">Character</th><th class="p-2 text-left">Actor Name</th><th class="p-2 text-left">Contact</th><th class="p-2 w-10 text-center">Status</th><th class="p-2 w-16 text-center">PU</th><th class="p-2 w-16 text-center">HMU</th><th class="p-2 w-16 text-center text-blue-600">SET</th><th class="p-2"></th></tr></thead><tbody class="divide-y divide-slate-50">${(d.cast||[]).map((c,i) => `<tr><td class="p-1"><input value="${c.character||''}" onchange="mBTDB.updateRow('${docId}','cast',${i},'character',this.value)" class="w-full font-bold text-slate-500 bg-transparent border-0 outline-none px-2"></td><td class="p-1"><div class="relative flex items-center"><input value="${c.actor||''}" onchange="mBTDB.updateRow('${docId}','cast',${i},'actor',this.value)" class="w-full font-black text-slate-900 bg-transparent border-0 outline-none"><div class="cursor-pointer text-slate-200 hover:text-blue-500 ml-1" onclick="mBTDB.pullFromOpenGate('${docId}','cast.${i}.actor','actor')">${this.icons.user}</div></div></td><td class="p-1"><input value="${c.contact||''}" onchange="mBTDB.updateRow('${docId}','cast',${i},'contact',this.value)" class="w-full text-[9px] font-mono bg-transparent border-0 outline-none text-slate-400"></td><td class="p-1"><input value="${c.status||'W'}" onchange="mBTDB.updateRow('${docId}','cast',${i},'status',this.value)" class="w-full text-center font-black uppercase bg-transparent border-0 outline-none"></td><td class="p-1"><input type="text" value="${c.pickup||''}" onchange="mBTDB.updateRow('${docId}','cast',${i},'pickup',this.value)" onblur="mBTDB.formatTime(this)" class="w-full text-center bg-transparent border-0 outline-none"></td><td class="p-1"><input type="text" value="${c.hmu||''}" onchange="mBTDB.updateRow('${docId}','cast',${i},'hmu',this.value)" onblur="mBTDB.formatTime(this)" class="w-full text-center bg-transparent border-0 outline-none"></td><td class="p-1"><input type="text" value="${c.setCall||''}" onchange="mBTDB.updateRow('${docId}','cast',${i},'setCall',this.value)" onblur="mBTDB.formatTime(this)" class="w-full text-center font-black bg-yellow-100 rounded border-0 outline-none text-slate-900"></td><td class="p-1 text-center widget-controls"><button onclick="mBTDB.deleteRow('${docId}','cast',${i}, 'cast')" class="text-slate-200 hover:text-red-500">${this.icons.trash}</button></td></tr>`).join('')}</tbody></table></div><div class="p-2 border-t border-slate-100 widget-controls bg-slate-50/30"><button onclick="mBTDB.addRow('${docId}','cast','talent')" class="w-full bg-white border border-slate-200 text-slate-500 text-[9px] font-black uppercase tracking-widest py-2 rounded-xl hover:text-purple-600 transition-all">+ Add Talent</button></div></div>`;
     },
-
     _renderRichText: function(docId, widgetId, data) {
         const val = data.additional ? data.additional[widgetId] : (data[widgetId] || "");
         return `<div class="h-full flex flex-col p-2"><div class="flex-grow relative"><textarea onchange="mBTDB.updateData('${docId}', 'additional.${widgetId}', this.value)" class="w-full h-full p-2 text-xs text-slate-800 bg-transparent border-0 outline-none resize-none font-medium leading-relaxed" placeholder="Type notes...">${val||''}</textarea></div></div>`;
     },
-
     // --- 5. Navigation & Logic Controllers ---
     toggleVertical: function(wid) { const doc = budget.documents.find(d => d.id === this.state.currentDocId); const w = doc.content.widgets.find(x => x.id === wid); if(w) { w.vertical = !w.vertical; this.renderFrame(); } },
     updateWidgetLabel: function(docId, widgetId, newLabel) { const doc = budget.documents.find(d => d.id === docId); const w = doc.content.widgets.find(x => x.id === widgetId); if(w) { w.label = newLabel; this._triggerSave(); } },
@@ -1727,17 +1785,17 @@ window.mBTDB = {
     addRow: function(docId, section, type, presetData) { const doc = budget.documents.find(d => d.id === docId); if(!doc.content.data[section]) doc.content.data[section] = []; let newRow = presetData || { id: Date.now() }; if(!presetData) { if(section==='schedule') newRow = { ...newRow, type, time:"", scene:"", description: type==='meal'?"LUNCH":"New Shot", cast:"", ie:"", loc:"", note:"" }; else if(section==='cast') newRow = { ...newRow, character:"", actor:"", status:"W", pickup:"", hmu:"", setCall:"", contact:"" }; else if(section==='crew') newRow = { ...newRow, department:"", position:"", name:"", contact:"", callTime:"" }; else if(section==='locations') newRow = { ...newRow, name:"", address:"", weather:"", hospital:"", mapLink:"", timeOnLocation:"" }; } doc.content.data[section].push(newRow); this._triggerSave(); this.renderFrame(); const widget = doc.content.widgets.find(w => w.type === (section === 'locations' ? 'logistics' : section)); if(widget) this._autoResizeWidget(widget.id); },
     deleteRow: function(docId, section, index, widgetType) { const doc = budget.documents.find(d => d.id === docId); doc.content.data[section].splice(index, 1); this._triggerSave(); this.renderFrame(); const widget = doc.content.widgets.find(w => w.type === (widgetType || section)); if(widget) this._autoResizeWidget(widget.id); },
     deleteWidget: function(id) { if(!confirm("Delete widget?")) return; const doc = budget.documents.find(d => d.id === this.state.currentDocId); const el = document.querySelector(`.grid-stack-item[gs-id="${id}"]`); if(el) this.state.grid.removeWidget(el); doc.content.widgets = doc.content.widgets.filter(w => w.id !== id); this._triggerSave(); },
-    addWidget: function() { 
+    addWidget: function() {
         const select = document.getElementById('mBTDB_WidgetSelect');
         if(!select) return;
-        const type = select.value; 
-        const doc = budget.documents.find(d => d.id === this.state.currentDocId); 
-        const w = { id: type+'_'+Date.now(), type, w: 6, h: 4, autoPosition: true, label: type.toUpperCase() }; 
-        const html = this._generateWidgetHTML(w, doc); 
-        const node = this.state.grid.addWidget({ w: 6, h: 4, content: html, id: w.id, autoPosition: true }); 
-        w.x = node.gridstackNode.x; w.y = node.gridstackNode.y; 
-        doc.content.widgets.push(w); 
-        this._triggerSave(); 
+        const type = select.value;
+        const doc = budget.documents.find(d => d.id === this.state.currentDocId);
+        const w = { id: type+'_'+Date.now(), type, w: 6, h: 4, autoPosition: true, label: type.toUpperCase() };
+        const html = this._generateWidgetHTML(w, doc);
+        const node = this.state.grid.addWidget({ w: 6, h: 4, content: html, id: w.id, autoPosition: true });
+        w.x = node.gridstackNode.x; w.y = node.gridstackNode.y;
+        doc.content.widgets.push(w);
+        this._triggerSave();
     },
     _autoResizeWidget: function(widgetId) { const el = document.querySelector(`.grid-stack-item[gs-id="${widgetId}"]`); if(!el) return; const body = el.querySelector('.widget-body'); if(!body) return; const currentHeight = body.style.height; body.style.height = 'auto'; const contentHeight = body.scrollHeight + 45; body.style.height = currentHeight; let newH = Math.ceil(contentHeight / 60); if(newH < 3) newH = 3; const doc = budget.documents.find(d => d.id === this.state.currentDocId); const w = doc.content.widgets.find(x => x.id === widgetId); if(w && w.h !== newH) { w.h = newH; this.state.grid.update(el, { h: newH }); this._triggerSave(); } },
     formatTime: function(el) { let val = el.value.replace(/[^0-9]/g, ''); if(val.length === 4) { el.value = val.substring(0,2) + ':' + val.substring(2,4); el.dispatchEvent(new Event('change')); } },
@@ -1748,83 +1806,103 @@ window.mBTDB = {
     snapshotDoc: function() { const doc = budget.documents.find(d => d.id === this.state.currentDocId); const newDoc = JSON.parse(JSON.stringify(doc)); newDoc.id = 'doc_' + Date.now(); newDoc.label = doc.label + " (Copy)"; budget.documents.push(newDoc); mBTDB.open(newDoc.id); },
     pullFromOpenGate: function(docId, path, roleQuery) { if (typeof mBTOG === 'undefined') return alert("Database Resolution Failure."); const matches = mBTOG.contacts.filter(c => c.role?.toLowerCase().includes(roleQuery.toLowerCase())); if (matches.length === 0) return alert(`No ${roleQuery} found.`); const apply = (c) => { const parts = path.split('.'); if(parts.length === 3 && (parts[0] === 'crew' || parts[0] === 'cast')) { this.updateRow(docId, parts[0], parseInt(parts[1]), parts[2], c.name); if(c.contact) this.updateRow(docId, parts[0], parseInt(parts[1]), 'contact', c.contact); } else { this.updateData(docId, path, `${c.name} ${c.contact ? '('+c.contact+')' : ''}`); } this.renderFrame(); }; if (matches.length === 1) apply(matches[0]); else { const choice = prompt(matches.map((c,i)=>`${i+1}. ${c.name}`).join('\n')); const idx = parseInt(choice)-1; if(matches[idx]) apply(matches[idx]); } },
     printToPDF: function(mode) { if (typeof mBTPublisher === 'undefined') return alert("Publisher Resolution Failure."); const original = document.getElementById('mBTDB_Workspace'); const clone = original.cloneNode(true); clone.id = "mBTDB_Print_Container"; clone.classList.remove('editing-mode'); clone.classList.add('print-container', mode === 'standard' ? 'print-standard' : 'print-graphic'); const originalInputs = original.querySelectorAll('input, textarea'); const cloneInputs = clone.querySelectorAll('input, textarea'); originalInputs.forEach((input, i) => { if(cloneInputs[i]) cloneInputs[i].value = input.value; }); document.body.appendChild(clone); mBTPublisher.exportToPDF('mBTDB_Print_Container', `${budget.projectName}_CallSheet`); setTimeout(() => { document.body.removeChild(clone); }, 2000); },
-
     // --- 6. Switchboard Integration ---
     _updateHeaderButtons: function() {
         const btnContainer = document.getElementById('mBTDB_Buttons'); if(!btnContainer) return; const isEd = this.state.isEditing;
         const previewMenu = `<div class="relative inline-block"><button onclick="this.nextElementSibling.classList.toggle('hidden');" class="bg-slate-800 text-white px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-slate-700 flex items-center gap-2 transition-all outline-none"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>Preview</button><div class="hidden absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-2xl border border-slate-100 z-[9999] overflow-hidden"><button onclick="mBTDB.previewDoc('standard'); this.parentElement.classList.add('hidden')" class="flex items-center gap-3 w-full text-left px-4 py-3 text-[10px] text-slate-600 hover:bg-blue-50 hover:text-blue-700 font-black uppercase tracking-widest border-b border-slate-50 transition-colors">Standard Layout</button><button onclick="mBTDB.previewDoc('graphic'); this.parentElement.classList.add('hidden')" class="flex items-center gap-3 w-full text-left px-4 py-3 text-[10px] text-slate-600 hover:bg-blue-50 hover:text-blue-700 font-black uppercase tracking-widest transition-colors">Graphic View</button></div></div>`;
         btnContainer.innerHTML = `<div class="flex gap-1 mr-4 border-r border-slate-700 pr-4"><button onclick="mBTDB.undo()" class="p-2 hover:bg-slate-800 rounded-lg text-slate-400 transition-colors" title="Undo">${this.icons.undo}</button><button onclick="mBTDB.redo()" class="p-2 hover:bg-slate-800 rounded-lg text-slate-400 transition-colors" title="Redo">${this.icons.redo}</button><button onclick="mBTDB.snapshotDoc()" class="p-2 hover:bg-blue-900/50 rounded-lg text-blue-400 transition-colors" title="Clone">${this.icons.copy}</button><button onclick="mBTDB.saveTemplate()" class="p-2 hover:bg-emerald-900/50 rounded-lg text-emerald-400 transition-colors" title="Save Template">${this.icons.save}</button></div>${isEd ? `<div class="flex items-center bg-slate-800 rounded-lg px-2 mr-2"><select id="mBTDB_WidgetSelect" class="bg-transparent text-[9px] font-black uppercase tracking-widest text-white h-8 outline-none cursor-pointer"><option value="richText">Note Block</option><option value="schedule">Schedule</option><option value="cast">Cast List</option><option value="crew">Crew List</option><option value="logistics">Logistics</option><option value="contacts">Contacts</option></select><button onclick="mBTDB.addWidget()" class="text-emerald-400 p-2 hover:scale-110 transition-transform">${this.icons.plus}</button></div>` : ''}<button onclick="mBTDB.toggleEditMode()" class="px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest shadow-lg transition-all ${isEd ? 'bg-emerald-600 text-white' : 'bg-blue-600 text-white hover:bg-blue-500'}">${isEd ? 'Save Layout' : 'Modify Layout'}</button>${previewMenu}<button onclick="mBTDB.close()" class="bg-red-900/80 text-red-200 p-2 rounded-lg hover:bg-red-600 hover:text-white transition-all ml-2">${this.icons.close}</button>`;
     },
-
-    _triggerSave: function() { 
-        if(typeof mBTLE !== 'undefined') mBTLE.reconcile(); 
+    _triggerSave: function() {
+        if(typeof mBTLE !== 'undefined') mBTLE.reconcile();
         if(typeof saveBudget === 'function') saveBudget();
     },
-
-    _generateDefaultData: function() { 
-        return { meta: { productionTitle: budget.projectName||"", productionCompany: budget.company||"", shootDate: new Date().toISOString().split('T')[0], crewCallTime: "08:00" }, contacts: { director: "", producer: "", ad: "" }, schedule: [], crew: [], cast: [], locations: [{name:"Base Camp", address:"", weather:"", hospital:"", mapLink:""}], additional: {} }; 
+    _generateDefaultData: function() {
+        return { meta: { productionTitle: budget.projectName||"", productionCompany: budget.company||"", shootDate: new Date().toISOString().split('T')[0], crewCallTime: "08:00" }, contacts: { director: "", producer: "", ad: "" }, schedule: [], crew: [], cast: [], locations: [{name:"Base Camp", address:"", weather:"", hospital:"", mapLink:""}], additional: {} };
     }
 };
 
 /* ======= TIER 5: Part 2: Module Controllers & Intelligence ======== */
-
     /* ========= mBTTrash: RECYCLE BIN ENGINE (State Normalization) ========= */
     // Logic Resolution: Manages the temporary deletion and restoration of production assets.
     window.mBTTrash = {
         state: { activeTab: 'documents' },
         // --- Registry Resolution: Pulling from consolidated Tier 1 assets ---
-        trashIcons: { 
-            folder: mBTAssets.folder, 
-            file: mBTAssets.file, 
-            trash: mBTAssets.trash 
+        trashIcons: {
+            folder: mBTAssets.folder,
+            file: mBTAssets.file,
+            trash: mBTAssets.trash
         },
-        
+      
         open: function(tab = 'documents') {
-            this.state.activeTab = tab; 
-            const type = this.state.activeTab; 
+            this.state.activeTab = tab;
+            const type = this.state.activeTab;
             const docTrash = budget.documentTrash || [];
             const projectTrash = JSON.parse(localStorage.getItem(trashKey) || '[]');
-
+            const renderDocumentRow = (doc) => `
+                <div class="flex items-center justify-between p-3 bg-white rounded-xl border border-slate-100 shadow-sm group">
+                    <div class="flex items-center gap-3 overflow-hidden">
+                        <div class="text-2xl opacity-60">${mBTAssets.file}</div>
+                        <div class="overflow-hidden">
+                            <div class="text-[10px] font-black uppercase text-slate-700 truncate">${RenderEngine.esc(doc.label)}</div>
+                            <div class="text-[9px] text-slate-400 font-bold">Type: ${doc.type || 'Custom'}</div>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button onclick="mBTTrash.restoreDocument('${doc.id}')" class="px-3 py-1.5 bg-emerald-100 text-emerald-700 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-emerald-200 transition-all">Restore</button>
+                        <button onclick="mBTTrash.permanentDeleteDocument('${doc.id}')" class="px-3 py-1.5 bg-rose-100 text-rose-700 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-rose-200 transition-all">Delete</button>
+                    </div>
+                </div>`;
+            const documentsHTML = docTrash.length === 0 ?
+                '<div class="h-full flex flex-col items-center justify-center opacity-20">'+this.trashIcons.trash+'<p class="font-black uppercase text-[10px] mt-2">Bin is Empty</p></div>' :
+                '<div class="space-y-2">'+docTrash.map(renderDocumentRow).join('')+'</div>';
+            const projectsHTML = projectTrash.length === 0 ?
+                '<div class="h-full flex flex-col items-center justify-center opacity-20">'+this.trashIcons.folder+'<p class="font-black uppercase text-[10px] mt-2">No Projects</p></div>' :
+                '<div class="space-y-2">Project restoration protocol pending...</div>';
             const content = `
-                <div class="flex flex-col h-[500px]">
+                <div class="flex flex-col max-h-[90vh]">
                     <div class="flex border-b bg-gray-50">
                         <button onclick="mBTTrash.open('documents')" class="flex-1 py-3 text-xs font-black uppercase ${type==='documents'?'bg-white text-blue-600 border-b-2 border-blue-600':'text-gray-400'}">Documents (${docTrash.length})</button>
                         <button onclick="mBTTrash.open('projects')" class="flex-1 py-3 text-xs font-black uppercase ${type==='projects'?'bg-white text-blue-600 border-b-2 border-blue-600':'text-gray-400'}">Projects (${projectTrash.length})</button>
                     </div>
                     <div class="flex-grow overflow-y-auto p-4 bg-slate-50 no-scrollbar">
-                        ${(type === 'documents' ? docTrash : projectTrash).length === 0 ? 
-                            '<div class="h-full flex flex-col items-center justify-center opacity-20">'+this.trashIcons.trash+'<p class="font-black uppercase text-[10px] mt-2">Bin is Empty</p></div>' 
-                            : '<div class="space-y-2">Restoration protocol pending...</div>'
-                        }
+                        ${type === 'documents' ? documentsHTML : projectsHTML}
                     </div>
                 </div>`;
             mBTME.open('trash', 'Recycle Bin', content, 'max-w-lg', { noPadding: true, hideHeader: true });
         },
-
-        trashDocument: function(docId) { 
-            const idx = budget.documents.findIndex(d => d.id === docId); 
-            if (idx > -1) { 
-                const doc = budget.documents.splice(idx, 1)[0]; 
-                if(!budget.documentTrash) budget.documentTrash = []; 
-                budget.documentTrash.push(doc); 
-                if(typeof render === 'function') render(); 
-            } 
+        restoreDocument: function(docId) {
+            const idx = budget.documentTrash.findIndex(d => d.id === docId);
+            if (idx > -1) {
+                const doc = budget.documentTrash.splice(idx, 1)[0];
+                if (!budget.documents) budget.documents = [];
+                budget.documents.push(doc);
+                saveBudget();
+                render();
+                this.open('documents'); // Refresh view
+            }
+        },
+        permanentDeleteDocument: function(docId) {
+            if (!confirm("Permanently delete this document? This cannot be undone.")) return;
+            const idx = budget.documentTrash.findIndex(d => d.id === docId);
+            if (idx > -1) {
+                budget.documentTrash.splice(idx, 1);
+                saveBudget();
+                this.open('documents'); // Refresh view
+            }
         }
     };
-
     /* --- 1. Interaction Handlers (UI-to-Logic Bridge) --- */
     window.toggleRateType = function(itemId, sectionName) {
         const item = budget.sections[sectionName].items.find(i => i.id === itemId);
         if (!item) return;
         item.rateType = (item.rateType === 'negotiable') ? 'fixed' : 'negotiable';
         if(typeof pushToHistory === 'function') pushToHistory(`Resolution: Synchronized ${item.description} to ${item.rateType}`);
-        render(); 
+        render();
     };
-
     function handleUpdate(sectionName, itemId, field, value, description) {
         const item = budget.sections[sectionName]?.items.find(i => i.id === itemId);
         if (!item) return;
-        
+      
         let val = value;
         if (['rate', 'actual'].includes(field)) {
             const parsed = parseFloat(value) || 0;
@@ -1832,31 +1910,29 @@ window.mBTDB = {
         } else if (field === 'quantity' || field === 'multiplier') {
             val = parseFloat(value) || (field === 'multiplier' ? 1 : 0);
         }
-        
+      
         if (field === 'unit') {
             if (value === 'Flat' && item.unit !== 'Flat') {
                 item._storedQuantity = item.quantity;
-                item.quantity = 1; 
+                item.quantity = 1;
             } else if (item.unit === 'Flat' && value !== 'Flat') {
                 if (item._storedQuantity !== undefined) item.quantity = item._storedQuantity;
             }
         }
-
         item[field] = val;
         if(typeof pushToHistory === 'function') pushToHistory(description);
-        
+      
         if (field === 'unit') render();
-        else if (field !== 'description') if(typeof mBTLE !== 'undefined') mBTLE.reconcile(); 
+        else if (field !== 'description') if(typeof mBTLE !== 'undefined') mBTLE.reconcile();
     }
-
     /* --- 2. Intelligence Suite (AI Tools & Consultant Interface) --- */
     function showAIToolsModal() {
         const provider = getSelectedProvider();
         const key = getStoredApiKey(provider);
         const isOnline = navigator.onLine;
         const aiContext = budget.aiContext || { saveHistory: true, analysis: "", chat: [] };
-        
-        const trayHTML = (budget.attachments || []).length > 0 ? 
+      
+        const trayHTML = (budget.attachments || []).length > 0 ?
             `<div class="mb-4 p-3 bg-slate-50 rounded-2xl border border-slate-100">
                 <div class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Attached Context</div>
                 <div class="flex flex-col gap-1.5 max-h-32 overflow-y-auto no-scrollbar">
@@ -1870,25 +1946,23 @@ window.mBTDB = {
                         </div>`).join('')}
                 </div>
             </div>` : `<div class="mb-4 p-5 border-2 border-dashed border-slate-100 rounded-2xl text-center text-slate-300 text-[10px] font-black uppercase tracking-widest">No Context Files Linked</div>`;
-
-        const savedChat = aiContext.chat.length > 0 ? 
-            aiContext.chat.map(msg => `<div class="ai-message ${msg.role === 'user' ? 'user' : 'assistant'}">${msg.content}</div>`).join('') : 
+        const savedChat = aiContext.chat.length > 0 ?
+            aiContext.chat.map(msg => `<div class="ai-message ${msg.role === 'user' ? 'user' : 'assistant'}">${msg.content}</div>`).join('') :
             `<div class="text-[10px] font-black uppercase tracking-widest text-slate-300 text-center mt-20 italic">Initialize Consultation Protocol...</div>`;
-
-        const content = !key ? 
+        const content = !key ?
             `<div class="text-center py-12 flex flex-col items-center">
                 <div class="text-slate-200 mb-6 scale-[1.5]">${mBTAssets.money}</div>
                 <h3 class="text-sm font-black uppercase tracking-widest text-slate-800 mb-2">Neural Link Required</h3>
                 <p class="text-xs text-slate-400 mb-8 max-w-[200px] font-bold uppercase leading-relaxed">Configure your API key in Settings to activate the AI Consultant.</p>
                 <button onclick="mBTME.close('aiToolsModal'); showSettingsModal('ai');" class="bg-blue-600 text-white px-8 py-3 rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-xl active:scale-95 transition-all">Link AI Provider</button>
-            </div>` : 
-            `<div class="grid grid-cols-1 md:grid-cols-2 gap-6 h-full">
-                <div class="p-6 bg-slate-50 rounded-3xl border border-slate-100 flex flex-col h-[500px] md:h-auto">
+            </div>` :
+            `<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="p-6 bg-slate-50 rounded-3xl border border-slate-100 flex flex-col">
                     <h4 class="font-black text-slate-800 mb-4 flex items-center gap-3 text-xs uppercase tracking-widest">${mBTAssets.doctor} Budget Doctor</h4>
                     <button id="analyzeBudgetBtn" class="w-full bg-emerald-600 text-white py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-xl hover:bg-emerald-700 transition-all ${!isOnline ? 'opacity-30 cursor-not-allowed' : ''}" ${!isOnline ? 'disabled' : ''}>${isOnline ? 'Analyze Production' : 'Analysis Cache Offline'}</button>
                     <div id="aiAnalysisOutput" class="mt-6 text-xs text-slate-600 flex-grow overflow-y-auto no-scrollbar border-t border-slate-200 pt-4 leading-relaxed">${aiContext.analysis || ''}</div>
                 </div>
-                <div class="p-6 bg-slate-50 rounded-3xl border border-slate-100 flex flex-col h-[500px] md:h-auto">
+                <div class="p-6 bg-slate-50 rounded-3xl border border-slate-100 flex flex-col">
                     <h4 class="font-black text-slate-800 mb-4 flex items-center gap-3 text-xs uppercase tracking-widest">${mBTAssets.chat} Consultant</h4>
                     ${trayHTML}
                     <div id="aiChatHistory" class="flex-grow overflow-y-auto no-scrollbar bg-white rounded-2xl p-4 mb-4 border border-slate-100 shadow-inner">${savedChat}</div>
@@ -1898,291 +1972,631 @@ window.mBTDB = {
                     </form>
                 </div>
             </div>`;
-
         mBTME.open('aiTools', 'Intelligence Suite', content, 'max-w-5xl');
         if (key && isOnline) {
             document.getElementById('analyzeBudgetBtn')?.addEventListener('click', handleAnalyzeBudget);
             document.getElementById('aiChatForm')?.addEventListener('submit', (e) => { e.preventDefault(); handleConsultantChat(); });
         }
     }
-
-    /* --- 3. Settings Engine: Full Tab Resolution --- */
-function getSettingsTabContent(tabName) {
-        // --- Tab: General ---
-        if (tabName === 'general') {
-            const currentDateFormat = getProjectDateFormat();
-            const currentSeparator = getProjectNameSeparator();
-            return `
-                <div class="space-y-4">
-                    <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
-                        <div>
-                            <h3 class="text-[10px] font-black uppercase tracking-widest text-slate-800">Application Info</h3>
-                            <p class="text-[9px] text-slate-400 font-bold mt-0.5">Studio Build: v${APP_VERSION}</p>
-                        </div>
-                        <div class="text-slate-200 scale-150 opacity-20">${mBTAssets.money}</div>
-                    </div>
-
-                    <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm space-y-3">
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Date Format</label>
-                                <select id="dateFormatSelect" class="w-full text-[10px] p-2 bg-slate-50 border-none rounded-lg font-bold outline-none cursor-pointer">
-                                    <option value="YYYYMMDD" ${currentDateFormat === 'YYYYMMDD' ? 'selected' : ''}>YYYY-MM-DD</option>
-                                    <option value="MMDDYYYY" ${currentDateFormat === 'MMDDYYYY' ? 'selected' : ''}>MM-DD-YYYY</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Separator</label>
-                                <input type="text" id="separatorInput" maxlength="1" value="${currentSeparator}" class="w-full text-[10px] p-2 bg-slate-50 border-none rounded-lg font-bold text-center outline-none">
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="flex justify-center pt-2">
-                         <button onclick="mBTME.close('settingsModal'); showCoffeeWidget();" class="flex items-center gap-2 px-6 py-3 bg-[#FFDD00] text-black rounded-xl font-black text-[9px] uppercase tracking-widest hover:scale-105 transition-transform shadow-sm">
-                            ${mBTAssets.coffee} Support Development
-                         </button>
-                    </div>
-                </div>`;
+/* --- 3. Settings Engine: Flicker-Free & Stable-Size Resolution v19.60 --- */
+    // Helper: Renders the sub-content for the Database tab
+function renderDatabaseSubView(subTab) {
+if (subTab === 'contacts') {
+    // Calculate merged contacts once for initial render
+    const globalContacts = mBTOG.contacts || [];
+    const assignedContacts = [];
+    Object.values(budget.sections || {}).forEach(sec => {
+        sec.items.forEach(item => {
+            if (item.crew && item.crew.name) {
+                assignedContacts.push({
+                    id: 'assigned_' + item.id,
+                    name: item.crew.name,
+                    role: item.description || 'Crew',
+                    phone: item.crew.phone || '',
+                    email: item.crew.email || '',
+                    assigned: true
+                });
+            }
+        });
+    });
+    const allContacts = [...globalContacts];
+    assignedContacts.forEach(ac => {
+        if (!allContacts.some(gc => gc.name.toLowerCase() === ac.name.toLowerCase())) {
+            allContacts.push(ac);
         }
-        
-        // ... (Keep the rest of the function for 'contacts', 'ai', 'database' as they were) ...
-        if (tabName === 'contacts') {
-             return `
-                <div class="space-y-3 h-full flex flex-col">
-                    <div class="p-3 bg-indigo-50 rounded-xl border border-indigo-100 flex justify-between items-center shrink-0">
+    });
+
+    return `
+        <div class="flex flex-col h-full bg-white overflow-hidden rounded-xl border border-slate-100 shadow-sm">
+            <div class="p-3 bg-indigo-50 border-b border-indigo-100 flex flex-col gap-3 shrink-0 z-10">
+                <div class="flex justify-center gap-3 flex-wrap">
+                    <button onclick="openAddContactModal()" class="bg-indigo-200 text-indigo-800 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-indigo-300 transition-all flex items-center gap-1.5">
+                        ${mBTAssets.plus} Add
+                    </button>
+                    <input type="file" id="csvImportInput" class="hidden" accept=".csv" onchange="importContactsCSV(this)">
+                    <button onclick="document.getElementById('csvImportInput').click()" class="bg-indigo-200 text-indigo-800 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-indigo-300 transition-all flex items-center gap-1.5">
+                        ${mBTAssets.plus} Import CSV
+                    </button>
+                    <button onclick="mBTAssign.assignFromContacts()" class="bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest shadow-sm active:scale-95 transition-all">
+                        Auto-Assign
+                    </button>
+                </div>
+                <div class="relative">
+                    <input type="text" id="contactsSearchInput" placeholder="SEARCH PERSONNEL..." class="w-full p-2.5 pr-10 bg-white border border-indigo-200 rounded-xl text-[10px] font-black uppercase tracking-widest outline-none focus:ring-2 focus:ring-indigo-300 transition-all">
+                    <div class="absolute right-3 top-1/2 -translate-y-1/2 text-indigo-400 pointer-events-none">${mBTAssets.search}</div>
+                </div>
+            </div>
+            
+            <div id="contactsListBody" class="flex-grow overflow-y-auto no-scrollbar relative bg-white">
+                ${allContacts.length > 0 ? allContacts.map(c => `
+                    <div class="flex items-center justify-between p-3 border-b border-slate-50 last:border-0 hover:bg-slate-50 transition-colors group">
                         <div class="flex items-center gap-3">
-                            <div class="text-indigo-400">${mBTAssets.user}</div>
-                            <div><h3 class="font-black text-indigo-900 text-[10px] uppercase tracking-widest">Personnel DB</h3><p class="text-[8px] text-indigo-600 font-bold uppercase">Global Roster</p></div>
+                            <div class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-[10px] font-black text-slate-500 group-hover:bg-indigo-100 group-hover:text-indigo-600 transition-colors">${c.name ? c.name.charAt(0).toUpperCase() : '?'}</div>
+                            <div>
+                                <div class="text-[10px] font-black uppercase text-slate-700">${c.name}</div>
+                                <div class="text-[9px] font-bold text-slate-400">${c.role || 'No Role'}${c.assigned ? ' (Assigned)' : ''}</div>
+                            </div>
                         </div>
-                        <button onclick="mBTAssign.assignFromContacts()" class="bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest shadow-sm active:scale-95 transition-all">Auto-Assign</button>
+                        ${c.assigned ? '' : `<button onclick="deleteGlobalContact('${c.id}')" class="text-slate-300 hover:text-rose-500 transition-colors">${mBTAssets.trash}</button>`}
                     </div>
-                    <div class="flex-grow overflow-y-auto no-scrollbar border border-slate-100 rounded-xl bg-white min-h-[200px]" id="contactsListBody">
-                        <div class="h-full flex flex-col items-center justify-center text-slate-300">
-                            <div class="scale-125 mb-2 opacity-50">${mBTAssets.search}</div>
-                            <p class="text-[9px] font-black uppercase tracking-widest">No Contacts Resolved</p>
-                        </div>
+                `).join('') : `<div class="p-8 text-center text-slate-300 text-[9px] font-black uppercase tracking-widest">No Contacts Found</div>`}
+            </div>
+        </div>`;
+}
+    if (subTab === 'lineItems') {
+        return `
+            <div class="flex flex-col h-full bg-white overflow-hidden rounded-xl border border-slate-100 shadow-sm">
+                <div class="p-3 bg-slate-50 border-b border-slate-100 shrink-0 z-10">
+                    <div class="relative">
+                        <input type="text" id="dbSearchInput" placeholder="SEARCH GLOBAL RATES..." class="w-full p-2.5 pr-10 bg-white border border-slate-200 rounded-xl text-[10px] font-black uppercase tracking-widest outline-none focus:ring-2 focus:ring-blue-100 transition-all">
+                        <div class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">${mBTAssets.search}</div>
                     </div>
-                </div>`;
-        }
-
-        if (tabName === 'ai') {
-             const provider = getSelectedProvider();
-             const saveHistory = budget.aiContext?.saveHistory ?? true; // Default to true if undefined
-            return `
-                <div class="space-y-4">
-                    <div class="p-5 bg-slate-900 rounded-2xl border border-black shadow-lg text-white">
-                        <div class="flex justify-between items-start mb-4">
-                            <div>
-                                <h3 class="text-[10px] font-black uppercase tracking-widest text-slate-400">Neural Link</h3>
-                                <p class="text-[9px] text-slate-500 font-bold mt-0.5">Configure Provider Access</p>
-                            </div>
-                            <div class="text-slate-700">${mBTAssets.sparkle}</div>
-                        </div>
-                        
-                        <div class="space-y-3">
-                            <div>
-                                <label class="block text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Active Provider</label>
-                                <select id="aiProviderSelect" class="w-full bg-slate-800 text-white border-none rounded-lg p-2.5 text-[10px] font-bold outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer">
-                                    <option value="gemini" ${provider === 'gemini' ? 'selected' : ''}>Google Gemini 1.5</option>
-                                    <option value="openai" ${provider === 'openai' ? 'selected' : ''}>OpenAI GPT-4</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1.5">API Credentials</label>
-                                <input type="password" id="apiKeyInput" value="${getStoredApiKey(provider)}" class="w-full bg-slate-800 text-white border-none rounded-lg p-2.5 text-[10px] font-mono outline-none focus:ring-1 focus:ring-blue-500" placeholder="sk-...">
-                            </div>
-                            
-                            <div class="flex items-center gap-3 py-1">
-                                <div class="relative flex items-center">
-                                    <input type="checkbox" id="aiContextToggle" ${saveHistory ? 'checked' : ''} 
-                                        onchange="if(!budget.aiContext) budget.aiContext={chat:[], analysis:''}; budget.aiContext.saveHistory = this.checked; saveBudget();"
-                                        class="peer h-4 w-4 cursor-pointer appearance-none rounded border border-slate-600 bg-slate-800 checked:border-blue-500 checked:bg-blue-500 transition-all">
-                                    <svg class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-3 h-3 pointer-events-none opacity-0 peer-checked:opacity-100 text-white" viewBox="0 0 14 14" fill="none"><path d="M3 7L6 10L11 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                </div>
+                <div class="flex-grow overflow-y-auto no-scrollbar relative min-h-0 bg-white">
+                    <table class="w-full text-[10px]">
+                        <thead class="bg-slate-50 text-slate-400 font-black uppercase tracking-widest sticky top-0 z-10">
+                            <tr><th class="p-2 text-left bg-slate-50 shadow-sm">Role</th><th class="p-2 text-right bg-slate-50 shadow-sm">Base Rate</th></tr>
+                        </thead>
+                        <tbody id="dbListBody" class="divide-y divide-slate-50 bg-white">
+                            ${mBTOG.rates.map(r => `<tr><td class="p-2 font-bold text-slate-700">${r.description}</td><td class="p-2 text-right font-mono text-slate-500">${mBTLE.format.currency(r.rate)}</td></tr>`).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>`;
+    }
+    if (subTab === 'templates') {
+        const templates = Array.isArray(mBTOG.templates) ? mBTOG.templates : [];
+        return `
+            <div class="flex flex-col h-full bg-white overflow-hidden rounded-xl border border-slate-100 shadow-sm">
+                <div class="p-3 bg-indigo-50 border-b border-indigo-100 shrink-0 z-10">
+                     <div class="relative">
+                        <input type="text" id="templateSearchInput" placeholder="SEARCH TEMPLATES..." class="w-full p-2.5 pr-10 bg-white border border-indigo-200 rounded-xl text-[10px] font-black uppercase tracking-widest outline-none focus:ring-2 focus:ring-indigo-300 transition-all">
+                        <div class="absolute right-3 top-1/2 -translate-y-1/2 text-indigo-400 pointer-events-none">${mBTAssets.search}</div>
+                    </div>
+                </div>
+                <div id="templatesListBody" class="flex-grow overflow-y-auto no-scrollbar p-4 space-y-3 bg-white">
+                    ${templates.length > 0 ? templates.map(t => `
+                        <div class="p-4 bg-white rounded-xl border border-slate-100 shadow-sm flex items-center justify-between group hover:border-blue-200 transition-all">
+                            <div class="flex items-center gap-4">
+                                <div class="text-2xl">${t.icon || '📄'}</div>
+                                <div>
+                                    <h4 class="font-black text-xs uppercase tracking-widest text-slate-800">${t.label}</h4>
+                                    <p class="text-[9px] text-slate-400 font-bold mt-1">${t.cat || 'General'}</p>
                                 </div>
-                                <label for="aiContextToggle" class="text-[9px] font-bold text-slate-400 uppercase tracking-wide cursor-pointer select-none">Save Conversation Context</label>
                             </div>
-
-                            <button id="saveApiKeyBtn" onclick="const p=document.getElementById('aiProviderSelect').value; const k=document.getElementById('apiKeyInput').value; saveStoredApiKey(p,k); localStorage.setItem('${storageKeyPrefix}selectedAiProvider', p); alert('Neural Link Established');" class="w-full bg-blue-600 text-white py-3 rounded-xl font-black uppercase tracking-widest text-[9px] shadow-lg hover:bg-blue-500 transition-all mt-2">Synchronize Link</button>
+                            <button onclick="createNewDocumentFromTemplate('${t.id}')" class="px-3 py-1.5 bg-slate-50 text-[9px] font-black uppercase tracking-widest text-blue-600 rounded-lg hover:bg-blue-600 hover:text-white transition-all">
+                                Use
+                            </button>
+                        </div>
+                    `).join('') : '<div class="p-8 text-center text-slate-300 text-[9px] font-black uppercase tracking-widest">No Templates Available</div>'}
+                </div>
+            </div>`;
+    }
+    return '';
+}
+  
+function getSettingsTabContent(tabName, subTab = 'lineItems') {
+    // --- Tab: General ---
+    if (tabName === 'general') {
+        const currentDateFormat = getProjectDateFormat();
+        const currentSeparator = getProjectNameSeparator();
+        const isCompact = budget.settings?.compactMode || false;
+        const syncAoD = budget.settings?.syncAoD || false;
+      
+        window.hardResetApp = function() {
+            if(confirm('Clear cache to fix display bugs? Data is SAFE.')) {
+                if('serviceWorker' in navigator) navigator.serviceWorker.getRegistrations().then(r => r.forEach(reg => reg.unregister()));
+                caches.keys().then(n => n.forEach(name => caches.delete(name)));
+                setTimeout(() => window.location.reload(true), 500);
+            }
+        };
+        // Update: Added h-full and overflow-y-auto wrapper
+        return `
+            <div class="h-full overflow-y-auto no-scrollbar p-6 space-y-6 animate-in fade-in duration-300">
+                <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex flex-col items-center justify-center text-center gap-3">
+                    <div class="w-16 h-16 rounded-2xl shadow-lg border-2 border-slate-50 overflow-hidden bg-[#fdba35]">${mBTAssets.appLogo}</div>
+                    <div>
+                        <h3 class="text-xs font-black uppercase tracking-widest text-slate-800">MooBudget Studio</h3>
+                        <p class="text-[9px] text-slate-400 font-bold mt-1">Build v${APP_VERSION} • ${navigator.onLine ? '<span class="text-emerald-500">Online</span>' : '<span class="text-rose-500">Offline</span>'}</p>
+                    </div>
+                </div>
+                <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm space-y-3">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Date Format</label>
+                            <select id="dateFormatSelect" class="w-full text-[10px] p-2 bg-slate-50 border-none rounded-lg font-bold outline-none cursor-pointer">
+                                <option value="YYYYMMDD" ${currentDateFormat === 'YYYYMMDD' ? 'selected' : ''}>YYYY-MM-DD</option>
+                                <option value="MMDDYYYY" ${currentDateFormat === 'MMDDYYYY' ? 'selected' : ''}>MM-DD-YYYY</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Separator</label>
+                            <input type="text" id="separatorInput" maxlength="1" value="${currentSeparator}" class="w-full text-[10px] p-2 bg-slate-50 border-none rounded-lg font-bold text-center outline-none">
                         </div>
                     </div>
-                </div>`;
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h4 class="text-[10px] font-black uppercase tracking-widest text-slate-800">Compact View</h4>
+                                <p class="text-[9px] text-slate-400 font-bold mt-0.5">Denser layout for small screens</p>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="compactModeToggle" ${isCompact ? 'checked' : ''} onchange="if(!budget.settings) budget.settings={}; budget.settings.compactMode = this.checked; saveBudget(); render();" class="sr-only peer">
+                                <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h4 class="text-[10px] font-black uppercase tracking-widest text-slate-800">Connect to AoD Database</h4>
+                                <p class="text-[9px] text-slate-400 font-bold mt-0.5">Pull crew by location, availability and role</p>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="aodSyncToggle" ${syncAoD ? 'checked' : ''} onchange="if(!budget.settings) budget.settings={}; budget.settings.syncAoD = this.checked; saveBudget();" class="sr-only peer">
+                                <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                     <a href="https://raw.githubusercontent.com/jaysonmy/moobudget/refs/heads/main/index.html" target="_blank" download="moobudget-beta.html" class="flex items-center justify-center gap-2 px-4 py-3 bg-slate-100 text-slate-600 rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-slate-200 transition-colors">${mBTAssets.cloud} Get Beta</a>
+                     <button onclick="hardResetApp()" class="flex items-center justify-center gap-2 px-4 py-3 bg-rose-50 text-rose-600 rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-rose-100 transition-colors">${mBTAssets.zap} Fix Bugs</button>
+                </div>
+                <div class="flex justify-center">
+                     <button onclick="mBTME.close('settingsModal'); showCoffeeWidget();" class="flex items-center gap-2 px-8 py-4 bg-[#FFDD00] text-black rounded-xl font-black text-[10px] uppercase tracking-widest hover:scale-105 transition-transform shadow-lg">${mBTAssets.coffee} Support Development</button>
+                </div>
+            </div>`;
+    }
+    // --- Tab: AI Configuration ---
+    if (tabName === 'ai') {
+        const provider = getSelectedProvider();
+        const saveHistory = budget.aiContext?.saveHistory ?? true;
+        // Update: Added h-full and overflow-y-auto wrapper
+        return `
+            <div class="h-full overflow-y-auto no-scrollbar p-6 space-y-6 animate-in fade-in duration-300">
+                <div class="p-5 bg-slate-900 rounded-2xl border border-black shadow-lg text-white">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <h3 class="text-[10px] font-black uppercase tracking-widest text-slate-400">Neural Link</h3>
+                            <p class="text-[9px] text-slate-500 font-bold mt-0.5">Configure Provider Access</p>
+                        </div>
+                        <div class="text-slate-700">${mBTAssets.sparkle}</div>
+                    </div>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Active Provider</label>
+                            <select id="aiProviderSelect" class="w-full bg-slate-800 text-white border-none rounded-lg p-2.5 text-[10px] font-bold outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer">
+                                <option value="gemini" ${provider === 'gemini' ? 'selected' : ''}>Google Gemini 1.5</option>
+                                <option value="openai" ${provider === 'openai' ? 'selected' : ''}>OpenAI GPT-4</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1.5">API Credentials</label>
+                            <input type="password" id="apiKeyInput" value="${getStoredApiKey(provider)}" class="w-full bg-slate-800 text-white border-none rounded-lg p-2.5 text-[10px] font-mono outline-none focus:ring-1 focus:ring-blue-500" placeholder="sk-...">
+                        </div>
+                        <div class="flex items-center gap-3 py-1">
+                            <div class="relative flex items-center">
+                                <input type="checkbox" id="aiContextToggle" ${saveHistory ? 'checked' : ''} onchange="if(!budget.aiContext) budget.aiContext={chat:[], analysis:''}; budget.aiContext.saveHistory = this.checked; saveBudget();" class="sr-only peer">
+                                <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500"></div>
+                            </div>
+                            <label for="aiContextToggle" class="text-[9px] font-bold text-slate-400 uppercase tracking-wide cursor-pointer select-none">Save Conversation Context</label>
+                        </div>
+                        <button id="saveApiKeyBtn" onclick="const p=document.getElementById('aiProviderSelect').value; const k=document.getElementById('apiKeyInput').value; saveStoredApiKey(p,k); localStorage.setItem('${storageKeyPrefix}selectedAiProvider', p); alert('Neural Link Established');" class="w-full bg-blue-600 text-white py-3 rounded-xl font-black uppercase tracking-widest text-[9px] shadow-lg hover:bg-blue-500 transition-all mt-2">Synchronize Link</button>
+                    </div>
+                </div>
+            </div>`;
+    }
+    // --- Tab: Database (with sub-tabs) ---
+    if (tabName === 'database') {
+        const nav = `
+            <div class="flex gap-2 bg-white p-1 rounded-xl border border-slate-100 shadow-sm shrink-0">
+                <button onclick="showSettingsModal('database', 'lineItems')" class="flex-1 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all ${subTab==='lineItems'?'bg-slate-100 text-slate-800':'text-slate-400 hover:text-slate-600'}">Line Items</button>
+                <button onclick="showSettingsModal('database', 'contacts')" class="flex-1 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all ${subTab==='contacts'?'bg-slate-100 text-slate-800':'text-slate-400 hover:text-slate-600'}">Contacts</button>
+                <button onclick="showSettingsModal('database', 'templates')" class="flex-1 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all ${subTab==='templates'?'bg-slate-100 text-slate-800':'text-slate-400 hover:text-slate-600'}">Templates</button>
+            </div>`;
+        // Update: Changed to flex col container without parent scroll
+        return `<div class="flex flex-col h-full p-6 pb-0 overflow-hidden space-y-4">
+            ${nav}
+            <div class="flex-grow flex flex-col relative overflow-hidden min-h-0">
+                ${renderDatabaseSubView(subTab)}
+            </div>
+        </div>`;
+    }
+    return `<div class="p-8 text-center text-slate-300 font-bold uppercase tracking-widest">Logic Stream Not Found</div>`;
+}
+
+window.openAddContactModal = function() {
+    const dummyItem = { id: 'dummy_new_contact', crew: { name: '', phone: '', email: '' } };
+    const dummySection = 'general'; // arbitrary section name, not used in add flow
+    openCrewProfile(null, null, dummyItem.id, dummySection);
+};
+
+window.addGlobalContact = function(e) {
+    if(e) e.preventDefault();
+    const nameInput = document.getElementById('newCNameModal') || document.getElementById('newCName');
+    const roleInput = document.getElementById('newCRoleModal') || document.getElementById('newCRole');
+    const name = nameInput.value.trim();
+    const role = roleInput.value.trim();
+ 
+    if (!name || !role) return alert("Name and Role are required.");
+ 
+    const exists = mBTOG.contacts.some(c => c.name.toLowerCase() === name.toLowerCase() && c.role.toLowerCase() === role.toLowerCase());
+    if(exists) return alert("Contact already exists in database.");
+ 
+    const newContact = {
+        id: 'c_' + Date.now(),
+        name,
+        role,
+        contact: ''
+    };
+ 
+    mBTOG.contacts.push(newContact);
+    localStorage.setItem('moo_contacts', JSON.stringify(mBTOG.contacts));
+ 
+    showSettingsModal('database', 'contacts');
+ 
+    nameInput.value = '';
+    roleInput.value = '';
+};
+
+window.showSettingsModal = function(tab = 'general', subTab = 'lineItems') {
+    const domId = 'settingsModal';
+    const contentHTML = getSettingsTabContent(tab, subTab);
+    const tabs = [
+        { id: 'general', label: 'General', icon: mBTAssets.gear },
+        { id: 'database', label: 'Database', icon: mBTAssets.list },
+        { id: 'ai', label: 'AI', icon: mBTAssets.sparkle }
+    ];
+    const tabNavHTML = tabs.map(t =>
+        `<button onclick="showSettingsModal('${t.id}', '${t.id === 'database' ? 'lineItems' : ''}')" class="flex-1 flex items-center justify-center gap-2 h-9 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${tab === t.id ? 'bg-slate-900 text-white shadow-md' : 'text-slate-400 hover:bg-slate-100 hover:text-slate-600'}">
+            <span class="scale-75">${t.icon}</span> <span>${t.label}</span>
+        </button>`
+    ).join('');
+    const existingModal = document.getElementById(domId);
+    if (existingModal) {
+        const contentArea = document.getElementById('settingsContentArea');
+        const navArea = document.getElementById('settingsTabNav');
+        if (contentArea) contentArea.innerHTML = contentHTML;
+        if (navArea) navArea.innerHTML = tabNavHTML;
+
+        // Attach listeners for Line Items search
+        if (tab === 'database' && subTab === 'lineItems') {
+            mBTME.attachSearch('dbSearchInput', 'dbListBody', mBTOG.rates, (r) => `<tr><td class="p-2 font-bold text-slate-700 border-b border-slate-50">${r.description}</td><td class="p-2 text-right font-mono text-slate-500 border-b border-slate-50">${mBTLE.format.currency(r.rate)}</td></tr>`);
         }
 
-       if (tabName === 'database') {
-            return `
-                <div class="space-y-3 h-full flex flex-col">
-                    <div class="bg-white p-2 rounded-xl border border-slate-100 shrink-0">
-                        <input type="text" id="dbSearchInput" placeholder="SEARCH GLOBAL RATES..." class="w-full p-2 bg-transparent border-none text-[10px] font-black uppercase tracking-widest outline-none">
+        // Attach listeners for Contacts search
+        if (tab === 'database' && subTab === 'contacts') {
+            const globalContacts = mBTOG.contacts || [];
+            const assignedContacts = [];
+            Object.values(budget.sections || {}).forEach(sec => {
+                sec.items.forEach(item => {
+                    if (item.crew && item.crew.name) {
+                        assignedContacts.push({
+                            id: 'assigned_' + item.id,
+                            name: item.crew.name,
+                            role: item.description || 'Crew',
+                            phone: item.crew.phone || '',
+                            email: item.crew.email || '',
+                            assigned: true
+                        });
+                    }
+                });
+            });
+            const allContacts = [...globalContacts];
+            assignedContacts.forEach(ac => {
+                if (!allContacts.some(gc => gc.name.toLowerCase() === ac.name.toLowerCase())) {
+                    allContacts.push(ac);
+                }
+            });
+            mBTME.attachSearch('contactsSearchInput', 'contactsListBody', allContacts, (c) => `
+                <div class="flex items-center justify-between p-3 border-b border-slate-50 last:border-0 hover:bg-slate-50 transition-colors group">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-[10px] font-black text-slate-500 group-hover:bg-indigo-100 group-hover:text-indigo-600 transition-colors">${c.name ? c.name.charAt(0).toUpperCase() : '?'}</div>
+                        <div>
+                            <div class="text-[10px] font-black uppercase text-slate-700">${c.name}</div>
+                            <div class="text-[9px] font-bold text-slate-400">${c.role || 'No Role'}${c.assigned ? ' (Assigned)' : ''}</div>
+                        </div>
                     </div>
-                    <div class="border border-slate-100 rounded-xl overflow-hidden shadow-sm bg-white flex-grow flex flex-col">
-                        <table class="w-full text-[10px]">
-                            <thead class="bg-slate-50 text-slate-400 font-black uppercase tracking-widest">
-                                <tr><th class="p-2 text-left">Role</th><th class="p-2 text-right">Base Rate</th></tr>
-                            </thead>
-                            <tbody id="dbListBody" class="divide-y divide-slate-50 bg-white">
-                                </tbody>
-                        </table>
-                    </div>
-                </div>`;
+                    ${c.assigned ? '' : `<button onclick="deleteGlobalContact('${c.id}')" class="text-slate-300 hover:text-rose-500 transition-colors">${mBTAssets.trash}</button>`}
+                </div>`);
         }
 
-        return `<div class="p-8 text-center text-slate-300 font-bold uppercase tracking-widest">Logic Stream Not Found</div>`;
+        // Attach listeners for Template search
+        if (tab === 'database' && subTab === 'templates') {
+            const templates = mBTOG.templates || [];
+            mBTME.attachSearch('templateSearchInput', 'templatesListBody', templates, (t) => `
+                <div class="p-4 bg-white rounded-xl border border-slate-100 shadow-sm flex items-center justify-between group hover:border-blue-200 transition-all">
+                    <div class="flex items-center gap-4">
+                        <div class="text-2xl">${t.icon || '📄'}</div>
+                        <div>
+                            <h4 class="font-black text-xs uppercase tracking-widest text-slate-800">${t.label}</h4>
+                            <p class="text-[9px] text-slate-400 font-bold mt-1">${t.cat || 'General'}</p>
+                        </div>
+                    </div>
+                    <button onclick="createNewDocumentFromTemplate('${t.id}')" class="px-3 py-1.5 bg-slate-50 text-[9px] font-black uppercase tracking-widest text-blue-600 rounded-lg hover:bg-blue-600 hover:text-white transition-all">
+                        Use
+                    </button>
+                </div>`);
+        }
+        return;
     }
 
-/* ======= Studio Orchestration & Switchboard ======== */
+    // Update: Removed 'overflow-y-auto' and 'p-6' to let children handle it
+    const fullContent = `
+        <div class="flex flex-col min-h-[600px] max-h-[90vh] bg-slate-50/50">
+            <div id="settingsTabNav" class="flex gap-2 p-3 border-b border-slate-100 bg-white shrink-0">
+                ${tabNavHTML}
+            </div>
+            <div id="settingsContentArea" class="flex-grow flex flex-col relative overflow-hidden">
+                ${contentHTML}
+            </div>
+        </div>`;
+    mBTME.open('settings', 'Settings', fullContent, 'max-w-2xl', { noPadding: true });
 
+    // Initial attachment on open (duplicated logic for first render)
+    if (tab === 'database' && subTab === 'lineItems') {
+        mBTME.attachSearch('dbSearchInput', 'dbListBody', mBTOG.rates, (r) => `<tr><td class="p-2 font-bold text-slate-700 border-b border-slate-50">${r.description}</td><td class="p-2 text-right font-mono text-slate-500 border-b border-slate-50">${mBTLE.format.currency(r.rate)}</td></tr>`);
+    }
+
+    if (tab === 'database' && subTab === 'contacts') {
+        const globalContacts = mBTOG.contacts || [];
+        const assignedContacts = [];
+        Object.values(budget.sections || {}).forEach(sec => {
+            sec.items.forEach(item => {
+                if (item.crew && item.crew.name) {
+                    assignedContacts.push({ id: 'assigned_' + item.id, name: item.crew.name, role: item.description || 'Crew', phone: item.crew.phone || '', email: item.crew.email || '', assigned: true });
+                }
+            });
+        });
+        const allContacts = [...globalContacts];
+        assignedContacts.forEach(ac => {
+            if (!allContacts.some(gc => gc.name.toLowerCase() === ac.name.toLowerCase())) {
+                allContacts.push(ac);
+            }
+        });
+        mBTME.attachSearch('contactsSearchInput', 'contactsListBody', allContacts, (c) => `
+            <div class="flex items-center justify-between p-3 border-b border-slate-50 last:border-0 hover:bg-slate-50 transition-colors group">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-[10px] font-black text-slate-500 group-hover:bg-indigo-100 group-hover:text-indigo-600 transition-colors">${c.name ? c.name.charAt(0).toUpperCase() : '?'}</div>
+                    <div>
+                        <div class="text-[10px] font-black uppercase text-slate-700">${c.name}</div>
+                        <div class="text-[9px] font-bold text-slate-400">${c.role || 'No Role'}${c.assigned ? ' (Assigned)' : ''}</div>
+                    </div>
+                </div>
+                ${c.assigned ? '' : `<button onclick="deleteGlobalContact('${c.id}')" class="text-slate-300 hover:text-rose-500 transition-colors">${mBTAssets.trash}</button>`}
+            </div>`);
+    }
+
+    if (tab === 'database' && subTab === 'templates') {
+        const templates = mBTOG.templates || [];
+        mBTME.attachSearch('templateSearchInput', 'templatesListBody', templates, (t) => `
+            <div class="p-4 bg-white rounded-xl border border-slate-100 shadow-sm flex items-center justify-between group hover:border-blue-200 transition-all">
+                <div class="flex items-center gap-4">
+                    <div class="text-2xl">${t.icon || '📄'}</div>
+                    <div>
+                        <h4 class="font-black text-xs uppercase tracking-widest text-slate-800">${t.label}</h4>
+                        <p class="text-[9px] text-slate-400 font-bold mt-1">${t.cat || 'General'}</p>
+                    </div>
+                </div>
+                <button onclick="createNewDocumentFromTemplate('${t.id}')" class="px-3 py-1.5 bg-slate-50 text-[9px] font-black uppercase tracking-widest text-blue-600 rounded-lg hover:bg-blue-600 hover:text-white transition-all">
+                    Use
+                </button>
+            </div>`);
+    }
+};
+
+/* ======= Studio Orchestration & Switchboard ======== */
     /* --- 1. Personnel Hub Intelligence (Interaction behavior) --- */
     // Logic Resolution: Manages the floating contact cards and profile resolution.
     window.toggleCrewPopup = function(el, event) {
-        if(event) event.stopPropagation(); 
+        if(event) event.stopPropagation();
         const wrapper = el.parentElement;
         document.querySelectorAll('.crew-wrapper').forEach(div => { if (div !== wrapper) div.classList.remove('mobile-active'); });
         wrapper.classList.toggle('mobile-active');
     };
+window.openCrewProfile = function(el, event, itemId, sectionName) {
+    if(event) event.stopPropagation();
 
-    window.openCrewProfile = function(el, event, itemId, sectionName) {
-        if(event) event.stopPropagation();
-        const section = budget.sections[sectionName];
-        const item = section.items.find(i => i.id === itemId);
-        if(!item) return;
+    // Safe fallback for dummy add from Settings
+    let section = { items: [] };
+    let item = null;
+    if (itemId && sectionName && budget.sections && budget.sections[sectionName]) {
+        section = budget.sections[sectionName];
+        item = section.items.find(i => i.id === itemId);
+    }
+    // If no valid item found (dummy case), create temporary item
+    if (!item) {
+        item = { id: itemId || 'temp', crew: { name: '', phone: '', email: '' }, description: 'New Contact' };
+    }
+    const crew = item.crew || { name: '', phone: '', email: '' };
 
-        const crew = item.crew || { name: '', phone: '', email: '' };
-        const cleanPhone = crew.phone ? crew.phone.replace(/\D/g, '') : '';
-        const hasPhone = cleanPhone.length > 6;
-        const hasEmail = crew.email && crew.email.includes('@');
+    // Actions logic
+    const cleanPhone = crew.phone ? crew.phone.replace(/\D/g, '') : '';
+    const hasPhone = cleanPhone.length > 6;
+    const hasEmail = crew.email && crew.email.includes('@');
 
-        // --- Logistics Resolution: construction of device-aware communication links ---
-        const waLink = `https://wa.me/${(cleanPhone.length === 10 && (cleanPhone.startsWith('876') || cleanPhone.startsWith('658'))) ? '1'+cleanPhone : cleanPhone}`;
+    const actionsBar = `
+        <div class="flex justify-center gap-3 mb-6 mt-2">
+            ${hasPhone ? `
+                <a href="tel:${cleanPhone}" class="flex flex-col items-center gap-1 group">
+                    <div class="w-10 h-10 rounded-full bg-green-50 text-green-600 border border-green-200 flex items-center justify-center shadow-sm group-hover:bg-green-600 group-hover:text-white transition-colors">${mBTAssets.phone}</div>
+                    <span class="text-[8px] font-black text-slate-400 uppercase tracking-widest">Call</span>
+                </a>
+                <a href="https://wa.me/${cleanPhone}" target="_blank" class="flex flex-col items-center gap-1 group">
+                    <div class="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200 flex items-center justify-center shadow-sm group-hover:bg-emerald-600 group-hover:text-white transition-colors">${mBTAssets.wa}</div>
+                    <span class="text-[8px] font-black text-slate-400 uppercase tracking-widest">WA</span>
+                </a>` : ''}
+            ${hasEmail ? `
+                <a href="mailto:${crew.email}" class="flex flex-col items-center gap-1 group">
+                    <div class="w-10 h-10 rounded-full bg-blue-50 text-blue-600 border border-blue-200 flex items-center justify-center shadow-sm group-hover:bg-blue-600 group-hover:text-white transition-colors">${mBTAssets.mail}</div>
+                    <span class="text-[8px] font-black text-slate-400 uppercase tracking-widest">Email</span>
+                </a>` : ''}
+        </div>`;
 
-        const actionsBar = `
-            <div class="flex justify-center gap-6 mb-8 mt-4">
-                ${hasPhone ? `
-                    <a href="tel:${cleanPhone}" class="flex flex-col items-center gap-2 group">
-                        <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center shadow-sm group-hover:bg-emerald-600 group-hover:text-white transition-all scale-100 active:scale-90">
-                            ${mBTAssets.phone}
-                        </div>
-                        <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Call</span>
-                    </a>
-                    <a href="${waLink}" target="_blank" class="flex flex-col items-center gap-2 group">
-                        <div class="w-12 h-12 rounded-2xl bg-green-50 text-green-600 border border-green-100 flex items-center justify-center shadow-sm group-hover:bg-green-600 group-hover:text-white transition-all scale-100 active:scale-90">
-                            ${mBTAssets.wa}
-                        </div>
-                        <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest">WhatsApp</span>
-                    </a>` : ''}
-                ${hasEmail ? `
-                    <a href="mailto:${crew.email}" class="flex flex-col items-center gap-2 group">
-                        <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 border border-indigo-100 flex items-center justify-center shadow-sm group-hover:bg-indigo-600 group-hover:text-white transition-all scale-100 active:scale-90">
-                            ${mBTAssets.mail}
-                        </div>
-                        <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Email</span>
-                    </a>` : ''}
-                ${!hasPhone && !hasEmail ? '<span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest italic text-center p-4 bg-slate-50 rounded-xl w-full border border-dashed border-slate-200">Pending Personnel Resolution</span>' : ''}
-            </div>`;
-
-			const content = `
-            <form id="crewProfileForm" class="space-y-6">
-                <div class="text-center relative">
-                    <div class="w-24 h-24 mx-auto rounded-[32px] bg-slate-900 flex items-center justify-center text-white font-black text-4xl shadow-2xl border-4 border-white rotate-3">
-                        ${crew.name ? RenderEngine.esc(crew.name.substring(0,1).toUpperCase()) : '?'}
-                    </div>
-                    <h3 class="text-xl font-black text-slate-900 mt-4 uppercase tracking-tighter">${RenderEngine.esc(crew.name || 'Unknown')}</h3>
-                    <p class="text-[10px] text-blue-600 font-black uppercase tracking-widest bg-blue-50 inline-block px-3 py-1 rounded-full mt-1">${RenderEngine.esc(item.description)}</p>
+    const content = `
+        <form id="crewProfileForm" class="space-y-6">
+            <div class="text-center relative">
+                <div class="w-24 h-24 mx-auto rounded-[32px] bg-slate-900 flex items-center justify-center text-white font-black text-4xl shadow-2xl border-4 border-white rotate-3">
+                    ${crew.name ? RenderEngine.esc(crew.name.substring(0,1).toUpperCase()) : '?'}
                 </div>
-                ${actionsBar}
-                <div class="bg-slate-50 p-5 rounded-3xl border border-slate-100 space-y-4">
-                    <div class="flex justify-between items-center mb-2">
-                        <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Profile</h4>
-                        <button type="button" id="importContactBtn" class="text-[10px] font-black uppercase tracking-widest text-blue-600 hover:text-blue-800 transition-colors flex items-center gap-2">${mBTAssets.plus} Import</button>
-                    </div>
-                    <div class="space-y-3">
-                        <input type="text" id="crewName" value="${RenderEngine.esc(crew.name || '')}" placeholder="FULL NAME" class="w-full p-3 bg-white border-none rounded-xl shadow-sm text-xs font-black uppercase tracking-tighter outline-none focus:ring-4 focus:ring-blue-50 transition-all">
-                        <div class="grid grid-cols-2 gap-3">
-                            <input type="tel" id="crewPhone" value="${RenderEngine.esc(crew.phone || '')}" placeholder="PHONE" class="w-full p-3 bg-white border-none rounded-xl shadow-sm text-xs font-mono font-bold outline-none focus:ring-4 focus:ring-blue-50 transition-all">
-                            <input type="email" id="crewEmail" value="${RenderEngine.esc(crew.email || '')}" placeholder="EMAIL" class="w-full p-3 bg-white border-none rounded-xl shadow-sm text-xs font-mono font-bold outline-none focus:ring-4 focus:ring-blue-50 transition-all">
-                        </div>
+                <h3 class="text-xl font-black text-slate-900 mt-4 uppercase tracking-tighter">${RenderEngine.esc(crew.name || 'Unknown')}</h3>
+                <p class="text-[10px] text-blue-600 font-black uppercase tracking-widest bg-blue-50 inline-block px-3 py-1 rounded-full mt-1">${RenderEngine.esc(item.description || 'New Contact')}</p>
+            </div>
+            ${actionsBar}
+            <div class="bg-slate-50 p-5 rounded-3xl border border-slate-100 space-y-4">
+                <div class="flex justify-between items-center mb-2">
+                    <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Profile</h4>
+                    <button type="button" id="importContactBtn" class="text-[10px] font-black uppercase tracking-widest text-blue-600 hover:text-blue-800 transition-colors flex items-center gap-2">${mBTAssets.plus} Import</button>
+                </div>
+                <div class="space-y-3">
+                    <input type="text" id="crewName" value="${RenderEngine.esc(crew.name || '')}" placeholder="FULL NAME" class="w-full p-3 bg-white border-none rounded-xl shadow-sm text-xs font-black uppercase tracking-tighter outline-none focus:ring-4 focus:ring-blue-50 transition-all">
+                    <div class="grid grid-cols-2 gap-3">
+                        <input type="tel" id="crewPhone" value="${RenderEngine.esc(crew.phone || '')}" placeholder="PHONE" class="w-full p-3 bg-white border-none rounded-xl shadow-sm text-xs font-mono font-bold outline-none focus:ring-4 focus:ring-blue-50 transition-all">
+                        <input type="email" id="crewEmail" value="${RenderEngine.esc(crew.email || '')}" placeholder="EMAIL" class="w-full p-3 bg-white border-none rounded-xl shadow-sm text-xs font-mono font-bold outline-none focus:ring-4 focus:ring-blue-50 transition-all">
                     </div>
                 </div>
-                <div class="pt-4 flex justify-between items-center gap-4">
-                    <button type="button" class="text-rose-500 text-[10px] font-black uppercase tracking-widest hover:bg-rose-50 px-4 py-3 rounded-2xl transition-all" onclick="window.clearCrewAssignment('${itemId}', '${sectionName}')">Remove</button>
-                    <button type="submit" class="flex-grow py-4 bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest rounded-2xl shadow-xl hover:bg-black transition-all active:scale-95">Save</button>
-                </div>
-            </form>`;
+            </div>
+            <div class="pt-4 flex justify-between items-center gap-4">
+                <button type="button" class="text-rose-500 text-[10px] font-black uppercase tracking-widest hover:bg-rose-50 px-4 py-3 rounded-2xl transition-all" onclick="window.clearCrewAssignment('${itemId}', '${sectionName}')">Remove</button>
+                <button type="submit" class="flex-grow py-4 bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest rounded-2xl shadow-xl hover:bg-black transition-all active:scale-95">Save</button>
+            </div>
+        </form>`;
 
-        mBTME.open('crewProfile', '', content, 'max-w-sm', { hideHeader: true });
+    mBTME.open('crewProfile', '', content, 'max-w-sm', { hideHeader: true });
 
-        document.getElementById('importContactBtn')?.addEventListener('click', async () => {
-            if ('contacts' in navigator && 'ContactsManager' in window) {
-                try {
-                    const contacts = await navigator.contacts.select(['name', 'tel', 'email'], { multiple: false });
-                    if (contacts.length) {
-                        const c = contacts[0];
-                        if(c.name?.[0]) document.getElementById('crewName').value = c.name[0];
-                        if(c.tel?.[0]) document.getElementById('crewPhone').value = c.tel[0];
-                        if(c.email?.[0]) document.getElementById('crewEmail').value = c.email[0];
-                    }
-                } catch (ex) { console.warn("Native contact resolution failure", ex); }
-            } else { alert("Device infrastructure does not support native contact selection."); }
-        });
+    setTimeout(() => {
+        const importBtn = document.getElementById('importContactBtn');
+        if(importBtn) {
+            importBtn.addEventListener('click', async () => {
+                if ('contacts' in navigator && 'ContactsManager' in window) {
+                    try {
+                        const contacts = await navigator.contacts.select(['name', 'tel', 'email'], { multiple: false });
+                        if (contacts.length) {
+                            const c = contacts[0];
+                            if(c.name?.[0]) document.getElementById('crewName').value = c.name[0];
+                            if(c.tel?.[0]) document.getElementById('crewPhone').value = c.tel[0];
+                            if(c.email?.[0]) document.getElementById('crewEmail').value = c.email[0];
+                        }
+                    } catch (ex) { console.log('Import failed/cancelled', ex); }
+                } else {
+                    alert("Contact import not supported on this browser.");
+                }
+            });
+        }
 
-        document.getElementById('crewProfileForm')?.addEventListener('submit', (e) => {
-            e.preventDefault();
-            item.crew = { 
-                name: document.getElementById('crewName').value.trim(), 
-                phone: document.getElementById('crewPhone').value.trim(), 
-                email: document.getElementById('crewEmail').value.trim() 
-            };
-            if(typeof mBTLE !== 'undefined') mBTLE.reconcile();
-            mBTME.close('crewProfileModal');
-            if(typeof render === 'function') render(); 
-        });
+        const form = document.getElementById('crewProfileForm');
+        if(form) {
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const name = document.getElementById('crewName').value.trim();
+                const phone = document.getElementById('crewPhone').value.trim();
+                const email = document.getElementById('crewEmail').value.trim();
+
+                if (itemId && itemId.startsWith('dummy_new_contact')) {
+                    // Global add from Settings
+                    if (!name) return alert("Name is required.");
+                    const exists = mBTOG.contacts.some(c => c.name.toLowerCase() === name.toLowerCase());
+                    if (exists) return alert("Contact already exists in database.");
+
+                    const newContact = {
+                        id: 'c_' + Date.now(),
+                        name,
+                        role: 'Crew',
+                        phone,
+                        email
+                    };
+                    mBTOG.contacts.push(newContact);
+                    localStorage.setItem('moo_contacts', JSON.stringify(mBTOG.contacts));
+                    mBTME.close('crewProfileModal');
+                    showSettingsModal('database', 'contacts');
+                } else {
+                    // Normal project assignment
+                    item.crew = { name, phone, email };
+                    mBTME.close('crewProfileModal');
+                    render();
+                    if(document.getElementById('stagesViewModal')) showStagesModal();
+                }
+            });
+        }
+    }, 50);
+};
+    window.clearCrewAssignment = function(itemId, sectionName) {
+        if(confirm('Remove assignment?')) {
+            const item = budget.sections[sectionName].items.find(i => i.id === itemId);
+            if(item) {
+                delete item.crew;
+                mBTME.close('crewProfileModal');
+                render();
+            }
+        }
     };
-
     /* --- 2. Studio Builder Logic Expansion --- */
     // Logic Resolution: High-speed bi-directional data flow for the Studio environment.
     window.mBTDB = {
         ...window.mBTDB, // Preserve parts 1 & 2
-        updateData: function(docId, path, value) { 
-            const doc = budget.documents.find(d => d.id === docId); 
-            const parts = path.split('.'); 
-            let target = doc.content.data; 
-            for(let i=0; i<parts.length-1; i++) { if(!target[parts[i]]) target[parts[i]]={}; target = target[parts[i]]; } 
-            target[parts[parts.length-1]] = value; 
-            this._triggerSave(); 
+        updateData: function(docId, path, value) {
+            const doc = budget.documents.find(d => d.id === docId);
+            const parts = path.split('.');
+            let target = doc.content.data;
+            for(let i=0; i<parts.length-1; i++) { if(!target[parts[i]]) target[parts[i]]={}; target = target[parts[i]]; }
+            target[parts[parts.length-1]] = value;
+            this._triggerSave();
         },
-        updateRow: function(docId, section, index, key, value) { 
-            const doc = budget.documents.find(d => d.id === docId); 
-            if(doc.content.data[section][index]) { 
-                doc.content.data[section][index][key] = value; 
-                this._triggerSave(); 
-            } 
+        updateRow: function(docId, section, index, key, value) {
+            const doc = budget.documents.find(d => d.id === docId);
+            if(doc.content.data[section][index]) {
+                doc.content.data[section][index][key] = value;
+                this._triggerSave();
+            }
         },
-        addRow: function(docId, section, type, presetData) { 
-            const doc = budget.documents.find(d => d.id === docId); 
-            if(!doc.content.data[section]) doc.content.data[section] = []; 
-            let newRow = presetData || { id: Date.now() }; 
-            doc.content.data[section].push(newRow); 
-            this._triggerSave(); 
-            this.renderFrame(); 
+        addRow: function(docId, section, type, presetData) {
+            const doc = budget.documents.find(d => d.id === docId);
+            if(!doc.content.data[section]) doc.content.data[section] = [];
+            let newRow = presetData || { id: Date.now() };
+            doc.content.data[section].push(newRow);
+            this._triggerSave();
+            this.renderFrame();
         },
-        deleteRow: function(docId, section, index) { 
-            const doc = budget.documents.find(d => d.id === docId); 
-            doc.content.data[section].splice(index, 1); 
-            this._triggerSave(); 
-            this.renderFrame(); 
+        deleteRow: function(docId, section, index) {
+            const doc = budget.documents.find(d => d.id === docId);
+            doc.content.data[section].splice(index, 1);
+            this._triggerSave();
+            this.renderFrame();
         },
         _triggerSave: function() { if(typeof mBTLE !== 'undefined') mBTLE.reconcile(); },
-        _generateDefaultData: function() { 
-            return { 
-                meta: { productionTitle: budget.projectName||"", productionCompany: budget.company||"", shootDate: new Date().toISOString().split('T')[0], crewCallTime: "08:00" }, 
-                contacts: { director: "", producer: "", ad: "" }, 
-                schedule: [], crew: [], cast: [], 
-                locations: [{name:"Base Camp", address:"", weather:"", hospital:"", mapLink:""}], 
-                additional: {} 
-            }; 
+        _generateDefaultData: function() {
+            return {
+                meta: { productionTitle: budget.projectName||"", productionCompany: budget.company||"", shootDate: new Date().toISOString().split('T')[0], crewCallTime: "08:00" },
+                contacts: { director: "", producer: "", ad: "" },
+                schedule: [], crew: [], cast: [],
+                locations: [{name:"Base Camp", address:"", weather:"", hospital:"", mapLink:""}],
+                additional: {}
+            };
         }
     };
-
     /* --- 3. Stage & Analytics Interface (Orchestration) --- */
     // Logic Resolution: Renders the Production Stages and provides neural analysis of cost drivers.
     function showStagesModal() {
@@ -2190,13 +2604,12 @@ function getSettingsTabContent(tabName) {
         const tl = budget.targetLock;
         const validKeys = ['dev', 'pre', 'prod', 'post', 'dist'];
         validKeys.forEach(k => { if (!tl.stages[k]) tl.stages[k] = { label: k.toUpperCase(), ratio: 20, days: 0, locked: false }; });
-        
+       
         const content = `<div class="p-8 text-center text-slate-300 font-black uppercase tracking-widest animate-pulse">Synchronizing Production Ratios...</div>`;
         mBTME.open('stagesView', 'Production Ratios', content, 'max-w-6xl w-full', { noPadding: true, hideHeader: true, onOpen: () => {
             if(typeof initializeStageDragAndDrop === 'function') initializeStageDragAndDrop();
         }});
     }
-
     window.openAnalyticsHub = function() {
         let allItems = []; let total = 0;
         Object.entries(budget.sections).forEach(([secName, section]) => {
@@ -2208,28 +2621,24 @@ function getSettingsTabContent(tabName) {
         const content = `<div class="p-12 text-center text-slate-300 font-black uppercase tracking-widest">${mBTAssets.money} Neural Matrix Resolving...</div>`;
         mBTME.open('analyticsHub', 'Budget Intelligence', content, 'max-w-2xl');
     };
-
     /* --- 4. Switchboard Bridge Hooks --- */
     window.autofillMtemp = function(docId) {
         const doc = budget.documents.find(d => d.id === docId);
         if (doc && typeof mBTPublisher !== 'undefined') {
             mBTPublisher.processAutofill(doc, budget);
-            if (typeof openDocumentViewer === 'function') openDocumentViewer(docId); 
+            if (typeof openDocumentViewer === 'function') openDocumentViewer(docId);
         }
     };
 
-/* ========= v19.54 CONNECTIVE  UI & Interaction Handlers ========= */
-
+/* ========= v19.54 CONNECTIVE UI & Interaction Handlers ========= */
     /* --- 1. UI Module: Project & Status Bar Resolution --- */
   function renderProjectManagement() {
     const container = document.getElementById('project-management-container');
     if (!container) return;
-
     const btnBase = "p-2.5 bg-white text-slate-400 hover:text-blue-600 rounded-xl border border-slate-100 shadow-sm transition-all active:scale-90 flex items-center justify-center";
-    
+   
     // Logic Resolution: Using indigo for Publish to match industry standard 'Finalization'
     const publishBase = "px-4 py-2 bg-indigo-600 text-white text-[9px] font-black uppercase tracking-widest rounded-xl shadow-lg hover:bg-indigo-700 transition-all active:scale-95 flex items-center gap-2";
-
     container.innerHTML = `
         <div class="flex flex-wrap items-center gap-3">
             <div class="flex items-center bg-white p-1 rounded-xl border border-slate-100 shadow-sm">
@@ -2238,7 +2647,6 @@ function getSettingsTabContent(tabName) {
                     ${FILM_CURRENCIES.map(c => `<option value="${c.code}" ${c.code === displayCurrency ? 'selected' : ''}>${c.label}</option>`).join('')}
                 </select>
             </div>
-
             <div class="flex items-center bg-white p-1.5 rounded-2xl shadow-sm border border-slate-100">
                 <select id="projectLoader" class="text-[10px] font-black uppercase tracking-widest bg-transparent border-none outline-none cursor-pointer px-2">
                     ${getProjectList().map(p => `<option value="${p}" ${p === currentProjectName ? 'selected' : ''}>${p}</option>`).join('')}
@@ -2250,23 +2658,20 @@ function getSettingsTabContent(tabName) {
                     <option value="Duplicate">DUPLICATE PROJECT</option>
                 </select>
             </div>
-
             <div class="flex items-center gap-1.5">
                 <button id="exportMooBtn" title="Backup Environment" class="${btnBase}">${mBTAssets.cloud}</button>
                 <button id="exportPdfBtn" title="Print PDF" class="${btnBase}">${mBTAssets.print}</button>
                 <button id="exportXlsxBtn" title="Export Excel" class="${btnBase}">${mBTAssets.file}</button>
-                
+               
                 <button id="publishBtn" class="${publishBase}">
                     ${mBTAssets.zap} PUBLISH
                 </button>
-
                 <button id="deleteProjectBtn" title="Archive" class="p-2.5 bg-white text-slate-300 hover:text-rose-500 rounded-xl border border-slate-100 shadow-sm transition-all active:scale-90 ml-2">
                     ${mBTAssets.trash}
                 </button>
             </div>
         </div>`;
 }
-
     function renderStatusBar() {
         const container = document.getElementById('statusBar');
         if (!container) return;
@@ -2278,7 +2683,6 @@ function getSettingsTabContent(tabName) {
                 <button id="redoBtn" class="hover:text-blue-400 transition-colors" ${historyIndex >= historyStack.length - 1 ? 'disabled style="opacity:0.3"' : ''}>REDO</button>
             </div>`;
     }
-
     /* --- 2. History & State Resolution --- */
     function handleUndo() {
         if (historyIndex > 0) {
@@ -2287,7 +2691,6 @@ function getSettingsTabContent(tabName) {
             render();
         }
     }
-
     function handleRedo() {
         if (historyIndex < historyStack.length - 1) {
             historyIndex++;
@@ -2295,7 +2698,6 @@ function getSettingsTabContent(tabName) {
             render();
         }
     }
-
     /* --- 3. Telemetry: Exchange Rate Resolution --- */
     async function fetchExchangeRates() {
         if (!navigator.onLine) return;
@@ -2308,7 +2710,6 @@ function getSettingsTabContent(tabName) {
             }
         } catch (e) { console.warn("Currency synchronization failure."); }
     }
-
     /* --- 4. Interactive Routing Logic --- */
     function handleNewProjectSelection(e) {
         const val = e.target.value;
@@ -2316,7 +2717,6 @@ function getSettingsTabContent(tabName) {
         else if (val) handleNewProject(true, val);
         e.target.value = "";
     }
-
     function deleteProject(name) {
         if (confirm(`Move "${name}" to Bin?`)) {
             localStorage.removeItem(storageKeyPrefix + name);
@@ -2329,9 +2729,8 @@ window.showStagesModal = function() {
     const metrics = mBTStagesEngine.getMetrics();
     const stages = ['dev', 'pre', 'prod', 'post', 'dist'];
     const stageLabels = { dev: 'Development', pre: 'Pre-Prod', prod: 'Production', post: 'Post-Prod', dist: 'Distribution' };
-
     const content = `
-        <div class="flex flex-col h-[85vh]">
+        <div class="flex flex-col max-h-[90vh]">
             <div class="p-6 bg-slate-900 text-white rounded-t-[32px] flex justify-between items-end">
                 <div>
                     <p class="text-[9px] font-black uppercase tracking-widest text-slate-400">Total Allocation</p>
@@ -2342,7 +2741,6 @@ window.showStagesModal = function() {
                     <p class="text-xl font-black text-emerald-400">${((metrics.grandTotal / (budget.grandTotal || 1)) * 100).toFixed(1)}%</p>
                 </div>
             </div>
-
             <div id="stagesCarousel" class="flex-grow overflow-x-auto flex gap-6 p-6 no-scrollbar snap-x snap-mandatory bg-slate-100">
                 ${stages.map(s => {
                     const status = mBTStagesEngine.getBurnStatus(metrics.stageTotals[s], (budget.targetLock?.totalCap * (budget.targetLock?.stages[s]?.ratio / 100)));
@@ -2352,7 +2750,7 @@ window.showStagesModal = function() {
                                 <h3 class="font-black uppercase text-xs tracking-widest text-slate-800">${stageLabels[s]}</h3>
                                 <span class="text-[10px] font-mono font-bold text-slate-500">${mBTLE.format.currency(metrics.stageTotals[s])}</span>
                             </div>
-                            
+                           
                             <div id="stage-zone-${s}" data-stage="${s}" class="stage-drop-zone flex-grow bg-white/50 border-2 border-dashed border-slate-200 rounded-[24px] p-4 overflow-y-auto no-scrollbar transition-colors hover:bg-white hover:border-blue-300">
                                 ${renderStageItems(s)}
                             </div>
@@ -2360,28 +2758,24 @@ window.showStagesModal = function() {
                     `;
                 }).join('')}
             </div>
-            
+           
             <div class="p-4 bg-white border-t border-slate-200 flex justify-center gap-2">
                 ${stages.map(s => `<div class="w-1.5 h-1.5 rounded-full bg-slate-300"></div>`).join('')}
             </div>
         </div>`;
-
-    mBTME.open('stagesView', 'Production Pipeline', content, 'max-w-7xl', { 
-        noPadding: true, 
+    mBTME.open('stagesView', 'Production Pipeline', content, 'max-w-7xl', {
+        noPadding: true,
         hideHeader: true,
         onOpen: () => {
-            // Re-initialize drag and drop logic for these new zones
             if (typeof initializeStageDragAndDrop === 'function') initializeStageDragAndDrop();
         }
     });
 };
-
 function renderStageItems(stageKey) {
     let html = '';
     Object.values(budget.sections).forEach(sec => {
         sec.items.forEach(item => {
             if (item.stageData && item.stageData[stageKey]) {
-                // Using RenderEngine from Tier 4
                 html += RenderEngine.stageCard({
                     ...item,
                     _sDays: item.stageData[stageKey].days,
@@ -2393,14 +2787,12 @@ function renderStageItems(stageKey) {
     });
     return html || '<p class="text-[8px] text-center mt-10 font-black text-slate-300 uppercase">Drop Items Here</p>';
 }
-
 /* --- Feature: Advanced Documents Hub --- */
 window.showDocumentsModal = function() {
     const docs = budget.documents || [];
-    const templates = mBTOG.templates; // Pulling from Tier 3 Industry DB
-
+    const templates = mBTOG.templates;
     const content = `
-        <div class="flex flex-col h-[80vh]">
+        <div class="flex flex-col max-h-[90vh]">
             <div class="p-6 bg-white border-b border-slate-100">
                 <div class="flex justify-between items-center mb-4">
                     <h3 class="font-black text-slate-900 text-xs uppercase tracking-widest">Studio Vault</h3>
@@ -2410,10 +2802,9 @@ window.showDocumentsModal = function() {
                         </button>
                     </div>
                 </div>
-                <input type="text" id="docSearch" placeholder="SEARCH VAULT..." 
+                <input type="text" id="docSearch" placeholder="SEARCH VAULT..."
                        class="w-full p-3 bg-slate-50 border-none rounded-2xl text-[10px] font-black uppercase tracking-widest outline-none focus:ring-4 focus:ring-blue-50 transition-all">
             </div>
-
             <div class="flex-grow overflow-y-auto p-6 space-y-4 no-scrollbar bg-slate-50/50">
                 <div class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Active Production Files</div>
                 <div id="activeDocsList" class="grid grid-cols-1 gap-3">
@@ -2436,17 +2827,14 @@ window.showDocumentsModal = function() {
                     `).join('') : '<div class="py-12 text-center text-slate-300 font-black uppercase text-[10px] tracking-widest">No Active Files</div>'}
                 </div>
             </div>
-
             <div class="p-6 bg-white border-t border-slate-100">
                 <button onclick="showNewDocumentSelector()" class="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-2xl hover:bg-black transition-all active:scale-95 flex items-center justify-center gap-3">
                     ${mBTAssets.plus} New Production Template
                 </button>
             </div>
         </div>`;
-
     mBTME.open('documents', 'Production Studio', content, 'max-w-2xl', { noPadding: true, hideHeader: true });
-    
-    // Wire up the live search
+   
     mBTME.attachSearch('docSearch', 'activeDocsList', docs, (doc) => `
         <div class="group bg-white p-4 rounded-3xl border border-slate-100 shadow-sm flex items-center justify-between">
             <div class="flex items-center gap-4 cursor-pointer flex-grow" onclick="mBTDB.open('${doc.id}')">
@@ -2457,19 +2845,17 @@ window.showDocumentsModal = function() {
     `);
 };
 window.showNewDocumentSelector = function() {
-    const categories = ['Pre-Prod', 'Production', 'Post-Prod', 'Legal'];
-    const templates = mBTOG.templates; // These are defined in Tier 3 Part 1
-
+    const templates = mBTOG.templates;
     const content = `
         <div class="space-y-6">
             <div class="text-center">
                 <h3 class="font-black text-slate-900 text-sm uppercase tracking-widest">Select Template</h3>
                 <p class="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">Choose a blueprint to start your document</p>
             </div>
-            
+           
             <div class="grid grid-cols-2 gap-3 max-h-[50vh] overflow-y-auto no-scrollbar p-1">
                 ${templates.map(tmpl => `
-                    <button onclick="createNewDocumentFromTemplate('${tmpl.id}')" 
+                    <button onclick="createNewDocumentFromTemplate('${tmpl.id}')"
                             class="flex flex-col items-center gap-3 p-5 bg-slate-50 border border-slate-100 rounded-[24px] hover:bg-blue-50 hover:border-blue-200 transition-all group">
                         <span class="text-2xl transition-transform group-hover:scale-110">${tmpl.icon}</span>
                         <div class="text-center">
@@ -2480,40 +2866,8 @@ window.showNewDocumentSelector = function() {
                 `).join('')}
             </div>
         </div>`;
-
     mBTME.open('newDocSelector', 'Studio Blueprints', content, 'max-w-md');
 };
-// Logic Resolution: Settings Window
-window.showSettingsModal = function(tab = 'general') {
-    const tabs = [
-        { id: 'general', label: 'General', icon: mBTAssets.gear },
-        { id: 'contacts', label: 'Crew DB', icon: mBTAssets.user },
-        { id: 'ai', label: 'AI Config', icon: mBTAssets.sparkle },
-        { id: 'database', label: 'Rates', icon: mBTAssets.money }
-    ];
-
-    const tabNav = tabs.map(t => 
-        `<button onclick="showSettingsModal('${t.id}')" class="flex-1 flex items-center justify-center gap-2 h-9 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${tab === t.id ? 'bg-slate-900 text-white shadow-md' : 'text-slate-400 hover:bg-slate-100 hover:text-slate-600'}">
-            <span class="scale-75">${t.icon}</span> <span>${t.label}</span>
-        </button>`
-    ).join('');
-
-   const content = `
-        <div class="flex flex-col h-[400px] bg-slate-50/50">
-            <div class="flex gap-2 p-3 border-b border-slate-100 bg-white shrink-0">
-                ${tabNav}
-            </div>
-            <div class="flex-grow p-4 overflow-y-auto no-scrollbar">
-                ${getSettingsTabContent(tab)}
-            </div>
-        </div>`;
-
-    // Window title: 'Settings'
-    mBTME.open('settingsModal', 'Settings', content, 'max-w-xl');
-    
-    if(tab === 'database') mBTME.attachSearch('dbSearchInput', 'dbListBody', mBTOG.rates, (r) => `<tr><td class="p-2 font-bold text-slate-700 border-b border-slate-50">${r.description}</td><td class="p-2 text-right font-mono text-slate-500 border-b border-slate-50">${mBTLE.format.currency(r.rate)}</td></tr>`);
-};
-
 // Logic Resolution: Publish Window (Export Options)
 window.showPublishModal = function() {
     const content = `
@@ -2549,44 +2903,28 @@ window.showPublishModal = function() {
         </div>`;
     mBTME.open('publishModal', 'Production Output', content, 'max-w-2xl');
 };
-
 // Logic Resolution: Coffee Widget (In-App Support)
+// Coffee Widget (Support)
 window.showCoffeeWidget = function() {
-    // We embed the official widget page directly to allow in-app payments
-    // without external script dependencies that get blocked by tracking protection.
     const widgetUrl = "https://www.buymeacoffee.com/widget/page/jaysonmy?description=Support%20mooBudget%20development!&color=%23FFDD00";
-    
+   
     const content = `
-        <div class="flex flex-col h-[650px] w-full overflow-hidden bg-white rounded-2xl">
-            <div class="p-6 text-center bg-[#FFDD00] text-black shrink-0 relative overflow-hidden">
+        <div class="flex flex-col h-[650px] w-full bg-white rounded-2xl overflow-hidden">
+            <div class="p-6 text-center bg-[#FFDD00] text-black relative overflow-hidden">
                 <div class="absolute top-[-20px] right-[-20px] opacity-10 rotate-12 transform scale-150">
                     ${mBTAssets.coffee}
                 </div>
                 <h3 class="text-xl font-black uppercase tracking-tighter mb-1 relative z-10">Fuel the Code</h3>
-                <p class="text-[10px] font-bold uppercase tracking-widest opacity-80 relative z-10">Secure Donation Portal</p>
             </div>
-
             <div class="flex-grow relative bg-slate-50">
-                <iframe 
-                    src="${widgetUrl}" 
+                <iframe
+                    src="${widgetUrl}"
                     style="width: 100%; height: 100%; border: none;"
                     title="Buy Me A Coffee"
                     loading="lazy">
                 </iframe>
-                
-                <div class="absolute inset-0 flex items-center justify-center pointer-events-none z-0 text-slate-300">
-                    <span class="animate-pulse font-black uppercase text-[10px] tracking-widest">Connecting to Bank...</span>
-                </div>
-            </div>
-            
-            <div class="p-2 bg-white border-t border-slate-100 text-center">
-                <button onclick="mBTME.close('coffeeModal')" class="text-[9px] font-black text-slate-400 hover:text-red-500 uppercase tracking-widest transition-colors">
-                    Close Secure Connection
-                </button>
             </div>
         </div>`;
-
-    // Open a slightly larger modal to accommodate the payment inputs
     mBTME.open('coffeeModal', 'Support', content, 'max-w-md', { hideHeader: true, noPadding: true });
 };
 console.log("TIER 5 complete");
@@ -2595,7 +2933,6 @@ console.log("TIER 5 complete");
 
 
 /* ================= v19.54 TIER 6: System Ignition v19.55 ================= */
-
     /* --- 1. OFFLINE ENDURANCE SERVICE (Service Worker Registration) --- */
     // Logic Resolution: Forcing validation of script assets while bypassing browser cache.
     if ('serviceWorker' in navigator) {
@@ -2604,7 +2941,7 @@ console.log("TIER 5 complete");
             navigator.serviceWorker.register('./sw.js', { scope: './', updateViaCache: 'none' })
                 .then(reg => {
                     console.log('SW Synchronization active:', reg.scope);
-                    
+                   
                     // --- Logic Change Detection: Monitoring repository for environmental changes ---
                     reg.onupdatefound = () => {
                         const installingWorker = reg.installing;
@@ -2626,16 +2963,13 @@ console.log("TIER 5 complete");
                 .catch(err => console.log('Service Worker initialization failure:', err));
         });
     }
-
     /* --- 2. GLOBAL EVENT ORCHESTRATION (mBTLE Handshake Hub) --- */
     // Logic Resolution: Centralized delegation for all interface triggers to prevent listener fragmentation.
     function bindAppEventListeners() {
         const appContainer = document.getElementById('app');
         const footer = document.querySelector('footer');
-
         if (!appContainer || appContainer.dataset.listenersBound) return;
         appContainer.dataset.listenersBound = 'true';
-
         // --- Master Change Listener: Environmental synchronization ---
         appContainer.addEventListener('change', (e) => {
             const id = e.target.id;
@@ -2655,15 +2989,14 @@ console.log("TIER 5 complete");
             } else if (id === 'currencySelector') {
                 displayCurrency = e.target.value;
                 localStorage.setItem(`${storageKeyPrefix}currency`, displayCurrency);
-                if(typeof mBTLE !== 'undefined') mBTLE.reconcile(); 
+                if(typeof mBTLE !== 'undefined') mBTLE.reconcile();
                 if(typeof render === 'function') render();
             }
         });
-
         // --- Master Click Listener: Interface orchestration ---
         appContainer.addEventListener('click', (e) => {
             const target = e.target;
-            
+           
             if (target.id === 'undoBtn') { if (typeof handleUndo === 'function') handleUndo(); }
             else if (target.id === 'redoBtn') { if (typeof handleRedo === 'function') handleRedo(); }
             else if (target.id === 'loginBtn') { if (typeof handleLogin === 'function') handleLogin(); }
@@ -2682,7 +3015,6 @@ console.log("TIER 5 complete");
                 handleRemoveItem(btnData.section, btnData.removeItem);
             }
         });
-
         // --- Master Input Listener: Real-time mathematical handshake ---
         appContainer.addEventListener('input', (e) => {
             const input = e.target;
@@ -2693,27 +3025,26 @@ console.log("TIER 5 complete");
                 if (typeof mBTLE !== 'undefined') mBTLE.reconcile();
             }
         });
-
         // --- Footer Navigation: Module activation resolution ---
        if (footer) {
-            footer.addEventListener('click', (e) => { 
+            footer.addEventListener('click', (e) => {
                 const btn = e.target.closest('button');
                 if (!btn) return;
-                
+               
                 // 1. Stages
-                if (btn.id === 'stagesFooterBtn') { 
-                    if (typeof showStagesModal === 'function') showStagesModal(); 
+                if (btn.id === 'stagesFooterBtn') {
+                    if (typeof showStagesModal === 'function') showStagesModal();
                 }
                 // 2. Documents
-                else if (btn.id === 'docsFooterBtn') { 
-                    if (typeof showDocumentsModal === 'function') showDocumentsModal(); 
+                else if (btn.id === 'docsFooterBtn') {
+                    if (typeof showDocumentsModal === 'function') showDocumentsModal();
                 }
                 // 3. Settings (Center)
-                else if (btn.id === 'mainActionBtn') { 
-                    if (typeof showSettingsModal === 'function') showSettingsModal(); 
+                else if (btn.id === 'mainActionBtn') {
+                    if (typeof showSettingsModal === 'function') showSettingsModal();
                 }
                 // 4. Publish (Right)
-                else if (btn.id === 'secondaryActionBtn') { 
+                else if (btn.id === 'secondaryActionBtn') {
                     if (typeof showPublishModal === 'function') showPublishModal();
                 }
                 // 5. Coffee (Right Edge)
@@ -2722,18 +3053,16 @@ console.log("TIER 5 complete");
                 }
             });
         }
-
         window.addEventListener('online', resolveConnectivityStatus);
         window.addEventListener('offline', resolveConnectivityStatus);
     }
-
     /* --- 3. INFRASTRUCTURE TELEMETRY (Connectivity resolution) --- */
-    function resolveConnectivityStatus() { 
+    function resolveConnectivityStatus() {
         const isOnline = navigator.onLine;
-        const btn = document.getElementById('loginBtn'); 
-        if(btn) { 
-            btn.className = `w-10 h-10 rounded-full border-2 flex items-center justify-center transition-all duration-300 shadow-sm flex-shrink-0 ${isOnline ? 'border-emerald-400 bg-emerald-50 text-emerald-600' : 'border-rose-400 bg-rose-50 text-rose-600'}`; 
-            btn.title = isOnline ? "Studio Online" : "Studio Offline"; 
+        const btn = document.getElementById('loginBtn');
+        if(btn) {
+            btn.className = `w-10 h-10 rounded-full border-2 flex items-center justify-center transition-all duration-300 shadow-sm flex-shrink-0 ${isOnline ? 'border-emerald-400 bg-emerald-50 text-emerald-600' : 'border-rose-400 bg-rose-50 text-rose-600'}`;
+            btn.title = isOnline ? "Studio Online" : "Studio Offline";
             btn.innerHTML = mBTAssets.user;
         }
         const aiBtn = document.getElementById('openAiToolsBtn');
@@ -2742,77 +3071,72 @@ console.log("TIER 5 complete");
             if(!isOnline) aiBtn.title = "AI Consultant Offline";
         }
     }
-
-    function handleLogin() { 
+    function handleLogin() {
         if (navigator.onLine && confirm("Establish secure connection to Moo Studio Cloud infrastructure?")) {
-            alert("Environment Authenticated."); 
+            alert("Environment Authenticated.");
         }
     }
-
 console.log("TIER 6 init starting", typeof render);
-
     /* --- 4. GLOBAL BOOT SEQUENCE (Environment resolution) --- */
     function init() {
         // --- Document Identity: Branding resolution ---
         document.title = `mooBudgetTool v${APP_VERSION}`;
-        
+       
         // --- State Hydration: Restoring currency and mathematical preferences ---
         displayCurrency = localStorage.getItem(`${storageKeyPrefix}currency`) || 'JMD';
-        
+       
         // --- Brain Handshake: Coordinate initial exchange logic ---
         if (typeof fetchExchangeRates === 'function') fetchExchangeRates();
-
-	// --- Asset Injection: Populating footer with Tier 1 SVG assets ---
-	if (typeof injectFooterIcons === 'function') injectFooterIcons();
-
+// --- Asset Injection: Populating footer with Tier 1 SVG assets ---
+if (typeof injectFooterIcons === 'function') injectFooterIcons();
         // --- Persistence Recovery: Locating last active project environment ---
         let projectToLoad = localStorage.getItem(`${storageKeyPrefix}lastLoaded`);
         if (!projectToLoad || !getProjectList().includes(projectToLoad)) {
             projectToLoad = getProjectList()[0];
         }
-        
+       
         // --- Structural Resolution: Initializing project state ---
         if (!projectToLoad) {
             if (typeof handleNewProject === 'function') handleNewProject(false);
         } else {
             if (typeof loadBudget === 'function') loadBudget(projectToLoad);
         }
-        
+       
         // --- UI Ignition: Triggering primary render and connectivity telemetry ---
         if (typeof render === 'function') {
             render();
             bindAppEventListeners();
             resolveConnectivityStatus();
+
+            // --- UI Reinforcement: Ensure project management and status bar are always rendered ---
+            if (typeof renderProjectManagement === 'function') renderProjectManagement();
+            if (typeof renderStatusBar === 'function') renderStatusBar();
+
             console.log(`Studio Core v${APP_VERSION} Synchronized.`);
         } else {
             console.error("Critical Resolution Failure: RenderEngine not found.");
         }
     }
-
-	function injectFooterIcons() {
+function injectFooterIcons() {
         const mapping = {
-            'icon-stages': mBTAssets.grid,       // Grid Icon
-            'icon-docs': mBTAssets.file,         // File Icon
-            'icon-main-action': mBTAssets.gear,  // Gear
-			'icon-secondary-action': mBTAssets.paperPlane, // Publish
-            'icon-coffee': mBTAssets.coffee      //  Coffee Cup
+            'icon-stages': mBTAssets.grid, // Grid Icon
+            'icon-docs': mBTAssets.file, // File Icon
+            'icon-main-action': mBTAssets.gear, // Gear
+'icon-secondary-action': mBTAssets.paperPlane, // Publish
+            'icon-coffee': mBTAssets.coffee // Coffee Cup
         };
-
         Object.entries(mapping).forEach(([id, svg]) => {
             const el = document.getElementById(id);
             if (el) el.innerHTML = svg;
         });
     }
-
     /* --- 5. GLOBAL BRIDGE HOOKS & LIFECYCLE TRIGGER --- */
     window.showBinModal = () => { if (typeof mBTTrash !== 'undefined') mBTTrash.open('documents'); };
     window.handleDocTrash = (id) => { if (typeof mBTTrash !== 'undefined') mBTTrash.trashDocument(id); };
-
     // --- Master Lifecycle Trigger: DOM Synchronization ---
     document.addEventListener('DOMContentLoaded', () => {
         if (typeof init === 'function') init();
     });
-
 /* ======= END OF mBT ========== */
 </script>
 </body>
